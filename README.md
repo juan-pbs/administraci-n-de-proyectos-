@@ -1,58 +1,301 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistema Web de Administracion de Proyectos Integradores
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Proyecto Laravel para administrar proyectos integradores de la UTVM. El sistema centraliza periodos academicos, carreras, grupos, usuarios, guias integradoras, equipos, proyectos, asesores, evaluadores, evidencias y documentacion final.
 
-## About Laravel
+## Estado Actual
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Este repositorio contiene una primera base funcional del sistema:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Login institucional con imagenes UTVM, favicon, recuperacion de contrasena y acceso por matricula.
+- Cambio obligatorio de contrasena en el primer inicio de sesion para usuarios nuevos.
+- Roles reducidos a tres perfiles principales:
+  - Direccion / Coordinacion.
+  - Docente / Asesor.
+  - Estudiante / Equipo.
+- Dashboard inicial por rol.
+- Modulos front-end y base funcional para:
+  - Periodos.
+  - Carreras y grupos.
+  - Usuarios, separados en alumnos y docentes.
+  - Asignaturas.
+  - Guias integradoras.
+  - Equipos.
+  - Proyectos.
+  - Reportes, notificaciones, bitacora y respaldos como vistas base.
+- Migraciones con nombres y columnas en espanol.
+- Seeders con datos de ejemplo de universidad:
+  - 3 carreras.
+  - 5 grados.
+  - 3 a 4 grupos por grado.
+  - Grupos de 30 alumnos.
+  - Equipos de 6 alumnos.
+  - Docentes por carrera.
+  - Proyectos, asesores y evaluadores de ejemplo.
+- Filtros, busqueda, scroll interno y paginacion en tablas extensas de carreras/grupos y usuarios.
+- Plantillas Excel para carga masiva de alumnos:
+  - Sin equipos.
+  - Con equipos.
+- Dependencias instaladas para manejar Excel, Word y PDF.
+- Idioma espanol agregado para validaciones, paginacion y mensajes del sistema.
+- Documentacion entregable ordenada con ilustraciones, logos y recursos.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Flujo General del Sistema
 
-## Learning Laravel
+1. Direccion / Coordinacion administra periodos academicos, carreras, grupos, usuarios, asignaturas y guias.
+2. Los alumnos se organizan por carrera, grado y grupo.
+3. Los alumnos pueden cargarse de forma individual o mediante plantilla Excel.
+4. El sistema permite formar equipos de 6 alumnos, ya sea por asignacion previa desde Excel o por asignacion manual.
+5. Los docentes pertenecen a una carrera principal, pero pueden participar como asesores o evaluadores en diferentes proyectos.
+6. Una guia integradora define apartados, fechas de entrega, asignaturas participantes y firmas requeridas.
+7. Cada proyecto se asocia a un equipo, una guia, docentes asesores/evaluadores y asignaturas.
+8. Los estudiantes capturan avances, suben evidencias y productos de software.
+9. Los docentes validan entregables con checkbox, observaciones y calificaciones por apartado.
+10. El sistema prepara la base para generar documentos finales en PDF y Word.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Requisitos
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- PHP 8.3 o superior.
+- Composer.
+- Node.js y npm.
+- MariaDB o MySQL.
+- Servidor local compatible con Laravel, por ejemplo Herd o Laragon.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Dependencias Principales
 
-## Agentic Development
+Backend:
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+- Laravel 13.
+- Laravel Tinker.
+- Laravel DOMPDF.
+- Maatwebsite Excel.
+- PHPWord.
+
+Desarrollo y pruebas:
+
+- Pest.
+- Laravel Lang.
+- Laravel Boost.
+- Vite.
+- Tailwind CSS.
+
+## Instalacion en Otra Computadora
+
+Clonar el repositorio:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+git clone https://github.com/juan-pbs/administraci-n-de-proyectos-.git
+cd administraci-n-de-proyectos-
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Instalar dependencias:
 
-## Contributing
+```bash
+composer install
+npm install
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Crear archivo de entorno:
 
-## Code of Conduct
+```bash
+copy .env.example .env
+php artisan key:generate
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Configurar la base de datos en `.env`.
 
-## Security Vulnerabilities
+Ejemplo para MariaDB/MySQL:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=administracion_proyectos
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-## License
+Ejecutar migraciones y datos de ejemplo:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+php artisan migrate:fresh --seed
+```
+
+Compilar assets:
+
+```bash
+npm run build
+```
+
+Levantar el sistema:
+
+```bash
+php artisan serve
+```
+
+URL local:
+
+```text
+http://127.0.0.1:8000/login
+```
+
+## Usuarios de Prueba
+
+Todos los usuarios sembrados usan la contrasena:
+
+```text
+password
+```
+
+Usuario Direccion / Coordinacion:
+
+```text
+Matricula: 20260001
+Correo: coordinacion@utvm.edu.mx
+Contrasena: password
+```
+
+Docentes:
+
+```text
+Matricula: DOC-TI-01, DOC-MECA-01, DOC-ADM-01
+Contrasena: password
+```
+
+Alumnos:
+
+```text
+Matricula: 202600001 en adelante
+Contrasena: password
+```
+
+## Estructura Relevante
+
+```text
+app/
+  Correos/
+  Http/Controllers/
+    Autenticacion/
+    Auth/
+    Modulos/
+  Models/
+  Soporte/
+
+database/
+  migrations/
+  seeders/
+
+documentacion/
+  entrega_ordenada/
+  conversaciones_codex/
+
+public/
+  assets/utvm/
+  plantillas/
+
+resources/views/
+  autenticacion/
+  auth/
+  components/
+  correos/
+  modulos/
+
+routes/
+  web.php
+  modulos.php
+
+tools/
+  hojas_calculo/
+```
+
+## Modulos Implementados
+
+### Autenticacion
+
+- Login con matricula y contrasena.
+- Correo como dato de recuperacion.
+- Vista de "olvide mi contrasena".
+- Envio de contrasena temporal al registrar usuarios.
+- Redireccion obligatoria a actualizacion de contrasena en primer inicio.
+
+### Control Academico
+
+- Periodos academicos.
+- Carreras y grupos.
+- Usuarios:
+  - Alumnos.
+  - Docentes / asesores.
+  - Direccion / Coordinacion.
+- Asignaturas.
+
+### Gestion de Proyectos
+
+- Guias integradoras.
+- Apartados de guia.
+- Asignaturas que contribuyen por apartado.
+- Firmas por apartado.
+- Equipos.
+- Asignacion y retiro de alumnos.
+- Asignacion y retiro de asesores.
+- Proyectos.
+- Asignacion de docentes asesores/evaluadores.
+- Asignacion de asignaturas participantes.
+
+### Documentacion y Plantillas
+
+- Documento entregable ordenado en `documentacion/entrega_ordenada/`.
+- Ilustraciones del documento en `documentacion/entrega_ordenada/ilustraciones/`.
+- Plantillas Excel en:
+  - `outputs/plantillas_carga_alumnos/`
+  - `public/plantillas/`
+
+## Comandos Utiles
+
+Pruebas:
+
+```bash
+php artisan test
+```
+
+Compilar estilos y scripts:
+
+```bash
+npm run build
+```
+
+Servidor de desarrollo:
+
+```bash
+php artisan serve
+```
+
+Regenerar base de datos con datos de ejemplo:
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+## Notas de Desarrollo
+
+- El proyecto esta en desarrollo activo.
+- La base de datos usa nombres en espanol para facilitar la relacion con la documentacion.
+- Los docentes no se cargan por lista masiva; solo los alumnos tienen carga por Excel.
+- Los docentes pueden ser asesores de uno o varios equipos y tambien evaluadores de apartados sin ser asesores.
+- Los equipos estan definidos con 6 alumnos.
+- Las tablas largas ya cuentan con filtros, busqueda, scroll interno y paginacion.
+- Las conversaciones y decisiones de Codex se resumen en `documentacion/conversaciones_codex/`.
+
+## Ultima Validacion
+
+Antes de este README se validaron:
+
+```bash
+php artisan test
+npm run build
+```
+
+Resultado esperado:
+
+```text
+14 tests passed
+Build correcto con Vite
+```
