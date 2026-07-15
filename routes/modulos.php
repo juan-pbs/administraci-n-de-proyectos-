@@ -20,9 +20,13 @@ Route::post('/docentes-carrera', [ControladorCarrerasGrupos::class, 'asignarDoce
 
 Route::get('/modulos/usuarios', [ControladorUsuarios::class, 'mostrar'])->name('modulos.usuarios');
 Route::post('/usuarios', [ControladorUsuarios::class, 'guardar'])->name('usuarios.guardar');
+Route::post('/usuarios/alumnos/importar', [ControladorUsuarios::class, 'importarAlumnos'])->name('usuarios.alumnos.importar');
+Route::patch('/usuarios/docentes/carrera', [ControladorUsuarios::class, 'actualizarCarreraDocente'])->name('usuarios.docentes.carrera.actualizar');
 
 Route::get('/modulos/asignaturas', [ControladorAsignaturas::class, 'mostrar'])->name('modulos.asignaturas');
 Route::post('/asignaturas', [ControladorAsignaturas::class, 'guardar'])->name('asignaturas.guardar');
+Route::post('/asignaturas/docentes', [ControladorAsignaturas::class, 'asignarDocente'])->name('asignaturas.docentes.guardar');
+Route::delete('/asignaturas/docentes', [ControladorAsignaturas::class, 'quitarDocente'])->name('asignaturas.docentes.quitar');
 
 Route::get('/modulos/guias', [ControladorGuias::class, 'mostrar'])->name('modulos.guias');
 Route::post('/guias', [ControladorGuias::class, 'guardar'])->name('guias.guardar');

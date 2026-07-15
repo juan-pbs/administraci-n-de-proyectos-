@@ -106,10 +106,22 @@
                     Este proceso se usara unicamente para alumnos. La lista debera incluir matricula, nombre, correo, carrera, grado, grupo y, cuando aplique, equipo asignado.
                 </p>
             </div>
-            <form class="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <input type="file" accept=".xlsx,.xls,.csv" class="block w-full rounded-md border border-slate-300 text-sm text-slate-700 file:mr-3 file:border-0 file:bg-[#EAF7EF] file:px-3 file:py-2.5 file:text-sm file:font-semibold file:text-[#0F7D47] sm:w-72">
-                <button type="button" class="rounded-md border border-[#15529A] bg-white px-4 py-2.5 text-sm font-bold text-[#15529A] transition hover:bg-[#EAF2FB]">
-                    Validar lista
+            <form method="POST" action="{{ route('usuarios.alumnos.importar') }}" enctype="multipart/form-data" class="grid gap-3 sm:grid-cols-[220px_minmax(220px,1fr)_auto] sm:items-end">
+                @csrf
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700">Periodo</label>
+                    <select name="periodo_id" required class="mt-2 block w-full rounded-md border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-[#15529A] focus:ring-2 focus:ring-[#15529A]/20">
+                        @foreach ($periodos as $periodo)
+                            <option value="{{ $periodo->id }}">{{ $periodo->nombre }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700">Archivo Excel / CSV</label>
+                    <input name="archivo" type="file" accept=".xlsx,.xls,.csv,.txt" required class="mt-2 block w-full rounded-md border border-slate-300 text-sm text-slate-700 file:mr-3 file:border-0 file:bg-[#EAF7EF] file:px-3 file:py-2.5 file:text-sm file:font-semibold file:text-[#0F7D47]">
+                </div>
+                <button class="rounded-md border border-[#15529A] bg-white px-4 py-2.5 text-sm font-bold text-[#15529A] transition hover:bg-[#EAF2FB]">
+                    Cargar lista
                 </button>
             </form>
         </div>
@@ -241,6 +253,7 @@
                             <th class="whitespace-nowrap px-4 py-3 text-left">Clave</th>
                             <th class="whitespace-nowrap px-4 py-3 text-left">Nombre</th>
                             <th class="whitespace-nowrap px-4 py-3 text-left">Carrera principal</th>
+                            <th class="whitespace-nowrap px-4 py-3 text-left">Cambiar carrera</th>
                             <th class="whitespace-nowrap px-4 py-3 text-left">Correo</th>
                             <th class="whitespace-nowrap px-4 py-3 text-left">Estado</th>
                         </tr>
@@ -251,12 +264,25 @@
                                 <td class="whitespace-nowrap px-4 py-3 font-semibold text-slate-800">{{ $docente->matricula }}</td>
                                 <td class="px-4 py-3 text-slate-600">{{ $docente->nombre }}</td>
                                 <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ $docente->carrera?->clave ?? '-' }}</td>
+                                <td class="min-w-72 px-4 py-3">
+                                    <form method="POST" action="{{ route('usuarios.docentes.carrera.actualizar') }}" class="flex gap-2">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="docente_id" value="{{ $docente->id }}">
+                                        <select name="carrera_id" class="block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-[#15529A] focus:ring-2 focus:ring-[#15529A]/20">
+                                            @foreach ($carreras as $carrera)
+                                                <option value="{{ $carrera->id }}" @selected((int) $docente->carrera_id === (int) $carrera->id)>{{ $carrera->clave }}</option>
+                                            @endforeach
+                                        </select>
+                                        <button class="rounded-md bg-[#15529A] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0D376D]">Guardar</button>
+                                    </form>
+                                </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ $docente->correo }}</td>
                                 <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ ucfirst($docente->estado) }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-4 py-6 text-center text-slate-500">Aun no hay docentes registrados con esos filtros.</td>
+                                <td colspan="6" class="px-4 py-6 text-center text-slate-500">Aun no hay docentes registrados con esos filtros.</td>
                             </tr>
                         @endforelse
                     </tbody>

@@ -59,6 +59,17 @@ class User extends Authenticatable
             ->withTimestamps('creado_en', 'actualizado_en');
     }
 
+    /**
+     * @return BelongsToMany<Asignatura, $this>
+     */
+    public function asignaturasComoDocente(): BelongsToMany
+    {
+        return $this->belongsToMany(Asignatura::class, 'docentes_asignatura', 'docente_id', 'asignatura_id')
+            ->wherePivot('activo', true)
+            ->withPivot(['activo'])
+            ->withTimestamps('creado_en', 'actualizado_en');
+    }
+
     public function hasRole(string $role): bool
     {
         return $this->role?->nombre === $role;

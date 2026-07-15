@@ -35,6 +35,7 @@ class DatabaseSeeder extends Seeder
         $this->asignarDocentesACarreras($carreras, $usuarios['docentesPorCarrera']);
 
         $asignaturas = $this->crearAsignaturas($carreras);
+        $this->asignarDocentesAAsignaturas($asignaturas, $usuarios['docentesPorCarrera']);
         $guias = $this->crearGuias($periodos, $asignaturas, $usuarios['direccion']);
         $equipos = $this->crearEquiposUniversidad($grupos, $usuarios);
         $this->crearProyectosUniversidad($guias, $equipos, $asignaturas, $usuarios['docentesPorCarrera']);
@@ -297,6 +298,27 @@ class DatabaseSeeder extends Seeder
         }
 
         return $asignaturas;
+    }
+
+    /**
+     * @param array<string, Asignatura> $asignaturas
+     * @param Collection<string, Collection<int, User>> $docentesPorCarrera
+     */
+    private function asignarDocentesAAsignaturas(array $asignaturas, Collection $docentesPorCarrera): void
+    {
+        foreach ($asignaturas as $asignatura) {
+            $claveCarrera = explode('-', (string) $asignatura->clave)[0] ?? null;
+            $docentes = $docentesPorCarrera[$claveCarrera] ?? collect();
+
+            if ($docentes->isEmpty()) {
+                continue;
+            }
+
+            $docente = $docentes->values()[(int) $asignatura->grado % $docentes->count()];
+            $asignatura->docentes()->syncWithoutDetaching([
+                $docente->id => ['activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
+            ]);
+        }
     }
 
     /**

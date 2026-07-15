@@ -96,6 +96,16 @@ return new class extends Migration
             $this->marcasTiempo($table);
         });
 
+        Schema::create('docentes_asignatura', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('asignatura_id')->constrained('asignaturas')->cascadeOnDelete();
+            $table->foreignId('docente_id')->constrained('usuarios')->cascadeOnDelete();
+            $table->boolean('activo')->default(true);
+            $this->marcasTiempo($table);
+
+            $table->unique(['asignatura_id', 'docente_id'], 'asignatura_docente_unica');
+        });
+
         Schema::create('guias_integradoras', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('periodo_id')->constrained('periodos')->cascadeOnDelete();
@@ -321,6 +331,7 @@ return new class extends Migration
         Schema::dropIfExists('asignaturas_apartado_guia');
         Schema::dropIfExists('apartados_guia');
         Schema::dropIfExists('guias_integradoras');
+        Schema::dropIfExists('docentes_asignatura');
         Schema::dropIfExists('asignaturas');
         Schema::dropIfExists('docentes_carrera');
 

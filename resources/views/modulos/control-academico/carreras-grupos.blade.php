@@ -274,26 +274,4 @@
             </div>
         </article>
     </section>
-
-    <section class="mt-5 rounded-md border border-slate-200 bg-white p-5 shadow-sm">
-        <h3 class="font-bold text-slate-900">Regla operativa del sistema</h3>
-        <div class="mt-4 grid gap-3 lg:grid-cols-4">
-            <div class="rounded-md border border-slate-200 p-4">
-                <p class="font-bold text-[#0D376D]">1. Carrera</p>
-                <p class="mt-2 text-sm leading-6 text-slate-600">Agrupa docentes, asignaturas y grupos académicos.</p>
-            </div>
-            <div class="rounded-md border border-slate-200 p-4">
-                <p class="font-bold text-[#0D376D]">2. Grado y grupo</p>
-                <p class="mt-2 text-sm leading-6 text-slate-600">Ubica alumnos antes de generar equipos de trabajo.</p>
-            </div>
-            <div class="rounded-md border border-slate-200 p-4">
-                <p class="font-bold text-[#0D376D]">3. Equipo</p>
-                <p class="mt-2 text-sm leading-6 text-slate-600">Puede tener uno o varios docentes como asesores.</p>
-            </div>
-            <div class="rounded-md border border-slate-200 p-4">
-                <p class="font-bold text-[#0D376D]">4. Evaluación</p>
-                <p class="mt-2 text-sm leading-6 text-slate-600">Un docente puede evaluar apartados sin ser asesor del proyecto.</p>
-            </div>
-        </div>
-    </section>
 </x-contenedor-aplicacion>
