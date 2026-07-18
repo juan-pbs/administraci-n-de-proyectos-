@@ -15,6 +15,7 @@ class SistemaInterfaz
 
         $porRol = match ($rol) {
             'direccion_coordinacion' => [
+                ['clave' => 'jerarquia-proyectos', 'titulo' => 'Jerarquía de proyectos', 'ruta' => route('modulos.jerarquia'), 'icono' => '◆'],
                 ['clave' => 'periodos', 'titulo' => 'Periodos', 'ruta' => route('modulos.show', 'periodos'), 'icono' => '▦'],
                 ['clave' => 'carreras-grupos', 'titulo' => 'Carreras y grupos', 'ruta' => route('modulos.show', 'carreras-grupos'), 'icono' => '▤'],
                 ['clave' => 'usuarios', 'titulo' => 'Usuarios', 'ruta' => route('modulos.show', 'usuarios'), 'icono' => '◎'],
@@ -27,7 +28,20 @@ class SistemaInterfaz
                 ['clave' => 'bitacora', 'titulo' => 'Bitácora', 'ruta' => route('modulos.show', 'bitacora'), 'icono' => '≡'],
                 ['clave' => 'respaldos', 'titulo' => 'Respaldos', 'ruta' => route('modulos.show', 'respaldos'), 'icono' => '↥'],
             ],
-            'docente_asesor' => [
+            'encargado_proyectos' => [
+                ['clave' => 'jerarquia-proyectos', 'titulo' => 'Líderes y grupos', 'ruta' => route('modulos.jerarquia'), 'icono' => '◆'],
+                ['clave' => 'usuarios', 'titulo' => 'Docentes', 'ruta' => route('modulos.show', 'usuarios'), 'icono' => '◉'],
+                ['clave' => 'asignaturas', 'titulo' => 'Materias y docentes', 'ruta' => route('modulos.show', 'asignaturas'), 'icono' => '◇'],
+                ['clave' => 'proyectos', 'titulo' => 'Proyectos', 'ruta' => route('modulos.show', 'proyectos'), 'icono' => '□'],
+                ['clave' => 'reportes', 'titulo' => 'Reportes', 'ruta' => route('modulos.show', 'reportes'), 'icono' => '▥'],
+            ],
+            'lider_proyecto' => [
+                ['clave' => 'usuarios', 'titulo' => 'Lista de alumnos', 'ruta' => route('modulos.show', 'usuarios'), 'icono' => '◉'],
+                ['clave' => 'equipos', 'titulo' => 'Equipos', 'ruta' => route('modulos.show', 'equipos'), 'icono' => '◫'],
+                ['clave' => 'proyectos', 'titulo' => 'Contexto de proyectos', 'ruta' => route('modulos.show', 'proyectos'), 'icono' => '□'],
+                ['clave' => 'reportes', 'titulo' => 'Seguimiento', 'ruta' => route('modulos.show', 'reportes'), 'icono' => '▥'],
+            ],
+            'docente_materia', 'docente_asesor' => [
                 ['clave' => 'revision-entregables', 'titulo' => 'Revisión', 'ruta' => route('modulos.show', 'revision-entregables'), 'icono' => '✓'],
                 ['clave' => 'productos-software', 'titulo' => 'Software', 'ruta' => route('modulos.show', 'productos-software'), 'icono' => '⌘'],
                 ['clave' => 'historial', 'titulo' => 'Historial', 'ruta' => route('modulos.show', 'historial'), 'icono' => '↺'],
@@ -70,11 +84,27 @@ class SistemaInterfaz
                     ['title' => 'Reportes', 'description' => 'Avance, cumplimiento, evaluaciones y trazabilidad.', 'status' => 'En tablero', 'route' => 'reportes'],
                 ],
             ],
-            'docente_asesor' => [
+            'encargado_proyectos' => [
+                'eyebrow' => 'Administración por carrera y cuatrimestre',
+                'title' => 'Panel del encargado de proyectos',
+                'description' => 'Asigna líderes, grupos, docentes de materia y las partes que evaluará cada asignatura.',
+                'badge' => 'Encargado de proyectos',
+                'stats' => [['label' => 'Responsabilidad', 'value' => 'Por cuatrimestre'], ['label' => 'Líderes', 'value' => 'Asignables'], ['label' => 'Grupos', 'value' => 'Supervisados'], ['label' => 'Materias', 'value' => 'Evaluadoras']],
+                'modules' => [['title' => 'Jerarquía', 'description' => 'Designación de líderes y grupos.', 'status' => 'Operativo', 'route' => 'jerarquia-proyectos'], ['title' => 'Materias', 'description' => 'Docentes y partes evaluables.', 'status' => 'Configurable', 'route' => 'asignaturas'], ['title' => 'Proyectos', 'description' => 'Seguimiento integral.', 'status' => 'Consulta', 'route' => 'proyectos']],
+            ],
+            'lider_proyecto' => [
+                'eyebrow' => 'Materia líder y organización de equipos',
+                'title' => 'Panel del líder de proyecto',
+                'description' => 'Carga alumnos, distribuye equipos y define nombre, número y contexto de cada proyecto.',
+                'badge' => 'Líder de proyecto',
+                'stats' => [['label' => 'Grupos', 'value' => 'Asignados'], ['label' => 'Alumnos', 'value' => 'Por cargar'], ['label' => 'Equipos', 'value' => 'Por organizar'], ['label' => 'Proyectos', 'value' => 'En seguimiento']],
+                'modules' => [['title' => 'Lista de alumnos', 'description' => 'Alta y carga por grupo.', 'status' => 'Editable', 'route' => 'usuarios'], ['title' => 'Equipos', 'description' => 'Distribución de integrantes.', 'status' => 'Editable', 'route' => 'equipos'], ['title' => 'Contexto', 'description' => 'Nombre, número y alcance.', 'status' => 'Editable', 'route' => 'proyectos']],
+            ],
+            'docente_materia', 'docente_asesor' => [
                 'eyebrow' => 'Revisión académica',
-                'title' => 'Panel de docente / asesor',
-                'description' => 'Revisión de entregables, validación por apartado, observaciones, calificaciones y productos de software.',
-                'badge' => 'Docente / asesor',
+                'title' => 'Panel de docente / asesor · Docente de materia',
+                'description' => 'Revisión y calificación exclusivamente de las partes asignadas a su materia.',
+                'badge' => 'Docente de materia',
                 'stats' => [
                     ['label' => 'Asignaciones', 'value' => '9'],
                     ['label' => 'Por revisar', 'value' => '14'],

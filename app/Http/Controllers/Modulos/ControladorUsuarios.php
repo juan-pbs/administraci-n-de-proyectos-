@@ -41,7 +41,7 @@ class ControladorUsuarios extends Controller
 
     public function guardar(Request $request): RedirectResponse
     {
-        $this->autorizarDireccion($request);
+        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'lider_proyecto'), 403);
 
         $datos = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
@@ -51,6 +51,12 @@ class ControladorUsuarios extends Controller
             'carrera_id' => ['nullable', 'exists:carreras,id'],
             'grupo_academico_id' => ['nullable', 'exists:grupos_academicos,id'],
         ]);
+
+        if ($request->user()->hasRole('lider_proyecto')) {
+            $rolEstudiante = Role::query()->where('nombre', 'estudiante')->firstOrFail();
+            abort_unless((int) $datos['rol_id'] === (int) $rolEstudiante->id && $datos['grupo_academico_id'], 403);
+            abort_unless(GrupoAcademico::query()->whereKey($datos['grupo_academico_id'])->where('lider_proyecto_id', $request->user()->id)->exists(), 403);
+        }
 
         $contrasenaTemporal = $this->generarContrasenaTemporal();
 
@@ -77,7 +83,7 @@ class ControladorUsuarios extends Controller
 
     public function actualizarCarreraDocente(Request $request): RedirectResponse
     {
-        $this->autorizarDireccion($request);
+        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'encargado_proyectos'), 403);
 
         $datos = $request->validate([
             'docente_id' => ['required', 'exists:usuarios,id'],
@@ -103,7 +109,7 @@ class ControladorUsuarios extends Controller
 
     public function importarAlumnos(Request $request): RedirectResponse
     {
-        $this->autorizarDireccion($request);
+        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'lider_proyecto'), 403);
 
         $datos = $request->validate([
             'periodo_id' => ['required', 'exists:periodos,id'],
@@ -175,15 +181,15 @@ class ControladorUsuarios extends Controller
                 continue;
             }
 
-            $grupoAcademico = GrupoAcademico::query()->firstOrCreate(
-                [
-                    'periodo_id' => $periodo->id,
-                    'carrera_id' => $carrera->id,
-                    'grado' => $grado,
-                    'grupo' => $grupoLetra,
-                ],
-                ['nombre' => $grado.$grupoLetra],
-            );
+            $claveGrupo = ['periodo_id' => $periodo->id, 'carrera_id' => $carrera->id, 'grado' => $grado, 'grupo' => $grupoLetra];
+            $grupoAcademico = $request->user()->hasRole('lider_proyecto')
+                ? GrupoAcademico::query()->where($claveGrupo)->where('lider_proyecto_id', $request->user()->id)->first()
+                : GrupoAcademico::query()->firstOrCreate($claveGrupo, ['nombre' => $grado.$grupoLetra]);
+
+            if (! $grupoAcademico) {
+                $errores[] = "Fila {$numeroFila}: el grupo {$grado}{$grupoLetra} no está asignado a este líder.";
+                continue;
+            }
 
             if ($grupoAcademico->wasRecentlyCreated) {
                 $resumen['grupos']++;
@@ -272,7 +278,8 @@ class ControladorUsuarios extends Controller
 
         $alumnos = User::query()
             ->with(['role:id,nombre,nombre_visible', 'carrera:id,clave,nombre', 'grupoAcademico:id,nombre,grado,grupo'])
-            ->whereHas('role', fn ($query) => $query->where('nombre', 'estudiante'));
+            ->whereHas('role', fn ($query) => $query->where('nombre', 'estudiante'))
+            ->when($request->user()->hasRole('lider_proyecto'), fn ($query) => $query->whereHas('grupoAcademico', fn ($grupo) => $grupo->where('lider_proyecto_id', $request->user()->id)));
 
         if ($filtrosAlumnos['busqueda'] !== '') {
             $busqueda = $filtrosAlumnos['busqueda'];
@@ -305,7 +312,7 @@ class ControladorUsuarios extends Controller
 
         $docentes = User::query()
             ->with(['role:id,nombre,nombre_visible', 'carrera:id,clave,nombre'])
-            ->whereHas('role', fn ($query) => $query->where('nombre', 'docente_asesor'));
+            ->whereHas('role', fn ($query) => $query->whereIn('nombre', ['encargado_proyectos', 'lider_proyecto', 'docente_materia', 'docente_asesor']));
 
         if ($filtrosDocentes['busqueda'] !== '') {
             $busqueda = $filtrosDocentes['busqueda'];
@@ -355,7 +362,7 @@ class ControladorUsuarios extends Controller
             'filtrosDocentes' => $filtrosDocentes,
             'roles' => Role::query()->orderBy('nombre_visible')->get(['id', 'nombre', 'nombre_visible']),
             'rolEstudiante' => Role::query()->where('nombre', 'estudiante')->first(['id', 'nombre_visible']),
-            'rolDocente' => Role::query()->where('nombre', 'docente_asesor')->first(['id', 'nombre_visible']),
+            'rolDocente' => Role::query()->where('nombre', 'docente_materia')->first(['id', 'nombre_visible']),
             'carreras' => Carrera::query()->orderBy('nombre')->get(['id', 'nombre', 'clave']),
             'grupos' => GrupoAcademico::query()->with('carrera:id,clave')->orderBy('grado')->orderBy('grupo')->get(['id', 'carrera_id', 'nombre', 'grado', 'grupo']),
             'periodos' => Periodo::query()->orderByDesc('fecha_inicio')->get(['id', 'nombre', 'estado']),

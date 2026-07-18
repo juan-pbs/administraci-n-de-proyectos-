@@ -8,6 +8,7 @@ use App\Http\Controllers\Modulos\ControladorModuloGeneral;
 use App\Http\Controllers\Modulos\ControladorPeriodos;
 use App\Http\Controllers\Modulos\ControladorProyectos;
 use App\Http\Controllers\Modulos\ControladorUsuarios;
+use App\Http\Controllers\Modulos\ControladorJerarquiaProyectos;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/modulos/periodos', [ControladorPeriodos::class, 'mostrar'])->name('modulos.periodos');
@@ -22,6 +23,10 @@ Route::get('/modulos/usuarios', [ControladorUsuarios::class, 'mostrar'])->name('
 Route::post('/usuarios', [ControladorUsuarios::class, 'guardar'])->name('usuarios.guardar');
 Route::post('/usuarios/alumnos/importar', [ControladorUsuarios::class, 'importarAlumnos'])->name('usuarios.alumnos.importar');
 Route::patch('/usuarios/docentes/carrera', [ControladorUsuarios::class, 'actualizarCarreraDocente'])->name('usuarios.docentes.carrera.actualizar');
+
+Route::get('/modulos/jerarquia-proyectos', [ControladorJerarquiaProyectos::class, 'mostrar'])->name('modulos.jerarquia');
+Route::post('/jerarquia/encargados', [ControladorJerarquiaProyectos::class, 'asignarEncargado'])->name('jerarquia.encargados.guardar');
+Route::post('/jerarquia/lideres', [ControladorJerarquiaProyectos::class, 'asignarLider'])->name('jerarquia.lideres.guardar');
 
 Route::get('/modulos/asignaturas', [ControladorAsignaturas::class, 'mostrar'])->name('modulos.asignaturas');
 Route::post('/asignaturas', [ControladorAsignaturas::class, 'guardar'])->name('asignaturas.guardar');

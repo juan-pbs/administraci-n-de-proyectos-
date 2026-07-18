@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -73,6 +74,21 @@ class User extends Authenticatable
     public function hasRole(string $role): bool
     {
         return $this->role?->nombre === $role;
+    }
+
+    public function hasAnyRole(string ...$roles): bool
+    {
+        return in_array($this->role?->nombre, $roles, true);
+    }
+
+    public function encargosProyecto(): HasMany
+    {
+        return $this->hasMany(EncargoProyecto::class, 'encargado_id')->where('activo', true);
+    }
+
+    public function gruposComoLiderProyecto(): HasMany
+    {
+        return $this->hasMany(GrupoAcademico::class, 'lider_proyecto_id');
     }
 
     public function getAuthPasswordName(): string

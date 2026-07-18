@@ -32,7 +32,7 @@ class ControladorAsignaturas extends Controller
 
     public function guardar(Request $request): RedirectResponse
     {
-        $this->autorizarDireccion($request);
+        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'encargado_proyectos'), 403);
 
         $datos = $request->validate([
             'carrera_id' => ['required', 'exists:carreras,id'],
@@ -48,7 +48,7 @@ class ControladorAsignaturas extends Controller
 
     public function asignarDocente(Request $request): RedirectResponse
     {
-        $this->autorizarDireccion($request);
+        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'encargado_proyectos'), 403);
 
         $datos = $request->validate([
             'asignatura_id' => ['required', 'exists:asignaturas,id'],
@@ -57,7 +57,7 @@ class ControladorAsignaturas extends Controller
 
         $docente = User::query()
             ->whereKey($datos['docente_id'])
-            ->whereHas('role', fn ($query) => $query->where('nombre', 'docente_asesor'))
+            ->whereHas('role', fn ($query) => $query->whereIn('nombre', ['lider_proyecto', 'docente_materia', 'docente_asesor']))
             ->firstOrFail();
 
         $asignatura = Asignatura::query()->findOrFail($datos['asignatura_id']);
@@ -70,7 +70,7 @@ class ControladorAsignaturas extends Controller
 
     public function quitarDocente(Request $request): RedirectResponse
     {
-        $this->autorizarDireccion($request);
+        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'encargado_proyectos'), 403);
 
         $datos = $request->validate([
             'asignatura_id' => ['required', 'exists:asignaturas,id'],
@@ -99,7 +99,7 @@ class ControladorAsignaturas extends Controller
             ->get();
         $docentes = User::query()
             ->with('carrera:id,nombre,clave')
-            ->whereHas('role', fn ($query) => $query->where('nombre', 'docente_asesor'))
+            ->whereHas('role', fn ($query) => $query->whereIn('nombre', ['lider_proyecto', 'docente_materia', 'docente_asesor']))
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'matricula', 'carrera_id']);
 

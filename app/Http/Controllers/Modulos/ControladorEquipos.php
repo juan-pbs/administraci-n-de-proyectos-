@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Modulos;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Modulos\Soporte\AutorizaDireccion;
 use App\Models\Equipo;
 use App\Models\GrupoAcademico;
 use App\Models\User;
@@ -14,8 +13,6 @@ use Illuminate\Http\Request;
 
 class ControladorEquipos extends Controller
 {
-    use AutorizaDireccion;
-
     public function mostrar(Request $request): View
     {
         $usuario = $request->user()->loadMissing('role');
@@ -26,23 +23,31 @@ class ControladorEquipos extends Controller
             'navegacion' => SistemaInterfaz::navegacionPara($rol),
             'pagina' => SistemaInterfaz::pagina('equipos'),
             'roleName' => $usuario->role?->nombre_visible ?? 'Estudiante / Equipo',
-            ...$this->datos(),
+            ...$this->datos($usuario),
         ]);
     }
 
     public function guardar(Request $request): RedirectResponse
     {
-        $this->autorizarDireccion($request);
+        $this->autorizarGestionEquipos($request);
 
         $datos = $request->validate([
             'grupo_academico_id' => ['required', 'exists:grupos_academicos,id'],
             'nombre' => ['required', 'string', 'max:255'],
-            'lider_id' => ['nullable', 'exists:usuarios,id'],
+            'numero' => ['nullable', 'integer', 'min:1'],
+            'contexto_proyecto' => ['nullable', 'string', 'max:3000'],
         ]);
+
+        $grupo = GrupoAcademico::query()->findOrFail($datos['grupo_academico_id']);
+        $this->autorizarGrupo($request, $grupo);
 
         Equipo::query()->updateOrCreate(
             ['grupo_academico_id' => $datos['grupo_academico_id'], 'nombre' => $datos['nombre']],
-            ['lider_id' => $datos['lider_id'] ?? null, 'estado' => 'activo'],
+            [
+                'numero' => $datos['numero'] ?? ((int) Equipo::query()->where('grupo_academico_id', $grupo->id)->max('numero') + 1),
+                'contexto_proyecto' => $datos['contexto_proyecto'] ?? 'Contexto pendiente de definir por el líder de proyecto.',
+                'estado' => 'activo',
+            ],
         );
 
         return redirect()->route('modulos.show', 'equipos')->with('estado', 'Equipo guardado correctamente.');
@@ -50,7 +55,7 @@ class ControladorEquipos extends Controller
 
     public function asignarAlumno(Request $request): RedirectResponse
     {
-        $this->autorizarDireccion($request);
+        $this->autorizarGestionEquipos($request);
 
         $datos = $request->validate([
             'equipo_id' => ['required', 'exists:equipos,id'],
@@ -58,7 +63,9 @@ class ControladorEquipos extends Controller
         ]);
 
         $equipo = Equipo::query()->with('grupoAcademico')->findOrFail($datos['equipo_id']);
+        $this->autorizarGrupo($request, $equipo->grupoAcademico);
         $estudiante = User::query()->findOrFail($datos['estudiante_id']);
+        abort_unless($estudiante->hasRole('estudiante'), 422);
 
         $estudiante->forceFill([
             'carrera_id' => $equipo->grupoAcademico->carrera_id,
@@ -74,7 +81,7 @@ class ControladorEquipos extends Controller
 
     public function asignarAsesor(Request $request): RedirectResponse
     {
-        $this->autorizarDireccion($request);
+        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'encargado_proyectos'), 403);
 
         $datos = $request->validate([
             'equipo_id' => ['required', 'exists:equipos,id'],
@@ -107,7 +114,7 @@ class ControladorEquipos extends Controller
 
     public function quitarAlumno(Request $request): RedirectResponse
     {
-        $this->autorizarDireccion($request);
+        $this->autorizarGestionEquipos($request);
 
         $datos = $request->validate([
             'equipo_id' => ['required', 'exists:equipos,id'],
@@ -115,6 +122,8 @@ class ControladorEquipos extends Controller
         ]);
 
         $equipo = Equipo::query()->findOrFail($datos['equipo_id']);
+        $equipo->loadMissing('grupoAcademico');
+        $this->autorizarGrupo($request, $equipo->grupoAcademico);
         $equipo->integrantes()->updateExistingPivot($datos['estudiante_id'], [
             'activo' => false,
             'actualizado_en' => now(),
@@ -129,7 +138,7 @@ class ControladorEquipos extends Controller
 
     public function quitarAsesor(Request $request): RedirectResponse
     {
-        $this->autorizarDireccion($request);
+        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'encargado_proyectos'), 403);
 
         $datos = $request->validate([
             'equipo_id' => ['required', 'exists:equipos,id'],
@@ -150,24 +159,37 @@ class ControladorEquipos extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function datos(): array
+    private function datos(User $usuario): array
     {
         $equipos = Equipo::query()
-            ->with(['grupoAcademico.carrera:id,nombre,clave', 'lider:id,nombre,matricula', 'integrantes:id,nombre,matricula', 'asesores:id,nombre,matricula'])
+            ->with(['grupoAcademico.carrera:id,nombre,clave', 'grupoAcademico.liderProyecto:id,nombre,matricula', 'integrantes:id,nombre,matricula', 'asesores:id,nombre,matricula'])
             ->withCount(['integrantes as integrantes_count', 'asesores as asesores_count'])
-            ->orderBy('nombre')
+            ->when($usuario->hasRole('lider_proyecto'), fn ($q) => $q->whereHas('grupoAcademico', fn ($g) => $g->where('lider_proyecto_id', $usuario->id)))
+            ->orderBy('numero')->orderBy('nombre')
             ->get();
 
         return [
             'equipos' => $equipos,
-            'grupos' => GrupoAcademico::query()->with('carrera:id,clave')->orderBy('grado')->orderBy('grupo')->get(),
+            'grupos' => GrupoAcademico::query()->with('carrera:id,clave')->when($usuario->hasRole('lider_proyecto'), fn ($q) => $q->where('lider_proyecto_id', $usuario->id))->orderBy('grado')->orderBy('grupo')->get(),
             'estudiantes' => User::query()->whereHas('role', fn ($query) => $query->where('nombre', 'estudiante'))->orderBy('nombre')->get(['id', 'nombre', 'matricula']),
-            'docentes' => User::query()->whereHas('role', fn ($query) => $query->where('nombre', 'docente_asesor'))->orderBy('nombre')->get(['id', 'nombre', 'matricula']),
+            'docentes' => User::query()->whereHas('role', fn ($query) => $query->whereIn('nombre', ['lider_proyecto', 'docente_materia', 'docente_asesor']))->orderBy('nombre')->get(['id', 'nombre', 'matricula']),
             'metricasEquipos' => [
                 ['label' => 'Equipos', 'value' => (string) $equipos->count()],
                 ['label' => 'Integrantes', 'value' => (string) $equipos->sum('integrantes_count')],
                 ['label' => 'Asesores asignados', 'value' => (string) $equipos->sum('asesores_count')],
             ],
         ];
+    }
+
+    private function autorizarGestionEquipos(Request $request): void
+    {
+        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'lider_proyecto'), 403);
+    }
+
+    private function autorizarGrupo(Request $request, GrupoAcademico $grupo): void
+    {
+        if ($request->user()->hasRole('lider_proyecto')) {
+            abort_unless((int) $grupo->lider_proyecto_id === (int) $request->user()->id, 403);
+        }
     }
 }

@@ -37,11 +37,15 @@ documentacion/entrega_ordenada/
 
 ## Decisiones Funcionales
 
-Roles finales:
+Jerarquia operativa actual:
 
-- Direccion / Coordinacion.
-- Docente / Asesor.
-- Estudiante / Equipo.
+- Direccion / Coordinacion: administracion tecnica e institucional.
+- Encargado de proyectos: administra una carrera por periodo y cuatrimestre. Asigna lideres, grupos, docentes y materias evaluadoras.
+- Lider de proyecto: docente de la materia lider. Carga alumnos, organiza equipos y define numero, nombre y contexto del proyecto.
+- Docente de materia: revisa y califica exclusivamente la parte asignada a su materia.
+- Alumno: participa en un equipo y entrega los avances del proyecto.
+
+El rol anterior `docente_asesor` se conserva temporalmente para compatibilidad con usuarios existentes.
 
 Reglas principales:
 
@@ -51,11 +55,13 @@ Reglas principales:
 - En el primer inicio de sesion, el sistema manda al usuario a actualizar su contrasena.
 - Los alumnos se organizan por carrera, grado y grupo.
 - Los alumnos pueden cargarse desde Excel.
-- Los docentes no se cargan por Excel.
+- Los docentes no se cargan por Excel; el lider carga unicamente listas de alumnos de sus grupos asignados.
 - Los docentes pertenecen a una carrera principal.
 - Un docente puede ser asesor de varios equipos.
 - Un docente puede evaluar apartados sin ser asesor del equipo.
-- Los equipos son de 6 alumnos.
+- Cada equipo almacena numero, nombre y contexto inicial del proyecto.
+- El lider solo puede administrar equipos pertenecientes a los grupos que tiene asignados.
+- El encargado puede tener mas de un cuatrimestre y puede existir mas de un encargado por carrera.
 - Los proyectos pueden modificar asesores y miembros de equipo.
 
 ## Sistema Implementado
@@ -74,6 +80,8 @@ Se construyo una base Laravel con:
 - Plantillas Excel para alumnos.
 - Dependencias para Excel, PDF y Word.
 - Idioma espanol para errores y mensajes.
+- Modulo de jerarquia de proyectos por periodo, carrera y cuatrimestre.
+- Permisos operativos con alcance por encargo y por grupo.
 
 ## Ajustes Visuales Recientes
 

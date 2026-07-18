@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['periodo_id', 'carrera_id', 'nombre', 'grado', 'grupo'])]
+#[Fillable(['periodo_id', 'carrera_id', 'lider_proyecto_id', 'asignatura_lider_id', 'nombre', 'grado', 'grupo'])]
 class GrupoAcademico extends Model
 {
     use HasFactory;
@@ -33,6 +33,16 @@ class GrupoAcademico extends Model
     public function carrera(): BelongsTo
     {
         return $this->belongsTo(Carrera::class, 'carrera_id');
+    }
+
+    public function liderProyecto(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'lider_proyecto_id');
+    }
+
+    public function asignaturaLider(): BelongsTo
+    {
+        return $this->belongsTo(Asignatura::class, 'asignatura_lider_id');
     }
 
     /**

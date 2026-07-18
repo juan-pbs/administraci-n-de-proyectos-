@@ -163,3 +163,23 @@ Se agregaron:
 Se hizo commit local de todos los archivos sin omitir contenido.
 
 Despues se agrego el remoto de GitHub y se subio la rama `main`.
+
+## 14. Nueva Jerarquia de Docentes
+
+El 18 de julio de 2026 se reemplazo la operacion basada en un unico rol generico de docente por una jerarquia con responsabilidades separadas:
+
+- Encargado de proyectos por periodo, carrera y cuatrimestre.
+- Lider de proyecto y materia lider por grupo.
+- Docente de materia para revisar la parte asignada.
+- Alumno como integrante de equipo.
+
+Se agrego el modulo `Jerarquia de proyectos`, el modelo `EncargoProyecto`, relaciones de lider y materia lider en grupos, y numero/contexto en equipos.
+
+Los permisos del servidor se actualizaron para que:
+
+- Direccion designe encargados.
+- El encargado designe lideres y docentes de materia.
+- El lider cargue listas y organice solamente sus grupos.
+- El docente consulte proyectos donde tiene una asignacion.
+
+La migracion se aplico localmente y la suite termino con 14 pruebas aprobadas y 55 aserciones.

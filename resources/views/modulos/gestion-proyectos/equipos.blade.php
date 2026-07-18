@@ -2,7 +2,7 @@
     <section class="border-b border-slate-200 pb-5">
         <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">Trabajo colaborativo</p>
         <h2 class="mt-2 text-2xl font-bold text-[#0D376D]">Equipos de trabajo</h2>
-        <p class="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Crea equipos por grupo, agrega o retira alumnos y asigna asesores sin limitar al docente por su asignatura principal.</p>
+        <p class="mt-2 max-w-4xl text-sm leading-6 text-slate-600">El líder de proyecto organiza a los alumnos de sus grupos y define el número, nombre y contexto de cada equipo.</p>
     </section>
 
     <x-mensajes-formulario />
@@ -36,13 +36,12 @@
                     <input name="nombre" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-[#15529A] focus:ring-2 focus:ring-[#15529A]/20" placeholder="Equipo 1">
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700">Líder</label>
-                    <select name="lider_id" class="mt-2 block w-full rounded-md border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-[#15529A] focus:ring-2 focus:ring-[#15529A]/20">
-                        <option value="">Sin líder</option>
-                        @foreach ($estudiantes as $estudiante)
-                            <option value="{{ $estudiante->id }}">{{ $estudiante->matricula }} - {{ $estudiante->nombre }}</option>
-                        @endforeach
-                    </select>
+                    <label class="block text-sm font-semibold text-slate-700">Número de equipo</label>
+                    <input name="numero" value="{{ old('numero') }}" type="number" min="1" required class="mt-2 block w-full rounded-md border border-slate-300 px-3 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700">Contexto del proyecto</label>
+                    <textarea name="contexto_proyecto" rows="4" required class="mt-2 block w-full rounded-md border border-slate-300 px-3 py-2.5 text-sm" placeholder="Problema, necesidad y alcance inicial">{{ old('contexto_proyecto') }}</textarea>
                 </div>
                 <button class="rounded-md bg-[#15529A] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#0D376D]">Guardar equipo</button>
             </form>
@@ -112,7 +111,8 @@
                     <div class="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
                         <div>
                             <h3 class="font-bold text-slate-900">{{ $equipo->nombre }}</h3>
-                            <p class="mt-1 text-sm text-slate-500">{{ $equipo->grupoAcademico->carrera->clave }} - {{ $equipo->grupoAcademico->nombre }} · Líder: {{ $equipo->lider?->nombre ?? 'Sin líder' }}</p>
+                            <p class="mt-1 text-sm text-slate-500">Equipo {{ $equipo->numero ?? '-' }} · {{ $equipo->grupoAcademico->carrera->clave }} - {{ $equipo->grupoAcademico->nombre }} · Líder docente: {{ $equipo->grupoAcademico->liderProyecto?->nombre ?? 'Sin asignar' }}</p>
+                            <p class="mt-2 text-sm text-slate-600">{{ $equipo->contexto_proyecto ?? 'Sin contexto definido.' }}</p>
                         </div>
                         <span class="rounded-md bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-slate-600">{{ $equipo->estado }}</span>
                     </div>

@@ -35,6 +35,7 @@ Desarrollo:
 /modulos/guias
 /modulos/equipos
 /modulos/proyectos
+/modulos/jerarquia-proyectos
 ```
 
 ## Archivos de Rutas
@@ -57,6 +58,7 @@ app/Http/Controllers/Modulos/ControladorAsignaturas.php
 app/Http/Controllers/Modulos/ControladorGuias.php
 app/Http/Controllers/Modulos/ControladorEquipos.php
 app/Http/Controllers/Modulos/ControladorProyectos.php
+app/Http/Controllers/Modulos/ControladorJerarquiaProyectos.php
 ```
 
 ## Modelos Principales
@@ -73,6 +75,7 @@ ApartadoGuia
 FirmaApartadoGuia
 Equipo
 Proyecto
+EncargoProyecto
 ```
 
 ## Migraciones Relevantes
@@ -81,7 +84,23 @@ Proyecto
 database/migrations/0001_01_01_000000_create_users_table.php
 database/migrations/2026_07_08_000001_add_matricula_to_users_table.php
 database/migrations/2026_07_11_000001_create_project_management_schema.php
+database/migrations/2026_07_18_000001_create_project_role_assignments.php
 ```
+
+La migracion del 18 de julio agrega:
+
+- Roles `encargado_proyectos`, `lider_proyecto` y `docente_materia`.
+- Tabla `encargos_proyecto`, con alcance por encargado, periodo, carrera y cuatrimestre.
+- `lider_proyecto_id` y `asignatura_lider_id` en grupos academicos.
+- `numero` y `contexto_proyecto` en equipos.
+
+## Reglas de Autorizacion
+
+- Direccion asigna encargados de proyectos.
+- El encargado asigna lideres, materia lider, docentes de materia y materias evaluadoras dentro de su alcance.
+- El lider carga alumnos y administra equipos solamente en sus grupos.
+- El docente de materia consulta y revisa proyectos donde participa como docente o responsable de una asignatura.
+- El alumno conserva el flujo de entregas de su equipo.
 
 ## Seeder
 
@@ -138,6 +157,6 @@ npm run build
 Resultado:
 
 ```text
-14 pruebas aprobadas
+14 pruebas aprobadas, 55 aserciones
 Build correcto
 ```

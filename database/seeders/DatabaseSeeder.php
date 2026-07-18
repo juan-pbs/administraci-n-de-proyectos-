@@ -48,8 +48,11 @@ class DatabaseSeeder extends Seeder
     {
         $roles = [
             'direccion_coordinacion' => ['Dirección / Coordinación', 'Administra usuarios, periodos, grupos, carga de alumnos, guías integradoras y seguimiento general.'],
-            'docente_asesor' => ['Docente / Asesor', 'Revisa apartados asignados, registra observaciones, calificaciones y retroalimentación académica.'],
-            'estudiante' => ['Estudiante / Equipo', 'Consulta guías, trabaja en equipo y sube entregas, evidencias y producto de código.'],
+            'encargado_proyectos' => ['Encargado de proyectos', 'Administra una carrera por periodo y cuatrimestre; asigna líderes, grupos, docentes y materias evaluadoras.'],
+            'lider_proyecto' => ['Líder de proyecto', 'Docente de la materia líder; carga alumnos, organiza equipos y define el contexto del proyecto.'],
+            'docente_materia' => ['Docente de materia', 'Revisa y califica la parte del proyecto asignada a su materia.'],
+            'docente_asesor' => ['Docente / Asesor (anterior)', 'Rol conservado para compatibilidad con datos anteriores.'],
+            'estudiante' => ['Alumno', 'Trabaja con su equipo y sube entregas, evidencias y productos del proyecto.'],
         ];
 
         return collect($roles)
