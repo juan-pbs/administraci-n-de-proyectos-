@@ -54,7 +54,7 @@ Este repositorio contiene una primera base funcional del sistema:
 
 ## Requisitos
 
-- PHP 8.3 o superior.
+- PHP 8.4.1 o superior.
 - Composer.
 - Node.js y npm.
 - MariaDB o MySQL.

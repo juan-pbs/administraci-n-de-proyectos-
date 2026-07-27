@@ -22,6 +22,8 @@ class ControladorCarrerasGrupos extends Controller
         $usuario = $request->user()->loadMissing('role');
         $rol = $usuario->role?->nombre ?? 'estudiante';
 
+        abort_unless(SistemaInterfaz::puedeVer($rol, 'carreras-grupos'), 403);
+
         return view('modulos.control-academico.carreras-grupos', [
             'active' => 'carreras-grupos',
             'navegacion' => SistemaInterfaz::navegacionPara($rol),

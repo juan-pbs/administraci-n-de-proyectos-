@@ -24,6 +24,8 @@ class ControladorGuias extends Controller
         $usuario = $request->user()->loadMissing('role');
         $rol = $usuario->role?->nombre ?? 'estudiante';
 
+        abort_unless(SistemaInterfaz::puedeVer($rol, 'guias'), 403);
+
         return view('modulos.gestion-proyectos.guias', [
             'active' => 'guias',
             'navegacion' => SistemaInterfaz::navegacionPara($rol),
