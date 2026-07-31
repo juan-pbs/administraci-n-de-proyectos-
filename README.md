@@ -1,56 +1,137 @@
-# Sistema Web de Administracion de Proyectos Integradores
+# Sistema de Administración de Proyectos Integradores
 
-Proyecto Laravel para administrar proyectos integradores de la UTVM. El sistema centraliza periodos academicos, carreras, grupos, usuarios, guias integradoras, equipos, proyectos, asesores, evaluadores, evidencias y documentacion final.
+Aplicación web desarrollada con Laravel para organizar el proceso académico de los proyectos integradores de la UTVM. El sistema administra periodos, carreras, grupos, usuarios, asignaturas, guías, equipos, proyectos, entregas y revisiones de acuerdo con el alcance de cada rol.
 
-## Estado Actual
+## Estado del proyecto
 
-Este repositorio contiene una primera base funcional del sistema:
+El repositorio contiene una versión funcional con:
 
-- Login institucional con imagenes UTVM, favicon, recuperacion de contrasena y acceso por matricula.
-- Cambio obligatorio de contrasena en el primer inicio de sesion para usuarios nuevos.
-- Roles reducidos a tres perfiles principales:
-  - Direccion / Coordinacion.
-  - Docente / Asesor.
-  - Estudiante / Equipo.
-- Dashboard inicial por rol.
-- Modulos front-end y base funcional para:
-  - Periodos.
-  - Carreras y grupos.
-  - Usuarios, separados en alumnos y docentes.
-  - Asignaturas.
-  - Guias integradoras.
-  - Equipos.
-  - Proyectos.
-  - Reportes, notificaciones, bitacora y respaldos como vistas base.
-- Migraciones con nombres y columnas en espanol.
-- Seeders con datos de ejemplo de universidad:
-  - 3 carreras.
-  - 5 grados.
-  - 3 a 4 grupos por grado.
-  - Grupos de 30 alumnos.
-  - Equipos de 6 alumnos.
-  - Docentes por carrera.
-  - Proyectos, asesores y evaluadores de ejemplo.
-- Filtros, busqueda, scroll interno y paginacion en tablas extensas de carreras/grupos y usuarios.
-- Plantillas Excel para carga masiva de alumnos:
-  - Sin equipos.
-  - Con equipos.
-- Dependencias instaladas para manejar Excel, Word y PDF.
-- Idioma espanol agregado para validaciones, paginacion y mensajes del sistema.
-- Documentacion entregable ordenada con ilustraciones, logos y recursos.
+- Autenticación por matrícula y contraseña.
+- Recuperación de acceso y cambio obligatorio de contraseña inicial.
+- Navegación, permisos y dashboard diferenciados por rol.
+- Operación independiente por periodo académico.
+- Carga masiva de alumnos mediante varias listas de Excel.
+- Conservación de docentes entre periodos, sin heredar sus asignaturas.
+- Gestión de carreras, grupos, asignaturas y materias líderes.
+- Configuración de guías integradoras por cuatrimestre.
+- Creación de equipos únicamente con alumnos libres del mismo grupo.
+- Creación y asignación de proyectos por el docente líder.
+- Entregas colaborativas con varios archivos y registro del integrante que entregó.
+- Revisión, comentarios, solicitud de correcciones y calificación.
+- Registro de repositorios y descarga de archivos comprimidos.
+- Filtros asíncronos que actualizan únicamente el apartado consultado.
+- Vistas de error personalizadas y autorización de rutas por rol.
 
-## Flujo General del Sistema
+Las vistas de notificaciones, bitácora, reportes y respaldos fueron retiradas del sistema.
 
-1. Direccion / Coordinacion administra periodos academicos, carreras, grupos, usuarios, asignaturas y guias.
-2. Los alumnos se organizan por carrera, grado y grupo.
-3. Los alumnos pueden cargarse de forma individual o mediante plantilla Excel.
-4. El sistema permite formar equipos de 6 alumnos, ya sea por asignacion previa desde Excel o por asignacion manual.
-5. Los docentes pertenecen a una carrera principal, pero pueden participar como asesores o evaluadores en diferentes proyectos.
-6. Una guia integradora define apartados, fechas de entrega, asignaturas participantes y firmas requeridas.
-7. Cada proyecto se asocia a un equipo, una guia, docentes asesores/evaluadores y asignaturas.
-8. Los estudiantes capturan avances, suben evidencias y productos de software.
-9. Los docentes validan entregables con checkbox, observaciones y calificaciones por apartado.
-10. El sistema prepara la base para generar documentos finales en PDF y Word.
+## Roles
+
+### Coordinación
+
+Integra las funciones de dirección/coordinación y encargado de proyectos.
+
+- Administra periodos, carreras, grupos y usuarios.
+- Registra varios docentes desde un mismo formulario.
+- Carga varias listas de alumnos y revisa una vista previa antes de confirmar.
+- Configura asignaturas y asigna docentes por periodo.
+- Define qué asignatura es la materia líder de cada grupo.
+- Asigna docentes líderes mediante la materia líder.
+- Configura las guías y sus apartados para todos los equipos del mismo cuatrimestre.
+- Define qué parte de la guía calificará cada docente.
+
+El dashboard de Coordinación es informativo y no funciona como un conjunto de accesos rápidos.
+
+### Docente líder
+
+Integra las funciones de docente asesor y líder de proyecto.
+
+- Visualiza únicamente los grupos que le fueron asignados.
+- Consulta las listas de alumnos, pero no puede crear ni importar alumnos.
+- Crea equipos cuando existen alumnos libres en el grupo seleccionado.
+- Asigna o retira alumnos respetando que todos pertenezcan al mismo grupo.
+- Crea proyectos y los asigna a los equipos.
+- Consulta el avance de sus grupos.
+- Revisa productos de código solamente cuando su asignatura fue configurada como materia líder.
+- Visualiza repositorios, archivos y comprimidos enviados por los alumnos.
+
+El número de un equipo se genera con el consecutivo siguiente dentro de su grupo.
+
+### Docente de materia
+
+- Consulta los apartados de la guía que Coordinación le asignó.
+- Visualiza únicamente los equipos que debe revisar.
+- Descarga los archivos entregados.
+- Agrega comentarios.
+- Califica, valida, rechaza o solicita correcciones.
+- Consulta entregas pendientes de revisión y actividades vencidas sin avance.
+
+Ser docente líder de un grupo y tener asignada la materia líder son condiciones independientes.
+
+### Estudiante
+
+- Consulta su equipo, integrantes, docente líder, guía y proyecto.
+- Visualiza el estado de las entregas de su propio equipo.
+- Sube varios archivos por apartado.
+- Puede reemplazar una entrega mientras la actividad continúe dentro del plazo.
+- Visualiza qué integrante realizó la entrega.
+- Consulta entregas validadas, rechazadas y no entregadas.
+- Registra el repositorio del proyecto y adjunta archivos de código o comprimidos.
+
+## Flujo académico
+
+1. Coordinación crea o activa el periodo académico.
+2. Configura las carreras y los grupos del periodo.
+3. Carga las listas de alumnos y registra o conserva a los docentes.
+4. Configura las asignaturas y asigna sus docentes para el periodo.
+5. Define la materia líder y, mediante ella, el docente responsable de cada grupo.
+6. Configura una guía por carrera, cuatrimestre y periodo.
+7. Define los apartados, fechas, ponderaciones, evidencias y docentes calificadores.
+8. El docente líder organiza equipos con alumnos del mismo grupo.
+9. El docente líder crea los proyectos y los asigna a los equipos.
+10. Los integrantes realizan entregas y registran el producto de código.
+11. Los docentes asignados revisan, comentan, califican o solicitan correcciones.
+
+Al iniciar un periodo nuevo no se heredan alumnos, grupos, asignaciones, guías, equipos ni proyectos. Los docentes permanecen registrados, pero sus materias se configuran nuevamente.
+
+## Carga de alumnos por Excel
+
+La carga principal se realiza en **Usuarios > Alumnos**. Es posible seleccionar varias listas en una sola operación y revisar cada lista completa antes de confirmarla.
+
+Por cada archivo se seleccionan desde el formulario:
+
+- Periodo.
+- Carrera.
+- Grado.
+- Grupo.
+
+La hoja debe llamarse `Carga alumnos` y contener estas columnas:
+
+| CÉDULA | NÓMINA | CORREO |
+| --- | --- | --- |
+| Matrícula o cédula | Nombre completo | Correo válido |
+
+También se reconocen encabezados equivalentes como `matricula`, `nombre_completo` y `correo_electronico`.
+
+Reglas importantes:
+
+- No incluir filas incompletas.
+- No repetir un correo para matrículas diferentes.
+- La matrícula se conserva como identificador de texto.
+- Cada archivo representa una lista completa de un grupo.
+- El docente líder no puede cargar alumnos.
+- El sistema admite archivos `.xlsx`, `.xls`, `.csv` y `.txt` de hasta 10 MB por lista.
+
+El repositorio también incluye plantillas históricas en `public/plantillas/`.
+
+## Entregas y archivos
+
+- Cada entrega puede incluir varios archivos.
+- Cada archivo comprimido admite hasta 150 MB.
+- El servidor debe permitir un tamaño total de solicitud suficiente para cargas múltiples.
+- El sistema registra al integrante que realizó o reemplazó la entrega.
+- Otro integrante del mismo equipo puede actualizarla mientras el plazo siga vigente.
+- Los docentes autorizados pueden visualizar y descargar las evidencias.
+- Los archivos y repositorios de código se muestran únicamente al docente cuya materia fue definida como líder.
 
 ## Requisitos
 
@@ -58,52 +139,38 @@ Este repositorio contiene una primera base funcional del sistema:
 - Composer.
 - Node.js y npm.
 - MariaDB o MySQL.
-- Servidor local compatible con Laravel, por ejemplo Herd o Laragon.
+- Extensiones de PHP requeridas por Laravel y PhpSpreadsheet.
+- Un servidor compatible con Laravel, como Herd, Laragon o `php artisan serve`.
 
-## Dependencias Principales
-
-Backend:
+## Tecnologías principales
 
 - Laravel 13.
-- Laravel Tinker.
+- PHP 8.4.
+- MariaDB/MySQL.
+- Tailwind CSS 4.
+- Vite 8.
+- Maatwebsite Excel y PhpSpreadsheet.
 - Laravel DOMPDF.
-- Maatwebsite Excel.
 - PHPWord.
+- Pest 4.
 
-Desarrollo y pruebas:
-
-- Pest.
-- Laravel Lang.
-- Laravel Boost.
-- Vite.
-- Tailwind CSS.
-
-## Instalacion en Otra Computadora
-
-Clonar el repositorio:
+## Instalación
 
 ```bash
 git clone https://github.com/juan-pbs/administraci-n-de-proyectos-.git
 cd administraci-n-de-proyectos-
-```
-
-Instalar dependencias:
-
-```bash
 composer install
 npm install
 ```
 
-Crear archivo de entorno:
+Crear el archivo de entorno y la clave:
 
 ```bash
 copy .env.example .env
 php artisan key:generate
 ```
 
-Configurar la base de datos en `.env`.
-
-Ejemplo para MariaDB/MySQL:
+Configurar la conexión en `.env`:
 
 ```env
 DB_CONNECTION=mysql
@@ -114,146 +181,132 @@ DB_USERNAME=root
 DB_PASSWORD=
 ```
 
-Ejecutar migraciones y datos de ejemplo:
+Preparar la base de datos y los datos demostrativos:
 
 ```bash
 php artisan migrate:fresh --seed
 ```
 
-Compilar assets:
+Compilar los recursos:
 
 ```bash
 npm run build
 ```
 
-Levantar el sistema:
+Iniciar el sistema:
 
 ```bash
 php artisan serve
 ```
 
-URL local:
+La pantalla de acceso estará disponible en:
 
 ```text
 http://127.0.0.1:8000/login
 ```
 
-## Usuarios de Prueba
+También puede utilizarse el instalador automatizado:
 
-Todos los usuarios sembrados usan la contrasena:
+```bash
+composer run setup
+```
+
+## Usuarios demostrativos
+
+Los usuarios creados por el seeder utilizan la contraseña:
 
 ```text
 password
 ```
 
-Usuario Direccion / Coordinacion:
+Coordinación:
 
 ```text
-Matricula: 20260001
+Matrícula: 20260001
 Correo: coordinacion@utvm.edu.mx
-Contrasena: password
+Contraseña: password
 ```
 
-Docentes:
+Docente líder con información demostrativa:
 
 ```text
-Matricula: DOC-TI-01, DOC-MECA-01, DOC-ADM-01
-Contrasena: password
+Matrícula: 20260002
+Contraseña: password
 ```
 
-Alumnos:
+Otros docentes:
 
 ```text
-Matricula: 202600001 en adelante
-Contrasena: password
+DOC-TI-01
+DOC-MECA-01
+DOC-ADM-01
 ```
 
-## Estructura Relevante
+Estudiante:
+
+```text
+Matrícula: 202600001
+Contraseña: password
+```
+
+Las asignaciones exactas dependen de la base de datos cargada y del periodo activo.
+
+## Estructura relevante
 
 ```text
 app/
   Correos/
   Http/Controllers/
-    Autenticacion/
     Auth/
+    Autenticacion/
     Modulos/
   Models/
   Soporte/
 
 database/
+  factories/
   migrations/
   seeders/
-
-documentacion/
-  entrega_ordenada/
-  conversaciones_codex/
 
 public/
   assets/utvm/
   plantillas/
 
-resources/views/
-  autenticacion/
-  auth/
-  components/
-  correos/
-  modulos/
+resources/
+  css/
+  js/
+  views/
+    components/
+    correos/
+    errors/
+    modulos/
+      control-academico/
+      docente-lider/
+      docente-materia/
+      estudiante/
+      gestion-proyectos/
 
 routes/
   web.php
   modulos.php
 
-tools/
-  hojas_calculo/
+tests/
+  Feature/
+  Unit/
 ```
 
-## Modulos Implementados
+## Comandos útiles
 
-### Autenticacion
-
-- Login con matricula y contrasena.
-- Correo como dato de recuperacion.
-- Vista de "olvide mi contrasena".
-- Envio de contrasena temporal al registrar usuarios.
-- Redireccion obligatoria a actualizacion de contrasena en primer inicio.
-
-### Control Academico
-
-- Periodos academicos.
-- Carreras y grupos.
-- Usuarios:
-  - Alumnos.
-  - Docentes / asesores.
-  - Direccion / Coordinacion.
-- Asignaturas.
-
-### Gestion de Proyectos
-
-- Guias integradoras.
-- Apartados de guia.
-- Asignaturas que contribuyen por apartado.
-- Firmas por apartado.
-- Equipos.
-- Asignacion y retiro de alumnos.
-- Asignacion y retiro de asesores.
-- Proyectos.
-- Asignacion de docentes asesores/evaluadores.
-- Asignacion de asignaturas participantes.
-
-### Documentacion y Plantillas
-
-- Documento entregable ordenado en `documentacion/entrega_ordenada/`.
-- Ilustraciones del documento en `documentacion/entrega_ordenada/ilustraciones/`.
-- Plantillas Excel en:
-  - `outputs/plantillas_carga_alumnos/`
-  - `public/plantillas/`
-
-## Comandos Utiles
-
-Pruebas:
+Ejecutar pruebas:
 
 ```bash
 php artisan test
+```
+
+Comprobar el estilo de PHP:
+
+```bash
+vendor/bin/pint --test
 ```
 
 Compilar estilos y scripts:
@@ -262,40 +315,32 @@ Compilar estilos y scripts:
 npm run build
 ```
 
-Servidor de desarrollo:
+Ejecutar servidor, cola y Vite:
 
 ```bash
-php artisan serve
+composer run dev
 ```
 
-Regenerar base de datos con datos de ejemplo:
+Limpiar cachés:
+
+```bash
+php artisan optimize:clear
+```
+
+Regenerar la base de datos:
 
 ```bash
 php artisan migrate:fresh --seed
 ```
 
-## Notas de Desarrollo
+## Validación
 
-- El proyecto esta en desarrollo activo.
-- La base de datos usa nombres en espanol para facilitar la relacion con la documentacion.
-- Los docentes no se cargan por lista masiva; solo los alumnos tienen carga por Excel.
-- Los docentes pueden ser asesores de uno o varios equipos y tambien evaluadores de apartados sin ser asesores.
-- Los equipos estan definidos con 6 alumnos.
-- Las tablas largas ya cuentan con filtros, busqueda, scroll interno y paginacion.
-- Las conversaciones y decisiones de Codex se resumen en `documentacion/conversaciones_codex/`.
+La última revisión integral incluyó:
 
-## Ultima Validacion
-
-Antes de este README se validaron:
-
-```bash
-php artisan test
-npm run build
-```
-
-Resultado esperado:
-
-```text
-14 tests passed
-Build correcto con Vite
-```
+- 27 pruebas automatizadas.
+- 104 aserciones.
+- Compilación correcta con Vite.
+- 61 rutas de aplicación registradas.
+- Migraciones ejecutadas desde una base limpia.
+- Revisión de acceso y autorización para los cuatro roles.
+- Validación de entregas colaborativas, revisión docente y productos de código.
