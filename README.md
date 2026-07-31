@@ -161,8 +161,22 @@ http://localhost:8000/login
 Credenciales demostrativas:
 
 ```text
+Contraseña para todos: password
+
+Coordinación:
 Matrícula: 20260001
-Contraseña: password
+
+Docente líder:
+Matrícula: DOC-TI-02
+
+Docente líder con materia líder:
+Matrícula: DOC-TI-01
+
+Docente de materia:
+Matrícula: DOC-TI-04
+
+Alumno:
+Matrícula: 202600001
 ```
 
 Comandos útiles:

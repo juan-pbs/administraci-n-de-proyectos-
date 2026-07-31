@@ -36,6 +36,7 @@ class DatabaseSeeder extends Seeder
 
         $asignaturas = $this->crearAsignaturas($carreras);
         $this->asignarDocentesAAsignaturas($asignaturas, $usuarios['docentesPorCarrera']);
+        $this->asignarMateriasLiderAGrupos($grupos, $asignaturas, $usuarios['docentesPorCarrera']);
         $guias = $this->crearGuias($periodos, $asignaturas, $usuarios['direccion']);
         $equipos = $this->crearEquiposUniversidad($grupos, $usuarios);
         $this->crearProyectosUniversidad($guias, $equipos, $asignaturas, $usuarios['docentesPorCarrera']);
@@ -155,7 +156,7 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        $docentesPorCarrera = $this->crearDocentes($roles['docente_lider'], $carreras);
+        $docentesPorCarrera = $this->crearDocentes($roles, $carreras);
         $alumnos = $this->crearAlumnos($roles['estudiante'], $carreras, $grupos);
 
         return [
@@ -170,7 +171,7 @@ class DatabaseSeeder extends Seeder
      * @param array<string, Carrera> $carreras
      * @return Collection<string, Collection<int, User>>
      */
-    private function crearDocentes(Role $rolDocente, array $carreras): Collection
+    private function crearDocentes(array $roles, array $carreras): Collection
     {
         $docentesBase = [
             'TI' => ['Miguel Espinal Botho', 'Laura Hernández Pérez', 'Fernanda Torres Aguilar', 'Roberto Nava Salinas', 'Daniela Cruz Morales', 'Arturo Ramírez León', 'Docente Asesor UTVM'],
@@ -178,19 +179,20 @@ class DatabaseSeeder extends Seeder
             'ADM' => ['Sandra López García', 'Hugo Molina Pacheco', 'Elena Jiménez Arce', 'Mario Reyes Ortega', 'Claudia Gómez Luna', 'Rafael Pérez Díaz'],
         ];
 
-        return collect($docentesBase)->mapWithKeys(function (array $nombres, string $claveCarrera) use ($rolDocente, $carreras) {
-            $docentes = collect($nombres)->map(function (string $nombre, int $indice) use ($rolDocente, $carreras, $claveCarrera) {
+        return collect($docentesBase)->mapWithKeys(function (array $nombres, string $claveCarrera) use ($roles, $carreras) {
+            $docentes = collect($nombres)->map(function (string $nombre, int $indice) use ($roles, $carreras, $claveCarrera) {
                 $numero = $indice + 1;
                 $matricula = $claveCarrera === 'TI' && $numero === 7
                     ? '20260002'
                     : 'DOC-'.$claveCarrera.'-'.str_pad((string) $numero, 2, '0', STR_PAD_LEFT);
+                $rol = $numero <= 3 ? $roles['docente_lider'] : $roles['docente_materia'];
 
                 return User::query()->updateOrCreate(
                     ['matricula' => $matricula],
                     [
                         'nombre' => $nombre,
                         'correo' => $this->correoDesdeNombre($nombre, 'utvm.edu.mx', 'docente'.$numero.'.'.$claveCarrera),
-                        'rol_id' => $rolDocente->id,
+                        'rol_id' => $rol->id,
                         'carrera_id' => $carreras[$claveCarrera]->id,
                         'grupo_academico_id' => null,
                         'estado' => 'activo',
@@ -318,6 +320,40 @@ class DatabaseSeeder extends Seeder
             $docente = $docentes->values()[(int) $asignatura->grado % $docentes->count()];
             $asignatura->docentes()->syncWithoutDetaching([
                 $docente->id => ['activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
+            ]);
+        }
+    }
+
+    /**
+     * @param array<string, GrupoAcademico> $grupos
+     * @param array<string, Asignatura> $asignaturas
+     * @param Collection<string, Collection<int, User>> $docentesPorCarrera
+     */
+    private function asignarMateriasLiderAGrupos(array $grupos, array $asignaturas, Collection $docentesPorCarrera): void
+    {
+        foreach ($grupos as $claveGrupo => $grupo) {
+            $claveCarrera = explode('-', $claveGrupo)[0];
+            $docenteLider = ($docentesPorCarrera[$claveCarrera] ?? collect())
+                ->first(fn (User $docente) => $docente->hasRole('docente_lider'));
+            $asignaturaLider = collect($asignaturas)
+                ->first(fn (Asignatura $asignatura) => str_starts_with($asignatura->clave, $claveCarrera.'-') && (int) $asignatura->grado === (int) $grupo->grado);
+
+            if (! $docenteLider || ! $asignaturaLider) {
+                continue;
+            }
+
+            $grupo->update([
+                'lider_proyecto_id' => $docenteLider->id,
+                'asignatura_lider_id' => $asignaturaLider->id,
+            ]);
+
+            $asignaturaLider->docentes()->syncWithoutDetaching([
+                $docenteLider->id => [
+                    'periodo_id' => $grupo->periodo_id,
+                    'activo' => true,
+                    'creado_en' => now(),
+                    'actualizado_en' => now(),
+                ],
             ]);
         }
     }
