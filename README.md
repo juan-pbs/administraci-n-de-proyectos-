@@ -142,6 +142,40 @@ El repositorio también incluye plantillas históricas en `public/plantillas/`.
 - Extensiones de PHP requeridas por Laravel y PhpSpreadsheet.
 - Un servidor compatible con Laravel, como Herd, Laragon o `php artisan serve`.
 
+## Ejecución con Docker
+
+Si se usa Docker, no es necesario instalar PHP, Composer, Node.js ni MariaDB en la máquina local. El contenedor construye las dependencias, compila los recursos de Vite, levanta MariaDB, ejecuta las migraciones y carga los datos demostrativos cuando la base está vacía.
+
+Construir y levantar el sistema:
+
+```bash
+docker compose up -d --build
+```
+
+Abrir el sistema:
+
+```text
+http://localhost:8000/login
+```
+
+Credenciales demostrativas:
+
+```text
+Matrícula: 20260001
+Contraseña: password
+```
+
+Comandos útiles:
+
+```bash
+docker compose logs -f app
+docker compose run --rm test
+docker compose down
+docker compose down -v
+```
+
+`docker compose down -v` elimina también la base de datos del contenedor para empezar desde cero.
+
 ## Tecnologías principales
 
 - Laravel 13.
@@ -332,5 +366,3 @@ Regenerar la base de datos:
 ```bash
 php artisan migrate:fresh --seed
 ```
-
-
