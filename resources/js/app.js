@@ -81,9 +81,16 @@ document.addEventListener('submit', async (event) => {
     setFormBusy(form, true);
 
     try {
-        const response = await fetch(form.action, {
-            method: form.method || 'POST',
-            body: formData,
+        const method = (form.method || 'POST').toUpperCase();
+        const url = new URL(form.action, window.location.href);
+
+        if (method === 'GET') {
+            url.search = new URLSearchParams(formData).toString();
+        }
+
+        const response = await fetch(url, {
+            method,
+            body: method === 'GET' ? undefined : formData,
             headers: {
                 Accept: 'text/html',
             },
@@ -93,6 +100,10 @@ document.addEventListener('submit', async (event) => {
         const html = await response.text();
 
         const replacedAnyRegion = replaceAsyncRegions(html, targets);
+
+        if (response.ok && method === 'GET') {
+            window.history.replaceState({}, '', url);
+        }
 
         if (!response.ok) {
             if (replacedAnyRegion) {
@@ -108,5 +119,32 @@ document.addEventListener('submit', async (event) => {
             form.dataset.asyncBusy = 'false';
             setFormBusy(form, false);
         }
+    }
+});
+
+document.addEventListener('click', async (event) => {
+    const link = event.target.closest('a[data-async-link]');
+    if (!link) {
+        return;
+    }
+
+    event.preventDefault();
+    const targets = (link.dataset.asyncTargets || '')
+        .split(/\s+/)
+        .map((target) => target.trim())
+        .filter(Boolean);
+
+    try {
+        const response = await fetch(link.href, {
+            headers: { Accept: 'text/html' },
+            credentials: 'same-origin',
+        });
+        const html = await response.text();
+        if (!response.ok || !replaceAsyncRegions(html, targets)) {
+            throw new Error('No se pudo actualizar la lista.');
+        }
+        window.history.replaceState({}, '', link.href);
+    } catch (error) {
+        showAsyncError(error.message || 'No se pudo actualizar la lista.');
     }
 });

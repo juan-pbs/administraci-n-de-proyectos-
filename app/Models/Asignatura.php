@@ -43,7 +43,7 @@ class Asignatura extends Model
     {
         return $this->belongsToMany(User::class, 'docentes_asignatura', 'asignatura_id', 'docente_id')
             ->wherePivot('activo', true)
-            ->withPivot(['activo'])
+            ->withPivot(['periodo_id', 'activo'])
             ->withTimestamps('creado_en', 'actualizado_en');
     }
 }

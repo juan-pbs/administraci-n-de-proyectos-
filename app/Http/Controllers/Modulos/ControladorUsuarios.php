@@ -6,7 +6,6 @@ use App\Correos\ContrasenaInicial;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Modulos\Soporte\AutorizaDireccion;
 use App\Models\Carrera;
-use App\Models\EncargoProyecto;
 use App\Models\Equipo;
 use App\Models\GrupoAcademico;
 use App\Models\Periodo;
@@ -45,7 +44,7 @@ class ControladorUsuarios extends Controller
 
     public function guardar(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'lider_proyecto'), 403);
+        abort_unless($request->user()?->hasRole('coordinacion'), 403);
 
         $datos = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
@@ -56,10 +55,10 @@ class ControladorUsuarios extends Controller
             'grupo_academico_id' => ['nullable', 'exists:grupos_academicos,id'],
         ]);
 
-        if ($request->user()->hasRole('lider_proyecto')) {
+        if ($request->user()->hasRole('docente_lider')) {
             $rolEstudiante = Role::query()->where('nombre', 'estudiante')->firstOrFail();
             abort_unless((int) $datos['rol_id'] === (int) $rolEstudiante->id && $datos['grupo_academico_id'], 403);
-            abort_unless(GrupoAcademico::query()->whereKey($datos['grupo_academico_id'])->where('lider_proyecto_id', $request->user()->id)->exists(), 403);
+            abort_unless(GrupoAcademico::query()->whereKey($datos['grupo_academico_id'])->conMateriaLiderDelDocente((int) $request->user()->id)->exists(), 403);
         }
 
         $contrasenaTemporal = $this->generarContrasenaTemporal();
@@ -85,26 +84,206 @@ class ControladorUsuarios extends Controller
         return redirect()->route('modulos.show', 'usuarios')->with('estado', 'Usuario registrado correctamente. La contrasena temporal fue enviada al correo registrado.');
     }
 
+    public function guardarDocentes(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()?->hasRole('coordinacion'), 403);
+
+        $datos = $request->validate([
+            'docentes' => ['required', 'array', 'min:1', 'max:30'],
+            'docentes.*.nombre' => ['required', 'string', 'max:255'],
+            'docentes.*.matricula' => ['required', 'string', 'max:50', 'distinct', 'unique:usuarios,matricula'],
+            'docentes.*.correo' => ['required', 'email', 'max:255', 'distinct', 'unique:usuarios,correo'],
+            'docentes.*.rol' => ['required', 'in:docente_lider,docente_materia'],
+            'docentes.*.carrera_id' => ['required', 'exists:carreras,id'],
+        ]);
+
+        $roles = Role::query()->whereIn('nombre', ['docente_lider', 'docente_materia'])->pluck('id', 'nombre');
+        $correosPendientes = [];
+
+        DB::transaction(function () use ($datos, $roles, &$correosPendientes): void {
+            foreach ($datos['docentes'] as $datosDocente) {
+                $contrasenaTemporal = $this->generarContrasenaTemporal();
+                $docente = User::query()->create([
+                    'nombre' => $datosDocente['nombre'],
+                    'matricula' => $datosDocente['matricula'],
+                    'correo' => $datosDocente['correo'],
+                    'rol_id' => $roles[$datosDocente['rol']],
+                    'carrera_id' => $datosDocente['carrera_id'],
+                    'estado' => 'activo',
+                    'contrasena' => $contrasenaTemporal,
+                    'debe_cambiar_contrasena' => true,
+                ]);
+                $docente->carrerasComoDocente()->syncWithoutDetaching([
+                    $datosDocente['carrera_id'] => ['activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
+                ]);
+                $correosPendientes[] = [$docente, $contrasenaTemporal];
+            }
+        });
+
+        $correosFallidos = 0;
+        foreach ($correosPendientes as [$docente, $contrasenaTemporal]) {
+            try {
+                Mail::to($docente->correo)->send(new ContrasenaInicial(
+                    nombre: $docente->nombre,
+                    matricula: $docente->matricula,
+                    contrasenaTemporal: $contrasenaTemporal,
+                ));
+            } catch (Throwable) {
+                $correosFallidos++;
+            }
+        }
+
+        return redirect()->route('modulos.show', ['modulo' => 'usuarios', 'seccion' => 'docentes'])
+            ->with('estado', count($datos['docentes'])." docentes registrados. Correos fallidos: {$correosFallidos}.");
+    }
+
+    public function previsualizarAlumnos(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()?->hasRole('coordinacion'), 403);
+
+        $datos = $request->validate([
+            'periodo_id' => ['required', 'exists:periodos,id'],
+            'listas' => ['required', 'array', 'min:1', 'max:12'],
+            'listas.*.archivo' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:10240'],
+            'listas.*.carrera_id' => ['required', 'exists:carreras,id'],
+            'listas.*.grado' => ['required', 'integer', 'between:1,12'],
+            'listas.*.grupo' => ['required', 'string', 'max:10'],
+        ]);
+
+        $vistaPrevia = [];
+        foreach ($datos['listas'] as $indice => $configuracion) {
+            $archivo = $request->file("listas.{$indice}.archivo");
+            $filas = $this->leerFilasCargaAlumnos($archivo->getRealPath());
+            [$encabezados, $filaInicio] = $this->detectarEncabezados($filas);
+            $faltantes = array_diff(['matricula', 'nombre_completo', 'correo_electronico'], array_keys($encabezados));
+
+            if ($faltantes !== []) {
+                throw ValidationException::withMessages([
+                    "listas.{$indice}.archivo" => 'Faltan columnas: '.implode(', ', $faltantes).'.',
+                ]);
+            }
+
+            $alumnos = collect(array_slice($filas, $filaInicio))
+                ->map(fn (array $fila) => $this->mapearFilaCarga($fila, $encabezados))
+                ->reject(fn (array $fila) => $this->filaVacia($fila))
+                ->map(fn (array $fila) => [
+                    'matricula' => $fila['matricula'] ?? '',
+                    'nombre_completo' => $fila['nombre_completo'] ?? '',
+                    'correo_electronico' => $fila['correo_electronico'] ?? '',
+                ])
+                ->values()
+                ->all();
+
+            $filasInvalidas = collect($alumnos)->filter(fn (array $alumno) =>
+                $alumno['matricula'] === ''
+                || $alumno['nombre_completo'] === ''
+                || ! filter_var($alumno['correo_electronico'], FILTER_VALIDATE_EMAIL)
+            );
+
+            if ($filasInvalidas->isNotEmpty()) {
+                throw ValidationException::withMessages([
+                    "listas.{$indice}.archivo" => "La lista contiene {$filasInvalidas->count()} filas incompletas o con correo inválido.",
+                ]);
+            }
+
+            $vistaPrevia[] = [
+                'nombre' => $archivo->getClientOriginalName(),
+                'carrera_id' => (int) $configuracion['carrera_id'],
+                'grado' => (int) $configuracion['grado'],
+                'grupo' => mb_strtoupper(trim($configuracion['grupo'])),
+                'alumnos' => $alumnos,
+            ];
+        }
+
+        $token = (string) Str::uuid();
+        $request->session()->put("preview_alumnos.{$token}", [
+            'periodo_id' => (int) $datos['periodo_id'],
+            'listas' => $vistaPrevia,
+        ]);
+
+        return redirect()->route('modulos.show', ['modulo' => 'usuarios', 'seccion' => 'alumnos', 'preview' => $token]);
+    }
+
+    public function confirmarAlumnos(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()?->hasRole('coordinacion'), 403);
+        $datos = $request->validate(['preview' => ['required', 'uuid']]);
+        $carga = $request->session()->pull("preview_alumnos.{$datos['preview']}");
+        abort_unless($carga, 419);
+
+        $periodo = Periodo::query()->findOrFail($carga['periodo_id']);
+        $rolEstudiante = Role::query()->where('nombre', 'estudiante')->firstOrFail();
+        $resumen = [];
+        $correosPendientes = [];
+
+        DB::transaction(function () use ($carga, $periodo, $rolEstudiante, $request, &$resumen, &$correosPendientes): void {
+            foreach ($carga['listas'] as $lista) {
+                $grupo = GrupoAcademico::query()->firstOrCreate([
+                    'periodo_id' => $periodo->id,
+                    'carrera_id' => $lista['carrera_id'],
+                    'grado' => $lista['grado'],
+                    'grupo' => $lista['grupo'],
+                ], ['nombre' => $lista['grado'].$lista['grupo']]);
+
+                if ($request->user()->hasRole('docente_lider')) {
+                    abort_unless(GrupoAcademico::query()->whereKey($grupo->id)->conMateriaLiderDelDocente((int) $request->user()->id)->exists(), 403);
+                }
+
+                $creados = 0;
+                $actualizados = 0;
+                foreach ($lista['alumnos'] as $fila) {
+                    if ($fila['matricula'] === '' || $fila['nombre_completo'] === '' || ! filter_var($fila['correo_electronico'], FILTER_VALIDATE_EMAIL)) {
+                        throw ValidationException::withMessages(['listas' => "La lista {$lista['nombre']} contiene datos incompletos o un correo inválido."]);
+                    }
+                    $existente = User::query()->where('matricula', $fila['matricula'])->first();
+                    $contrasena = $existente ? null : $this->generarContrasenaTemporal();
+                    $alumno = User::query()->updateOrCreate(['matricula' => $fila['matricula']], [
+                        'nombre' => $fila['nombre_completo'],
+                        'correo' => $fila['correo_electronico'],
+                        'rol_id' => $rolEstudiante->id,
+                        'carrera_id' => $lista['carrera_id'],
+                        'grupo_academico_id' => $grupo->id,
+                        'estado' => 'activo',
+                        ...($contrasena ? ['contrasena' => $contrasena, 'debe_cambiar_contrasena' => true] : []),
+                    ]);
+                    if ($contrasena) {
+                        $correosPendientes[] = [$alumno, $contrasena];
+                    }
+                    $existente ? $actualizados++ : $creados++;
+                }
+                $resumen[] = "{$lista['nombre']}: ".count($lista['alumnos'])." admitidos ({$creados} nuevos, {$actualizados} actualizados)";
+            }
+        });
+
+        $correosFallidos = 0;
+        foreach ($correosPendientes as [$alumno, $contrasena]) {
+            try {
+                Mail::to($alumno->correo)->send(new ContrasenaInicial(
+                    nombre: $alumno->nombre,
+                    matricula: $alumno->matricula,
+                    contrasenaTemporal: $contrasena,
+                ));
+            } catch (Throwable) {
+                $correosFallidos++;
+            }
+        }
+
+        return redirect()->route('modulos.show', ['modulo' => 'usuarios', 'seccion' => 'alumnos', 'periodo_alumnos' => $periodo->id])
+            ->with('estado', 'Carga completada. '.implode(' · ', $resumen)." · Correos fallidos: {$correosFallidos}.");
+    }
+
     public function actualizarCarreraDocente(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'encargado_proyectos'), 403);
+        abort_unless($request->user()?->hasRole('coordinacion'), 403);
 
         $datos = $request->validate([
             'docente_id' => ['required', 'exists:usuarios,id'],
             'carrera_id' => ['required', 'exists:carreras,id'],
         ]);
 
-        if ($request->user()->hasRole('encargado_proyectos')) {
-            abort_unless(EncargoProyecto::query()
-                ->where('encargado_id', $request->user()->id)
-                ->where('carrera_id', $datos['carrera_id'])
-                ->where('activo', true)
-                ->exists(), 403);
-        }
-
         $docente = User::query()
             ->whereKey($datos['docente_id'])
-            ->whereHas('role', fn ($query) => $query->where('nombre', 'docente_asesor'))
+            ->whereHas('role', fn ($query) => $query->whereIn('nombre', ['docente_lider', 'docente_materia']))
             ->firstOrFail();
 
         $docente->update(['carrera_id' => $datos['carrera_id']]);
@@ -121,7 +300,7 @@ class ControladorUsuarios extends Controller
 
     public function importarAlumnos(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'lider_proyecto'), 403);
+        abort_unless($request->user()?->hasRole('coordinacion'), 403);
 
         $datos = $request->validate([
             'periodo_id' => ['required', 'exists:periodos,id'],
@@ -205,8 +384,8 @@ class ControladorUsuarios extends Controller
                 }
 
                 $claveGrupo = ['periodo_id' => $periodo->id, 'carrera_id' => $carrera->id, 'grado' => $grado, 'grupo' => $grupoLetra];
-                $grupoAcademico = $request->user()->hasRole('lider_proyecto')
-                    ? GrupoAcademico::query()->where($claveGrupo)->where('lider_proyecto_id', $request->user()->id)->first()
+                $grupoAcademico = $request->user()->hasRole('docente_lider')
+                    ? GrupoAcademico::query()->where($claveGrupo)->conMateriaLiderDelDocente((int) $request->user()->id)->first()
                     : GrupoAcademico::query()->firstOrCreate($claveGrupo, ['nombre' => $grado.$grupoLetra]);
 
                 if (! $grupoAcademico) {
@@ -307,23 +486,46 @@ class ControladorUsuarios extends Controller
      */
     private function datos(Request $request): array
     {
+        $periodoSeleccionado = $request->query('periodo_alumnos')
+            ?: Periodo::query()->where('estado', 'activo')->orderByDesc('fecha_inicio')->value('id')
+            ?: Periodo::query()->orderByDesc('fecha_inicio')->value('id');
+        $carreras = Carrera::query()->orderBy('nombre')->get(['id', 'nombre', 'clave']);
+        $carreraSeleccionada = $request->query('carrera_alumnos')
+            ?: GrupoAcademico::query()->where('periodo_id', $periodoSeleccionado)->orderBy('carrera_id')->value('carrera_id')
+            ?: $carreras->first()?->id;
+        $gruposPaginacion = GrupoAcademico::query()
+            ->with('carrera:id,clave')
+            ->where('periodo_id', $periodoSeleccionado)
+            ->where('carrera_id', $carreraSeleccionada)
+            ->when($request->user()->hasRole('docente_lider'), fn ($query) => $query->conMateriaLiderDelDocente((int) $request->user()->id))
+            ->orderBy('grado')
+            ->orderBy('grupo')
+            ->get(['id', 'carrera_id', 'nombre', 'grado', 'grupo']);
+        $grupoSeleccionado = $gruposPaginacion->contains('id', (int) $request->query('grupo_alumnos'))
+            ? (int) $request->query('grupo_alumnos')
+            : $gruposPaginacion->first()?->id;
+
         $filtrosAlumnos = [
             'busqueda' => trim((string) $request->query('busqueda_alumnos', '')),
-            'carrera_id' => $request->query('carrera_alumnos'),
-            'grupo_academico_id' => $request->query('grupo_alumnos'),
+            'carrera_id' => $carreraSeleccionada,
+            'grupo_academico_id' => $grupoSeleccionado,
             'estado' => $request->query('estado_alumnos'),
+            'periodo_id' => $periodoSeleccionado,
         ];
 
+        $carreraDocenteSeleccionada = $request->query('carrera_docentes') ?: $carreras->first()?->id;
         $filtrosDocentes = [
             'busqueda' => trim((string) $request->query('busqueda_docentes', '')),
-            'carrera_id' => $request->query('carrera_docentes'),
+            'carrera_id' => $carreraDocenteSeleccionada,
             'estado' => $request->query('estado_docentes'),
         ];
 
         $alumnos = User::query()
             ->with(['role:id,nombre,nombre_visible', 'carrera:id,clave,nombre', 'grupoAcademico:id,nombre,grado,grupo'])
             ->whereHas('role', fn ($query) => $query->where('nombre', 'estudiante'))
-            ->when($request->user()->hasRole('lider_proyecto'), fn ($query) => $query->whereHas('grupoAcademico', fn ($grupo) => $grupo->where('lider_proyecto_id', $request->user()->id)));
+            ->when($grupoSeleccionado, fn ($query) => $query->where('grupo_academico_id', $grupoSeleccionado))
+            ->when(! $grupoSeleccionado, fn ($query) => $query->whereRaw('1 = 0'))
+            ->when($request->user()->hasRole('docente_lider'), fn ($query) => $query->whereHas('grupoAcademico', fn ($grupo) => $grupo->conMateriaLiderDelDocente((int) $request->user()->id)));
 
         if ($filtrosAlumnos['busqueda'] !== '') {
             $busqueda = $filtrosAlumnos['busqueda'];
@@ -342,29 +544,14 @@ class ControladorUsuarios extends Controller
             });
         }
 
-        if ($filtrosAlumnos['carrera_id']) {
-            $alumnos->where('carrera_id', $filtrosAlumnos['carrera_id']);
-        }
-
-        if ($filtrosAlumnos['grupo_academico_id']) {
-            $alumnos->where('grupo_academico_id', $filtrosAlumnos['grupo_academico_id']);
-        }
-
         if ($filtrosAlumnos['estado']) {
             $alumnos->where('estado', $filtrosAlumnos['estado']);
         }
 
         $docentes = User::query()
             ->with(['role:id,nombre,nombre_visible', 'carrera:id,clave,nombre'])
-            ->whereHas('role', fn ($query) => $query->whereIn('nombre', ['encargado_proyectos', 'lider_proyecto', 'docente_materia', 'docente_asesor']))
-            ->when($request->user()->hasRole('lider_proyecto'), fn ($query) => $query->whereRaw('1 = 0'))
-            ->when($request->user()->hasRole('encargado_proyectos'), fn ($query) => $query->whereExists(function ($subquery) use ($request) {
-                $subquery->selectRaw('1')
-                    ->from('encargos_proyecto')
-                    ->whereColumn('encargos_proyecto.carrera_id', 'usuarios.carrera_id')
-                    ->where('encargos_proyecto.encargado_id', $request->user()->id)
-                    ->where('encargos_proyecto.activo', true);
-            }));
+            ->whereHas('role', fn ($query) => $query->whereIn('nombre', ['docente_lider', 'docente_materia']))
+            ->when($request->user()->hasRole('docente_lider'), fn ($query) => $query->whereRaw('1 = 0'));
 
         if ($filtrosDocentes['busqueda'] !== '') {
             $busqueda = $filtrosDocentes['busqueda'];
@@ -387,44 +574,55 @@ class ControladorUsuarios extends Controller
             $docentes->where('estado', $filtrosDocentes['estado']);
         }
 
-        $alumnosPaginados = $alumnos
+        $alumnosDelGrupo = $alumnos
             ->orderBy('nombre')
-            ->paginate(12, ['*'], 'pagina_alumnos')
-            ->withQueryString();
+            ->get();
 
-        $docentesPaginados = $docentes
+        $docentesPorCarrera = $docentes
             ->orderBy('nombre')
-            ->paginate(8, ['*'], 'pagina_docentes')
-            ->withQueryString();
+            ->get();
 
-        $usuariosDireccion = $request->user()->hasRole('direccion_coordinacion')
+        $usuariosDireccion = $request->user()->hasRole('coordinacion')
             ? User::query()
-                ->whereHas('role', fn ($query) => $query->where('nombre', 'direccion_coordinacion'))
+                ->whereHas('role', fn ($query) => $query->where('nombre', 'coordinacion'))
                 ->orderBy('nombre')
                 ->get()
             : collect();
 
-        $totalEstudiantes = $alumnosPaginados->total();
-        $totalDocentes = $docentesPaginados->total();
+        $totalEstudiantes = $alumnosDelGrupo->count();
+        $totalDocentes = $docentesPorCarrera->count();
         $totalUsuarios = $totalEstudiantes + $totalDocentes + $usuariosDireccion->count();
 
         return [
-            'alumnos' => $alumnosPaginados,
-            'docentes' => $docentesPaginados,
+            'alumnos' => $alumnosDelGrupo,
+            'docentes' => $docentesPorCarrera,
             'usuariosDireccion' => $usuariosDireccion,
             'filtrosAlumnos' => $filtrosAlumnos,
             'filtrosDocentes' => $filtrosDocentes,
             'roles' => Role::query()->orderBy('nombre_visible')->get(['id', 'nombre', 'nombre_visible']),
             'rolEstudiante' => Role::query()->where('nombre', 'estudiante')->first(['id', 'nombre_visible']),
             'rolDocente' => Role::query()->where('nombre', 'docente_materia')->first(['id', 'nombre_visible']),
-            'carreras' => Carrera::query()->orderBy('nombre')->get(['id', 'nombre', 'clave']),
+            'rolesDocentes' => Role::query()->whereIn('nombre', ['docente_lider', 'docente_materia'])->orderBy('nombre_visible')->get(['id', 'nombre', 'nombre_visible']),
+            'carreras' => $carreras,
             'grupos' => GrupoAcademico::query()
                 ->with('carrera:id,clave')
-                ->when($request->user()->hasRole('lider_proyecto'), fn ($query) => $query->where('lider_proyecto_id', $request->user()->id))
+                ->when($periodoSeleccionado, fn ($query) => $query->where('periodo_id', $periodoSeleccionado))
+                ->when($request->user()->hasRole('docente_lider'), fn ($query) => $query->conMateriaLiderDelDocente((int) $request->user()->id))
                 ->orderBy('grado')
                 ->orderBy('grupo')
                 ->get(['id', 'carrera_id', 'nombre', 'grado', 'grupo']),
             'periodos' => Periodo::query()->orderByDesc('fecha_inicio')->get(['id', 'nombre', 'estado']),
+            'gruposPaginacion' => $gruposPaginacion,
+            'grupoSeleccionado' => $grupoSeleccionado,
+            'seccionActiva' => in_array($request->query('seccion'), ['alumnos', 'docentes'], true)
+                && $request->user()->hasRole('coordinacion')
+                ? $request->query('seccion')
+                : 'alumnos',
+            'esCoordinacion' => $request->user()->hasRole('coordinacion'),
+            'vistaPrevia' => $request->query('preview')
+                ? $request->session()->get('preview_alumnos.'.$request->query('preview'))
+                : null,
+            'tokenVistaPrevia' => $request->query('preview'),
             'metricasUsuarios' => [
                 ['label' => 'Usuarios', 'value' => (string) $totalUsuarios],
                 ['label' => 'Estudiantes', 'value' => (string) $totalEstudiantes],
@@ -507,7 +705,8 @@ class ControladorUsuarios extends Controller
             ->toString();
 
         return match ($valor) {
-            'nombre', 'nombre_completo', 'alumno' => 'nombre_completo',
+            'cedula', 'cedula_alumno', 'numero_cedula' => 'matricula',
+            'nombre', 'nombre_completo', 'alumno', 'nomina' => 'nombre_completo',
             'correo', 'correo_electronico', 'email' => 'correo_electronico',
             'carrera', 'clave_carrera' => 'clave_carrera',
             default => $valor,

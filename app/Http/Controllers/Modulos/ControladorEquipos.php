@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Modulos;
 
 use App\Http\Controllers\Controller;
-use App\Models\EncargoProyecto;
 use App\Models\Equipo;
 use App\Models\GrupoAcademico;
+use App\Models\GuiaIntegradora;
 use App\Models\User;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
@@ -27,7 +27,7 @@ class ControladorEquipos extends Controller
             'navegacion' => SistemaInterfaz::navegacionPara($rol),
             'pagina' => SistemaInterfaz::pagina('equipos'),
             'roleName' => $usuario->role?->nombre_visible ?? 'Estudiante / Equipo',
-            ...$this->datos($usuario),
+            ...$this->datos($usuario, $request),
         ]);
     }
 
@@ -38,23 +38,37 @@ class ControladorEquipos extends Controller
         $datos = $request->validate([
             'grupo_academico_id' => ['required', 'exists:grupos_academicos,id'],
             'nombre' => ['required', 'string', 'max:255'],
-            'numero' => ['nullable', 'integer', 'min:1'],
             'contexto_proyecto' => ['nullable', 'string', 'max:3000'],
         ]);
 
         $grupo = GrupoAcademico::query()->findOrFail($datos['grupo_academico_id']);
         $this->autorizarGrupo($request, $grupo);
 
-        Equipo::query()->updateOrCreate(
-            ['grupo_academico_id' => $datos['grupo_academico_id'], 'nombre' => $datos['nombre']],
-            [
-                'numero' => $datos['numero'] ?? ((int) Equipo::query()->where('grupo_academico_id', $grupo->id)->max('numero') + 1),
-                'contexto_proyecto' => $datos['contexto_proyecto'] ?? 'Contexto pendiente de definir por el líder de proyecto.',
-                'estado' => 'activo',
-            ],
-        );
+        DB::transaction(function () use ($grupo, $datos): void {
+            GrupoAcademico::query()->whereKey($grupo->id)->lockForUpdate()->firstOrFail();
+            $hayAlumnosLibres = User::query()
+                ->where('grupo_academico_id', $grupo->id)
+                ->whereHas('role', fn ($query) => $query->where('nombre', 'estudiante'))
+                ->whereDoesntHave('equiposComoIntegrante')
+                ->exists();
+            abort_unless($hayAlumnosLibres, 422, 'El grupo no tiene alumnos libres para crear otro equipo.');
 
-        return redirect()->route('modulos.show', 'equipos')->with('estado', 'Equipo guardado correctamente.');
+            $equipo = Equipo::query()->firstOrNew([
+                'grupo_academico_id' => $grupo->id,
+                'nombre' => $datos['nombre'],
+            ]);
+            if (! $equipo->exists) {
+                $equipo->numero = (int) Equipo::query()
+                    ->where('grupo_academico_id', $grupo->id)
+                    ->lockForUpdate()
+                    ->max('numero') + 1;
+            }
+            $equipo->contexto_proyecto = $datos['contexto_proyecto'] ?? 'Contexto pendiente de definir por el líder de proyecto.';
+            $equipo->estado = 'activo';
+            $equipo->save();
+        });
+
+        return $this->volverEquipos($request, 'Equipo guardado correctamente.');
     }
 
     public function asignarAlumno(Request $request): RedirectResponse
@@ -70,31 +84,25 @@ class ControladorEquipos extends Controller
         $this->autorizarGrupo($request, $equipo->grupoAcademico);
         $estudiante = User::query()->findOrFail($datos['estudiante_id']);
         abort_unless($estudiante->hasRole('estudiante'), 422);
+        abort_unless((int) $estudiante->grupo_academico_id === (int) $equipo->grupo_academico_id, 422);
 
-        $equiposDelGrupo = Equipo::query()
-            ->where('grupo_academico_id', $equipo->grupo_academico_id)
-            ->pluck('id');
-
-        DB::table('integrantes_equipo')
-            ->whereIn('equipo_id', $equiposDelGrupo)
+        $yaTieneEquipo = DB::table('integrantes_equipo')
             ->where('estudiante_id', $estudiante->id)
-            ->update(['activo' => false, 'actualizado_en' => now()]);
-
-        $estudiante->forceFill([
-            'carrera_id' => $equipo->grupoAcademico->carrera_id,
-            'grupo_academico_id' => $equipo->grupo_academico_id,
-        ])->save();
+            ->where('activo', true)
+            ->where('equipo_id', '!=', $equipo->id)
+            ->exists();
+        abort_unless(! $yaTieneEquipo, 422, 'El alumno ya pertenece a otro equipo.');
 
         $equipo->integrantes()->syncWithoutDetaching([
             $estudiante->id => ['activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
         ]);
 
-        return redirect()->route('modulos.show', 'equipos')->with('estado', 'Alumno asignado al equipo correctamente.');
+        return $this->volverEquipos($request, 'Alumno asignado al equipo correctamente.');
     }
 
     public function asignarAsesor(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'encargado_proyectos'), 403);
+        $this->autorizarGestionEquipos($request);
 
         $datos = $request->validate([
             'equipo_id' => ['required', 'exists:equipos,id'],
@@ -103,11 +111,10 @@ class ControladorEquipos extends Controller
         ]);
 
         $equipo = Equipo::query()->with('grupoAcademico')->findOrFail($datos['equipo_id']);
-        $this->autorizarEncargoGrupo($request, $equipo->grupoAcademico);
-
+        $this->autorizarGrupo($request, $equipo->grupoAcademico);
         $asesor = User::query()
             ->whereKey($datos['asesor_id'])
-            ->whereHas('role', fn ($query) => $query->whereIn('nombre', ['lider_proyecto', 'docente_materia', 'docente_asesor']))
+            ->whereHas('role', fn ($query) => $query->whereIn('nombre', ['docente_lider', 'docente_materia']))
             ->firstOrFail();
 
         if ($request->boolean('principal')) {
@@ -128,7 +135,7 @@ class ControladorEquipos extends Controller
             ],
         ]);
 
-        return redirect()->route('modulos.show', 'equipos')->with('estado', 'Asesor asignado al equipo correctamente.');
+        return $this->volverEquipos($request, 'Asesor asignado al equipo correctamente.');
     }
 
     public function quitarAlumno(Request $request): RedirectResponse
@@ -152,12 +159,12 @@ class ControladorEquipos extends Controller
             $equipo->forceFill(['lider_id' => null])->save();
         }
 
-        return redirect()->route('modulos.show', 'equipos')->with('estado', 'Alumno retirado del equipo correctamente.');
+        return $this->volverEquipos($request, 'Alumno retirado del equipo correctamente.');
     }
 
     public function quitarAsesor(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'encargado_proyectos'), 403);
+        $this->autorizarGestionEquipos($request);
 
         $datos = $request->validate([
             'equipo_id' => ['required', 'exists:equipos,id'],
@@ -165,38 +172,76 @@ class ControladorEquipos extends Controller
         ]);
 
         $equipo = Equipo::query()->with('grupoAcademico')->findOrFail($datos['equipo_id']);
-        $this->autorizarEncargoGrupo($request, $equipo->grupoAcademico);
-
+        $this->autorizarGrupo($request, $equipo->grupoAcademico);
         $equipo->asesores()->updateExistingPivot($datos['asesor_id'], [
             'activo' => false,
             'principal' => false,
             'actualizado_en' => now(),
         ]);
 
-        return redirect()->route('modulos.show', 'equipos')->with('estado', 'Asesor retirado del equipo correctamente.');
+        return $this->volverEquipos($request, 'Asesor retirado del equipo correctamente.');
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function datos(User $usuario): array
+    private function datos(User $usuario, Request $request): array
     {
+        $periodos = \App\Models\Periodo::query()->orderByDesc('fecha_inicio')->get(['id', 'nombre', 'estado']);
+        $periodoSeleccionado = (int) ($request->query('periodo_equipos')
+            ?: $periodos->firstWhere('estado', 'activo')?->id
+            ?: $periodos->first()?->id);
+        $grupos = GrupoAcademico::query()
+            ->with(['carrera:id,clave', 'periodo:id,nombre'])
+            ->where('periodo_id', $periodoSeleccionado)
+            ->when($usuario->hasRole('docente_lider'), fn ($query) => $query->conMateriaLiderDelDocente($usuario->id))
+            ->orderBy('carrera_id')->orderBy('grado')->orderBy('grupo')
+            ->get();
+        $grupos->each(function (GrupoAcademico $grupo): void {
+            $grupo->setAttribute('alumnos_libres_count', User::query()
+                ->where('grupo_academico_id', $grupo->id)
+                ->whereHas('role', fn ($query) => $query->where('nombre', 'estudiante'))
+                ->whereDoesntHave('equiposComoIntegrante')
+                ->count());
+        });
+        $grupoSeleccionado = $grupos->contains('id', (int) $request->query('grupo_equipos'))
+            ? (int) $request->query('grupo_equipos')
+            : $grupos->first()?->id;
+
         $equipos = Equipo::query()
-            ->with(['grupoAcademico.carrera:id,nombre,clave', 'grupoAcademico.liderProyecto:id,nombre,matricula', 'integrantes:id,nombre,matricula', 'asesores:id,nombre,matricula'])
+            ->with([
+                'grupoAcademico.carrera:id,nombre,clave',
+                'grupoAcademico.periodo:id,nombre',
+                'grupoAcademico.liderProyecto:id,nombre,matricula',
+                'integrantes:id,nombre,matricula,grupo_academico_id',
+                'asesores:id,nombre,matricula',
+                'proyectos.guiaIntegradora:id,nombre,version',
+            ])
             ->withCount(['integrantes as integrantes_count', 'asesores as asesores_count'])
-            ->when($usuario->hasRole('lider_proyecto'), fn ($q) => $q->whereHas('grupoAcademico', fn ($g) => $g->where('lider_proyecto_id', $usuario->id)))
+            ->when($usuario->hasRole('docente_lider'), fn ($q) => $q->whereHas('grupoAcademico', fn ($g) => $g->conMateriaLiderDelDocente($usuario->id)))
+            ->when($grupoSeleccionado, fn ($query) => $query->where('grupo_academico_id', $grupoSeleccionado))
+            ->when(! $grupoSeleccionado, fn ($query) => $query->whereRaw('1 = 0'))
             ->orderBy('numero')->orderBy('nombre')
             ->get();
 
         return [
             'equipos' => $equipos,
-            'grupos' => GrupoAcademico::query()->with('carrera:id,clave')->when($usuario->hasRole('lider_proyecto'), fn ($q) => $q->where('lider_proyecto_id', $usuario->id))->orderBy('grado')->orderBy('grupo')->get(),
+            'grupos' => $grupos,
+            'periodos' => $periodos,
+            'periodoSeleccionado' => $periodoSeleccionado,
+            'grupoSeleccionado' => $grupoSeleccionado,
             'estudiantes' => User::query()
                 ->whereHas('role', fn ($query) => $query->where('nombre', 'estudiante'))
-                ->when($usuario->hasRole('lider_proyecto'), fn ($query) => $query->whereHas('grupoAcademico', fn ($grupo) => $grupo->where('lider_proyecto_id', $usuario->id)))
+                ->whereDoesntHave('equiposComoIntegrante')
+                ->when($usuario->hasRole('docente_lider'), fn ($query) => $query->whereHas('grupoAcademico', fn ($grupo) => $grupo->conMateriaLiderDelDocente($usuario->id)))
                 ->orderBy('nombre')
-                ->get(['id', 'nombre', 'matricula']),
-            'docentes' => User::query()->whereHas('role', fn ($query) => $query->whereIn('nombre', ['lider_proyecto', 'docente_materia', 'docente_asesor']))->orderBy('nombre')->get(['id', 'nombre', 'matricula']),
+                ->get(['id', 'nombre', 'matricula', 'grupo_academico_id']),
+            'docentes' => User::query()->whereHas('role', fn ($query) => $query->whereIn('nombre', ['docente_lider', 'docente_materia']))->orderBy('nombre')->get(['id', 'nombre', 'matricula']),
+            'guias' => GuiaIntegradora::query()
+                ->with('asignatura:id,carrera_id,grado')
+                ->where('estado', 'publicada')
+                ->orderBy('nombre')
+                ->get(['id', 'periodo_id', 'asignatura_id', 'nombre', 'cuatrimestre', 'version']),
             'metricasEquipos' => [
                 ['label' => 'Equipos', 'value' => (string) $equipos->count()],
                 ['label' => 'Integrantes', 'value' => (string) $equipos->sum('integrantes_count')],
@@ -207,26 +252,21 @@ class ControladorEquipos extends Controller
 
     private function autorizarGestionEquipos(Request $request): void
     {
-        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'lider_proyecto'), 403);
+        abort_unless($request->user()?->hasRole('docente_lider'), 403);
     }
 
     private function autorizarGrupo(Request $request, GrupoAcademico $grupo): void
     {
-        if ($request->user()->hasRole('lider_proyecto')) {
-            abort_unless((int) $grupo->lider_proyecto_id === (int) $request->user()->id, 403);
-        }
+        abort_unless(GrupoAcademico::query()->whereKey($grupo->id)->conMateriaLiderDelDocente((int) $request->user()->id)->exists(), 403);
     }
 
-    private function autorizarEncargoGrupo(Request $request, GrupoAcademico $grupo): void
+    private function volverEquipos(Request $request, string $mensaje): RedirectResponse
     {
-        if ($request->user()->hasRole('encargado_proyectos')) {
-            abort_unless(EncargoProyecto::query()
-                ->where('encargado_id', $request->user()->id)
-                ->where('periodo_id', $grupo->periodo_id)
-                ->where('carrera_id', $grupo->carrera_id)
-                ->where('cuatrimestre', $grupo->grado)
-                ->where('activo', true)
-                ->exists(), 403);
-        }
+        return redirect()->route('modulos.show', array_filter([
+            'modulo' => 'equipos',
+            'periodo_equipos' => $request->input('periodo_equipos'),
+            'grupo_equipos' => $request->input('grupo_equipos'),
+        ]))->with('estado', $mensaje);
     }
+
 }

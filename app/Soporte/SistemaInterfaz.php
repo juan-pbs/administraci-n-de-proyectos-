@@ -2,6 +2,8 @@
 
 namespace App\Soporte;
 
+use App\Models\GrupoAcademico;
+
 class SistemaInterfaz
 {
     /**
@@ -14,46 +16,28 @@ class SistemaInterfaz
         ];
 
         $porRol = match ($rol) {
-            'direccion_coordinacion' => [
+            'coordinacion' => [
                 ['clave' => 'jerarquia-proyectos', 'titulo' => 'Jerarquía de proyectos', 'ruta' => route('modulos.jerarquia'), 'icono' => '◆'],
                 ['clave' => 'periodos', 'titulo' => 'Periodos', 'ruta' => route('modulos.show', 'periodos'), 'icono' => '▦'],
                 ['clave' => 'carreras-grupos', 'titulo' => 'Carreras y grupos', 'ruta' => route('modulos.show', 'carreras-grupos'), 'icono' => '▤'],
                 ['clave' => 'usuarios', 'titulo' => 'Usuarios', 'ruta' => route('modulos.show', 'usuarios'), 'icono' => '◎'],
                 ['clave' => 'asignaturas', 'titulo' => 'Asignaturas', 'ruta' => route('modulos.show', 'asignaturas'), 'icono' => '◇'],
                 ['clave' => 'guias', 'titulo' => 'Guías', 'ruta' => route('modulos.show', 'guias'), 'icono' => '▣'],
-                ['clave' => 'equipos', 'titulo' => 'Equipos', 'ruta' => route('modulos.show', 'equipos'), 'icono' => '◫'],
-                ['clave' => 'proyectos', 'titulo' => 'Proyectos', 'ruta' => route('modulos.show', 'proyectos'), 'icono' => '□'],
-                ['clave' => 'reportes', 'titulo' => 'Reportes', 'ruta' => route('modulos.show', 'reportes'), 'icono' => '▥'],
-                ['clave' => 'notificaciones', 'titulo' => 'Notificaciones', 'ruta' => route('modulos.show', 'notificaciones'), 'icono' => '○'],
-                ['clave' => 'bitacora', 'titulo' => 'Bitácora', 'ruta' => route('modulos.show', 'bitacora'), 'icono' => '≡'],
-                ['clave' => 'respaldos', 'titulo' => 'Respaldos', 'ruta' => route('modulos.show', 'respaldos'), 'icono' => '↥'],
             ],
-            'encargado_proyectos' => [
-                ['clave' => 'jerarquia-proyectos', 'titulo' => 'Líderes y grupos', 'ruta' => route('modulos.jerarquia'), 'icono' => '◆'],
-                ['clave' => 'usuarios', 'titulo' => 'Docentes', 'ruta' => route('modulos.show', 'usuarios'), 'icono' => '◉'],
-                ['clave' => 'asignaturas', 'titulo' => 'Materias y docentes', 'ruta' => route('modulos.show', 'asignaturas'), 'icono' => '◇'],
-                ['clave' => 'proyectos', 'titulo' => 'Proyectos', 'ruta' => route('modulos.show', 'proyectos'), 'icono' => '□'],
-                ['clave' => 'reportes', 'titulo' => 'Reportes', 'ruta' => route('modulos.show', 'reportes'), 'icono' => '▥'],
-            ],
-            'lider_proyecto' => [
+            'docente_lider' => auth()->check() && GrupoAcademico::query()->conMateriaLiderDelDocente((int) auth()->id())->exists() ? [
                 ['clave' => 'usuarios', 'titulo' => 'Lista de alumnos', 'ruta' => route('modulos.show', 'usuarios'), 'icono' => '◉'],
                 ['clave' => 'equipos', 'titulo' => 'Equipos', 'ruta' => route('modulos.show', 'equipos'), 'icono' => '◫'],
-                ['clave' => 'proyectos', 'titulo' => 'Contexto de proyectos', 'ruta' => route('modulos.show', 'proyectos'), 'icono' => '□'],
-                ['clave' => 'reportes', 'titulo' => 'Seguimiento', 'ruta' => route('modulos.show', 'reportes'), 'icono' => '▥'],
-            ],
-            'docente_materia', 'docente_asesor' => [
-                ['clave' => 'revision-entregables', 'titulo' => 'Revisión', 'ruta' => route('modulos.show', 'revision-entregables'), 'icono' => '✓'],
-                ['clave' => 'productos-software', 'titulo' => 'Software', 'ruta' => route('modulos.show', 'productos-software'), 'icono' => '⌘'],
-                ['clave' => 'historial', 'titulo' => 'Historial', 'ruta' => route('modulos.show', 'historial'), 'icono' => '↺'],
-                ['clave' => 'reportes', 'titulo' => 'Reportes', 'ruta' => route('modulos.show', 'reportes'), 'icono' => '▥'],
-                ['clave' => 'notificaciones', 'titulo' => 'Notificaciones', 'ruta' => route('modulos.show', 'notificaciones'), 'icono' => '○'],
+                ['clave' => 'proyectos', 'titulo' => 'Proyectos', 'ruta' => route('modulos.show', 'proyectos'), 'icono' => '□'],
+                ['clave' => 'revision-codigo', 'titulo' => 'Revisión de código', 'ruta' => route('docente-lider.codigo'), 'icono' => '</>'],
+            ] : [],
+            'docente_materia' => [
+                ['clave' => 'asignaciones-docente', 'titulo' => 'Mis asignaciones', 'ruta' => route('docente-materia.asignaciones'), 'icono' => '◇'],
+                ['clave' => 'revisiones-docente', 'titulo' => 'Revisiones', 'ruta' => route('docente-materia.revisiones'), 'icono' => '✓'],
             ],
             default => [
-                ['clave' => 'avances', 'titulo' => 'Avances', 'ruta' => route('modulos.show', 'avances'), 'icono' => '✎'],
-                ['clave' => 'documentos', 'titulo' => 'Documento final', 'ruta' => route('modulos.show', 'documentos'), 'icono' => '▧'],
-                ['clave' => 'productos-software', 'titulo' => 'Software', 'ruta' => route('modulos.show', 'productos-software'), 'icono' => '⌘'],
-                ['clave' => 'historial', 'titulo' => 'Historial', 'ruta' => route('modulos.show', 'historial'), 'icono' => '↺'],
-                ['clave' => 'notificaciones', 'titulo' => 'Notificaciones', 'ruta' => route('modulos.show', 'notificaciones'), 'icono' => '○'],
+                ['clave' => 'mi-proyecto', 'titulo' => 'Mi proyecto', 'ruta' => route('estudiante.proyecto'), 'icono' => '◇'],
+                ['clave' => 'mis-entregas', 'titulo' => 'Entregas', 'ruta' => route('estudiante.entregas'), 'icono' => '✓'],
+                ['clave' => 'codigo-estudiante', 'titulo' => 'Código y repositorio', 'ruta' => route('estudiante.codigo'), 'icono' => '</>'],
             ],
         };
 
@@ -66,10 +50,10 @@ class SistemaInterfaz
     public static function dashboardPara(string $rol): array
     {
         return match ($rol) {
-            'direccion_coordinacion' => [
+            'coordinacion' => [
                 'eyebrow' => 'Dirección y coordinación académica',
                 'title' => 'Panel de dirección / coordinación',
-                'description' => 'Control operativo de periodos, usuarios, equipos, guías, asignaciones, reportes y bitácora.',
+                'description' => 'Control académico de periodos, carreras, grupos, usuarios, asignaturas y guías.',
                 'badge' => 'Dirección / coordinación',
                 'stats' => [
                     ['label' => 'Periodos activos', 'value' => '1'],
@@ -80,61 +64,31 @@ class SistemaInterfaz
                 'modules' => [
                     ['title' => 'Carga académica', 'description' => 'Periodos, grupos, alumnos, docentes y asignaturas.', 'status' => 'Configurable', 'route' => 'periodos'],
                     ['title' => 'Guías integradoras', 'description' => 'Apartados, fechas, ponderación y evidencias requeridas.', 'status' => 'Editable', 'route' => 'guias'],
-                    ['title' => 'Equipos y proyectos', 'description' => 'Asignación automática, manual, asesores y evaluadores.', 'status' => 'Preparado', 'route' => 'equipos'],
-                    ['title' => 'Reportes', 'description' => 'Avance, cumplimiento, evaluaciones y trazabilidad.', 'status' => 'En tablero', 'route' => 'reportes'],
                 ],
             ],
-            'encargado_proyectos' => [
-                'eyebrow' => 'Administración por carrera y cuatrimestre',
-                'title' => 'Panel del encargado de proyectos',
-                'description' => 'Asigna líderes, grupos, docentes de materia y las partes que evaluará cada asignatura.',
-                'badge' => 'Encargado de proyectos',
-                'stats' => [['label' => 'Responsabilidad', 'value' => 'Por cuatrimestre'], ['label' => 'Líderes', 'value' => 'Asignables'], ['label' => 'Grupos', 'value' => 'Supervisados'], ['label' => 'Materias', 'value' => 'Evaluadoras']],
-                'modules' => [['title' => 'Jerarquía', 'description' => 'Designación de líderes y grupos.', 'status' => 'Operativo', 'route' => 'jerarquia-proyectos'], ['title' => 'Materias', 'description' => 'Docentes y partes evaluables.', 'status' => 'Configurable', 'route' => 'asignaturas'], ['title' => 'Proyectos', 'description' => 'Seguimiento integral.', 'status' => 'Consulta', 'route' => 'proyectos']],
-            ],
-            'lider_proyecto' => [
+            'docente_lider' => [
                 'eyebrow' => 'Materia líder y organización de equipos',
-                'title' => 'Panel del líder de proyecto',
-                'description' => 'Carga alumnos, distribuye equipos y define nombre, número y contexto de cada proyecto.',
-                'badge' => 'Líder de proyecto',
+                'title' => 'Panel del docente líder',
+                'description' => 'Consulta sus grupos, organiza alumnos y equipos, y asigna los proyectos integradores.',
+                'badge' => 'Docente líder',
                 'stats' => [['label' => 'Grupos', 'value' => 'Asignados'], ['label' => 'Alumnos', 'value' => 'Por cargar'], ['label' => 'Equipos', 'value' => 'Por organizar'], ['label' => 'Proyectos', 'value' => 'En seguimiento']],
-                'modules' => [['title' => 'Lista de alumnos', 'description' => 'Alta y carga por grupo.', 'status' => 'Editable', 'route' => 'usuarios'], ['title' => 'Equipos', 'description' => 'Distribución de integrantes.', 'status' => 'Editable', 'route' => 'equipos'], ['title' => 'Contexto', 'description' => 'Nombre, número y alcance.', 'status' => 'Editable', 'route' => 'proyectos']],
+                'modules' => [['title' => 'Lista de alumnos', 'description' => 'Carga y consulta por grupo.', 'status' => 'Editable', 'route' => 'usuarios'], ['title' => 'Equipos', 'description' => 'Distribución de integrantes.', 'status' => 'Editable', 'route' => 'equipos'], ['title' => 'Proyectos', 'description' => 'Asignación y participación docente.', 'status' => 'Editable', 'route' => 'proyectos']],
             ],
-            'docente_materia', 'docente_asesor' => [
-                'eyebrow' => 'Revisión académica',
-                'title' => 'Panel de docente / asesor · Docente de materia',
-                'description' => 'Revisión y calificación exclusivamente de las partes asignadas a su materia.',
+            'docente_materia' => [
+                'eyebrow' => 'Evaluación académica',
+                'title' => 'Panel del docente de materia',
+                'description' => 'Consulta los apartados asignados por Coordinación y da seguimiento a las entregas de cada equipo.',
                 'badge' => 'Docente de materia',
-                'stats' => [
-                    ['label' => 'Asignaciones', 'value' => '9'],
-                    ['label' => 'Por revisar', 'value' => '14'],
-                    ['label' => 'Con observación', 'value' => '6'],
-                    ['label' => 'Aprobadas', 'value' => '31'],
-                ],
-                'modules' => [
-                    ['title' => 'Entregables', 'description' => 'Validación individual con checkbox, observaciones y calificación.', 'status' => 'Lista de trabajo', 'route' => 'revision-entregables'],
-                    ['title' => 'Productos de software', 'description' => 'Código, repositorios, ejecutables, scripts y manuales.', 'status' => 'Validable', 'route' => 'productos-software'],
-                    ['title' => 'Historial', 'description' => 'Versiones, responsables, fechas y resultados.', 'status' => 'Trazable', 'route' => 'historial'],
-                    ['title' => 'Reportes', 'description' => 'Cumplimiento por grupo, equipo, apartado y asignatura.', 'status' => 'Consulta', 'route' => 'reportes'],
-                ],
+                'stats' => [],
+                'modules' => [],
             ],
             default => [
-                'eyebrow' => 'Trabajo por equipo',
-                'title' => 'Panel de estudiante / equipo',
-                'description' => 'Seguimiento de guía, captura de avances, evidencias, documento final y productos de software.',
-                'badge' => 'Estudiante / equipo',
-                'stats' => [
-                    ['label' => 'Apartados', 'value' => '8'],
-                    ['label' => 'Completados', 'value' => '5'],
-                    ['label' => 'Correcciones', 'value' => '2'],
-                    ['label' => 'Avance', 'value' => '62%'],
-                ],
-                'modules' => [
-                    ['title' => 'Avances', 'description' => 'Captura por apartado y carga de evidencias.', 'status' => 'Activo', 'route' => 'avances'],
-                    ['title' => 'Documento final', 'description' => 'Generación institucional en PDF y Word.', 'status' => 'Plantilla', 'route' => 'documentos'],
-                    ['title' => 'Software', 'description' => 'Repositorio, código fuente, ejecutables y manuales.', 'status' => 'Entrega', 'route' => 'productos-software'],
-                    ['title' => 'Historial', 'description' => 'Versiones enviadas, observaciones y resultados.', 'status' => 'Consulta', 'route' => 'historial'],
-                ],
+                'eyebrow' => 'Trabajo del equipo',
+                'title' => 'Panel del estudiante',
+                'description' => 'Consulta tu proyecto, entrega avances de la guía y da seguimiento a calificaciones y correcciones.',
+                'badge' => 'Estudiante',
+                'stats' => [],
+                'modules' => [],
             ],
         };
     }
@@ -187,7 +141,7 @@ class SistemaInterfaz
             ],
             'carreras-grupos' => [
                 'titulo' => 'Gestión de carreras y grupos',
-                'subtitulo' => 'Estructura académica usada para equipos, asignaturas y reportes.',
+                'subtitulo' => 'Estructura académica usada para organizar grupos, equipos y asignaturas.',
                 'acciones' => ['Nueva carrera', 'Nuevo grupo', 'Importar grupos'],
                 'metricas' => [
                     ['label' => 'Carreras', 'value' => '3'],
@@ -489,117 +443,6 @@ class SistemaInterfaz
                         ['12/07/2026', 'Equipo 1', 'Subió versión 2', 'En revisión', 'Se agregó diagrama corregido'],
                         ['13/07/2026', 'Docente Asesor', 'Validó apartado', 'Aprobada', 'Cumple estructura'],
                         ['14/07/2026', 'Docente Asesor', 'Solicitó corrección', 'Corrección', 'Falta evidencia técnica'],
-                    ],
-                ],
-            ],
-            'reportes' => [
-                'titulo' => 'Reportes académicos',
-                'subtitulo' => 'Avance, cumplimiento, calificaciones, entregas pendientes y participación.',
-                'acciones' => ['Generar reporte', 'Exportar Excel', 'Exportar PDF'],
-                'metricas' => [
-                    ['label' => 'Cumplimiento', 'value' => '76%'],
-                    ['label' => 'Atrasos', 'value' => '8'],
-                    ['label' => 'Promedio', 'value' => '8.7'],
-                ],
-                'formulario' => [
-                    'titulo' => 'Parámetros',
-                    'campos' => [
-                        ['label' => 'Periodo', 'tipo' => 'select', 'opciones' => ['Mayo - Agosto 2026', 'Septiembre - Noviembre 2026']],
-                        ['label' => 'Grupo', 'tipo' => 'select', 'opciones' => ['Todos', '9B', '9A']],
-                        ['label' => 'Tipo de reporte', 'tipo' => 'select', 'opciones' => ['Avance', 'Cumplimiento', 'Calificaciones', 'Pendientes']],
-                        ['label' => 'Incluir observaciones', 'tipo' => 'checkbox', 'valor' => '1'],
-                    ],
-                ],
-                'tabla' => [
-                    'titulo' => 'Resumen por equipo',
-                    'columnas' => ['Equipo', 'Avance', 'Pendientes', 'Calificación', 'Riesgo'],
-                    'filas' => [
-                        ['Equipo 1', '82%', '1', '9.1', 'Bajo'],
-                        ['Equipo 2', '67%', '3', '8.4', 'Medio'],
-                        ['Equipo 3', '44%', '5', '7.2', 'Alto'],
-                    ],
-                ],
-            ],
-            'notificaciones' => [
-                'titulo' => 'Notificaciones',
-                'subtitulo' => 'Entregas pendientes, observaciones, revisiones y cambios de estado.',
-                'acciones' => ['Marcar leídas', 'Nueva notificación', 'Configurar avisos'],
-                'metricas' => [
-                    ['label' => 'No leídas', 'value' => '6'],
-                    ['label' => 'Pendientes hoy', 'value' => '3'],
-                    ['label' => 'Observaciones', 'value' => '4'],
-                ],
-                'formulario' => [
-                    'titulo' => 'Aviso manual',
-                    'campos' => [
-                        ['label' => 'Destinatario', 'tipo' => 'select', 'opciones' => ['Equipo 1', 'Grupo 9B', 'Docentes / asesores']],
-                        ['label' => 'Título', 'tipo' => 'text', 'valor' => 'Entrega próxima a vencer'],
-                        ['label' => 'Mensaje', 'tipo' => 'textarea', 'valor' => 'Revisar fecha límite del apartado activo.'],
-                        ['label' => 'Enviar correo', 'tipo' => 'checkbox', 'valor' => '1'],
-                    ],
-                ],
-                'tabla' => [
-                    'titulo' => 'Bandeja',
-                    'columnas' => ['Fecha', 'Tipo', 'Mensaje', 'Destino', 'Estado'],
-                    'filas' => [
-                        ['Hoy', 'Entrega', 'Modelo entidad relación vence pronto', 'Equipo 1', 'No leída'],
-                        ['Ayer', 'Observación', 'Se registró comentario de revisión', 'Equipo 2', 'Leída'],
-                        ['10/07/2026', 'Sistema', 'Guía publicada', 'Grupo 9B', 'Leída'],
-                    ],
-                ],
-            ],
-            'bitacora' => [
-                'titulo' => 'Bitácora de actividades',
-                'subtitulo' => 'Registro de acciones relevantes dentro del sistema.',
-                'acciones' => ['Filtrar', 'Exportar bitácora', 'Auditar usuario'],
-                'metricas' => [
-                    ['label' => 'Eventos hoy', 'value' => '57'],
-                    ['label' => 'Usuarios activos', 'value' => '41'],
-                    ['label' => 'Cambios críticos', 'value' => '2'],
-                ],
-                'formulario' => [
-                    'titulo' => 'Búsqueda',
-                    'campos' => [
-                        ['label' => 'Usuario', 'tipo' => 'text', 'valor' => '20260003'],
-                        ['label' => 'Módulo', 'tipo' => 'select', 'opciones' => ['Todos', 'Guías', 'Entregas', 'Usuarios']],
-                        ['label' => 'Acción', 'tipo' => 'select', 'opciones' => ['Todas', 'Crear', 'Editar', 'Eliminar', 'Validar']],
-                        ['label' => 'Fecha', 'tipo' => 'date', 'valor' => '2026-07-11'],
-                    ],
-                ],
-                'tabla' => [
-                    'titulo' => 'Eventos recientes',
-                    'columnas' => ['Hora', 'Usuario', 'Módulo', 'Acción', 'Detalle'],
-                    'filas' => [
-                        ['09:15', '20260001', 'Guías', 'Editar', 'Cambió fecha límite'],
-                        ['10:22', '20260003', 'Entregas', 'Crear', 'Subió evidencia'],
-                        ['11:04', '20260002', 'Revisión', 'Validar', 'Aprobó apartado'],
-                    ],
-                ],
-            ],
-            'respaldos' => [
-                'titulo' => 'Respaldo y recuperación',
-                'subtitulo' => 'Copias de seguridad, restauración y protección de información.',
-                'acciones' => ['Crear respaldo', 'Restaurar', 'Programar copia'],
-                'metricas' => [
-                    ['label' => 'Último respaldo', 'value' => 'Hoy'],
-                    ['label' => 'Tamaño', 'value' => '248 MB'],
-                    ['label' => 'Estado', 'value' => 'Correcto'],
-                ],
-                'formulario' => [
-                    'titulo' => 'Programación',
-                    'campos' => [
-                        ['label' => 'Frecuencia', 'tipo' => 'select', 'opciones' => ['Diaria', 'Semanal', 'Mensual']],
-                        ['label' => 'Hora', 'tipo' => 'time', 'valor' => '22:00'],
-                        ['label' => 'Incluir archivos de entrega', 'tipo' => 'checkbox', 'valor' => '1'],
-                        ['label' => 'Mantener versiones', 'tipo' => 'number', 'valor' => '5'],
-                    ],
-                ],
-                'tabla' => [
-                    'titulo' => 'Respaldos disponibles',
-                    'columnas' => ['Fecha', 'Contenido', 'Tamaño', 'Responsable', 'Estado'],
-                    'filas' => [
-                        ['11/07/2026', 'Base de datos y archivos', '248 MB', 'Sistema', 'Correcto'],
-                        ['10/07/2026', 'Base de datos', '91 MB', 'Sistema', 'Correcto'],
                     ],
                 ],
             ],

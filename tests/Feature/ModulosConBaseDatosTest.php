@@ -16,8 +16,9 @@ uses(RefreshDatabase::class);
 
 function direccionAutenticada(): User
 {
-    $rol = Role::query()->create([
-        'nombre' => 'direccion_coordinacion',
+    $rol = Role::query()->firstOrCreate([
+        'nombre' => 'coordinacion',
+    ], [
         'nombre_visible' => 'Dirección / Coordinación',
         'descripcion' => 'Rol de prueba',
     ]);
@@ -31,6 +32,8 @@ test('modulos base guardan informacion en base de datos', function () {
     Mail::fake();
 
     $direccion = direccionAutenticada();
+    $rolDocenteLider = Role::query()->where('nombre', 'docente_lider')->firstOrFail();
+    $docenteLider = User::factory()->create(['rol_id' => $rolDocenteLider->id]);
 
     $rolEstudiante = Role::query()->create([
         'nombre' => 'estudiante',
@@ -52,6 +55,7 @@ test('modulos base guardan informacion en base de datos', function () {
     $grupo = GrupoAcademico::query()->create([
         'periodo_id' => $periodo->id,
         'carrera_id' => $carrera->id,
+        'lider_proyecto_id' => $docenteLider->id,
         'nombre' => '9B',
         'grado' => 9,
         'grupo' => 'B',
@@ -83,16 +87,19 @@ test('modulos base guardan informacion en base de datos', function () {
         ->assertRedirect(route('modulos.show', 'asignaturas'));
 
     $asignatura = Asignatura::query()->where('clave', 'TI-INT-09')->firstOrFail();
+    $docenteLider->asignaturasComoDocente()->attach($asignatura->id, ['periodo_id' => $periodo->id, 'activo' => true]);
+    $grupo->update(['asignatura_lider_id' => $asignatura->id]);
     $guia = GuiaIntegradora::query()->create([
         'periodo_id' => $periodo->id,
         'asignatura_id' => $asignatura->id,
         'creado_por' => $direccion->id,
         'nombre' => 'Guía de prueba',
+        'cuatrimestre' => '9',
         'version' => '1.0',
         'estado' => 'publicada',
     ]);
 
-    $this->actingAs($direccion)
+    $this->actingAs($docenteLider)
         ->post(route('equipos.guardar'), [
             'grupo_academico_id' => $grupo->id,
             'nombre' => 'Equipo Prueba',
@@ -102,7 +109,7 @@ test('modulos base guardan informacion en base de datos', function () {
 
     $equipo = Equipo::query()->where('nombre', 'Equipo Prueba')->firstOrFail();
 
-    $this->actingAs($direccion)
+    $this->actingAs($docenteLider)
         ->post(route('proyectos.guardar'), [
             'guia_integradora_id' => $guia->id,
             'equipo_id' => $equipo->id,
@@ -114,5 +121,125 @@ test('modulos base guardan informacion en base de datos', function () {
     $this->assertDatabaseHas('proyectos', [
         'equipo_id' => $equipo->id,
         'titulo' => 'Proyecto de Prueba',
+    ]);
+});
+
+test('coordinacion registra varios docentes en una sola operacion', function () {
+    Mail::fake();
+    $direccion = direccionAutenticada();
+    $carrera = Carrera::query()->create([
+        'nombre' => 'Tecnologías de la Información',
+        'clave' => 'TI-LOTE',
+        'estado' => 'activa',
+    ]);
+
+    $this->actingAs($direccion)->post(route('usuarios.docentes.guardar'), [
+        'docentes' => [
+            [
+                'nombre' => 'Docente Líder',
+                'matricula' => 'DOC-LOTE-1',
+                'correo' => 'lider-lote@example.test',
+                'rol' => 'docente_lider',
+                'carrera_id' => $carrera->id,
+            ],
+            [
+                'nombre' => 'Docente de Materia',
+                'matricula' => 'DOC-LOTE-2',
+                'correo' => 'materia-lote@example.test',
+                'rol' => 'docente_materia',
+                'carrera_id' => $carrera->id,
+            ],
+        ],
+    ])->assertRedirect(route('modulos.show', ['modulo' => 'usuarios', 'seccion' => 'docentes']));
+
+    $this->assertDatabaseHas('usuarios', ['matricula' => 'DOC-LOTE-1', 'carrera_id' => $carrera->id]);
+    $this->assertDatabaseHas('usuarios', ['matricula' => 'DOC-LOTE-2', 'carrera_id' => $carrera->id]);
+    Mail::assertSent(ContrasenaInicial::class, 2);
+});
+
+test('coordinacion consulta docentes lideres por carrera en la jerarquia', function () {
+    $coordinacion = direccionAutenticada();
+    $periodo = Periodo::query()->create([
+        'nombre' => 'Enero - Abril 2027',
+        'fecha_inicio' => '2027-01-08',
+        'fecha_fin' => '2027-04-20',
+        'estado' => 'activo',
+    ]);
+    $carrera = Carrera::query()->create([
+        'nombre' => 'Administración',
+        'clave' => 'ADM-JER',
+        'estado' => 'activa',
+    ]);
+    $rolLider = Role::query()->where('nombre', 'docente_lider')->firstOrFail();
+    $lider = User::factory()->create([
+        'rol_id' => $rolLider->id,
+        'carrera_id' => $carrera->id,
+        'nombre' => 'Docente Líder de Administración',
+    ]);
+    $lider->carrerasComoDocente()->attach($carrera->id, ['activo' => true]);
+    $asignaturaLider = Asignatura::query()->create([
+        'carrera_id' => $carrera->id,
+        'nombre' => 'Integradora',
+        'clave' => 'ADM-INT-04',
+        'grado' => 4,
+        'estado' => 'activo',
+    ]);
+    $lider->asignaturasComoDocente()->attach($asignaturaLider->id, ['periodo_id' => $periodo->id, 'activo' => true]);
+    GrupoAcademico::query()->create([
+        'periodo_id' => $periodo->id,
+        'carrera_id' => $carrera->id,
+        'nombre' => '4A',
+        'grado' => 4,
+        'grupo' => 'A',
+    ]);
+
+    $this->actingAs($coordinacion)
+        ->get(route('modulos.jerarquia', [
+            'periodo_id' => $periodo->id,
+            'carrera_id' => $carrera->id,
+        ]))
+        ->assertOk()
+        ->assertSee('Docente Líder de Administración');
+});
+
+test('coordinacion asigna docentes que califican cada apartado de la guia', function () {
+    $coordinacion = direccionAutenticada();
+    $periodo = Periodo::query()->create([
+        'nombre' => 'Mayo - Agosto 2027',
+        'fecha_inicio' => '2027-05-01',
+        'fecha_fin' => '2027-08-20',
+        'estado' => 'activo',
+    ]);
+    $carrera = Carrera::query()->create(['nombre' => 'Mecatrónica', 'clave' => 'MECA-CAL', 'estado' => 'activa']);
+    $asignatura = Asignatura::query()->create(['carrera_id' => $carrera->id, 'nombre' => 'Integradora', 'clave' => 'MECA-CAL-4', 'grado' => 4, 'estado' => 'activo']);
+    $guia = GuiaIntegradora::query()->create([
+        'periodo_id' => $periodo->id,
+        'asignatura_id' => $asignatura->id,
+        'creado_por' => $coordinacion->id,
+        'nombre' => 'Guía calificable',
+        'cuatrimestre' => 4,
+        'version' => '1.0',
+        'estado' => 'publicada',
+    ]);
+    $apartado = \App\Models\ApartadoGuia::query()->create([
+        'guia_integradora_id' => $guia->id,
+        'orden' => 1,
+        'titulo' => 'Planteamiento',
+        'ponderacion' => 20,
+    ]);
+    $rolDocente = Role::query()->where('nombre', 'docente_materia')->firstOrFail();
+    $docente = User::factory()->create(['rol_id' => $rolDocente->id, 'carrera_id' => $carrera->id]);
+
+    $this->actingAs($coordinacion)
+        ->post(route('guias.apartados.calificadores.guardar'), [
+            'apartado_guia_id' => $apartado->id,
+            'docente_id' => $docente->id,
+        ])
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('firmas_apartado_guia', [
+        'apartado_guia_id' => $apartado->id,
+        'docente_id' => $docente->id,
+        'requerida' => true,
     ]);
 });

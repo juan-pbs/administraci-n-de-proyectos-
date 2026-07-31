@@ -99,10 +99,17 @@ class ControladorCarrerasGrupos extends Controller
      */
     private function datos(Request $request): array
     {
+        $periodos = Periodo::query()->orderByDesc('fecha_inicio')->get(['id', 'nombre', 'estado']);
+        $periodoSeleccionado = $request->query('periodo_grupos')
+            ?: $periodos->firstWhere('estado', 'activo')?->id
+            ?: $periodos->first()?->id;
+        $carrerasBase = Carrera::query()->orderBy('nombre')->get(['id', 'nombre', 'clave', 'estado']);
+        $carreraSeleccionada = $request->query('carrera_grupos') ?: $carrerasBase->first()?->id;
+
         $filtros = [
             'busqueda' => trim((string) $request->query('busqueda_grupos', '')),
-            'carrera_id' => $request->query('carrera_grupos'),
-            'periodo_id' => $request->query('periodo_grupos'),
+            'carrera_id' => $carreraSeleccionada,
+            'periodo_id' => $periodoSeleccionado,
             'grado' => $request->query('grado_grupos'),
             'grupo' => $request->query('grupo_grupos'),
         ];
@@ -110,14 +117,16 @@ class ControladorCarrerasGrupos extends Controller
         $carreras = Carrera::query()
             ->with(['docentes:id,nombre,matricula', 'gruposAcademicos.periodo'])
             ->withCount([
-                'gruposAcademicos as grupos_count',
-                'usuarios as alumnos_count' => fn ($query) => $query->whereHas('role', fn ($role) => $role->where('nombre', 'estudiante')),
+                'gruposAcademicos as grupos_count' => fn ($query) => $query->where('periodo_id', $periodoSeleccionado),
+                'usuarios as alumnos_count' => fn ($query) => $query
+                    ->whereHas('role', fn ($role) => $role->where('nombre', 'estudiante'))
+                    ->whereHas('grupoAcademico', fn ($grupo) => $grupo->where('periodo_id', $periodoSeleccionado)),
             ])
             ->orderBy('nombre')
             ->get();
 
         $consultaGrupos = GrupoAcademico::query()
-            ->with(['carrera:id,nombre,clave', 'periodo:id,nombre,estado'])
+            ->with(['carrera:id,nombre,clave', 'periodo:id,nombre,estado', 'liderProyecto:id,nombre,matricula'])
             ->withCount([
                 'alumnos as alumnos_count' => fn ($query) => $query->whereHas('role', fn ($role) => $role->where('nombre', 'estudiante')),
                 'equipos as equipos_count',
@@ -137,13 +146,9 @@ class ControladorCarrerasGrupos extends Controller
             });
         }
 
-        if ($filtros['carrera_id']) {
-            $consultaGrupos->where('carrera_id', $filtros['carrera_id']);
-        }
-
-        if ($filtros['periodo_id']) {
-            $consultaGrupos->where('periodo_id', $filtros['periodo_id']);
-        }
+        $consultaGrupos
+            ->when($filtros['carrera_id'], fn ($query) => $query->where('carrera_id', $filtros['carrera_id']))
+            ->when($filtros['periodo_id'], fn ($query) => $query->where('periodo_id', $filtros['periodo_id']));
 
         if ($filtros['grado']) {
             $consultaGrupos->where('grado', $filtros['grado']);
@@ -156,9 +161,7 @@ class ControladorCarrerasGrupos extends Controller
         $gruposTabla = $consultaGrupos
             ->orderBy('grado')
             ->orderBy('grupo')
-            ->orderBy('carrera_id')
-            ->paginate(12, ['*'], 'pagina_grupos')
-            ->withQueryString();
+            ->get();
 
         $grupos = GrupoAcademico::query()
             ->with(['carrera:id,nombre,clave', 'periodo:id,nombre,estado'])
@@ -173,12 +176,12 @@ class ControladorCarrerasGrupos extends Controller
             'filtrosGrupos' => $filtros,
             'opcionesGrados' => $grupos->pluck('grado')->unique()->sort()->values(),
             'opcionesGrupos' => $grupos->pluck('grupo')->unique()->sort()->values(),
-            'periodos' => Periodo::query()->orderByDesc('fecha_inicio')->get(['id', 'nombre', 'estado']),
-            'docentes' => User::query()->whereHas('role', fn ($query) => $query->where('nombre', 'docente_asesor'))->orderBy('nombre')->get(['id', 'nombre', 'matricula', 'carrera_id']),
+            'periodos' => $periodos,
+            'docentes' => User::query()->whereHas('role', fn ($query) => $query->whereIn('nombre', ['docente_lider', 'docente_materia']))->orderBy('nombre')->get(['id', 'nombre', 'matricula', 'carrera_id']),
             'metricasCarreras' => [
                 ['label' => 'Carreras activas', 'value' => (string) $carreras->count()],
-                ['label' => 'Grupos registrados', 'value' => (string) $grupos->count()],
-                ['label' => 'Alumnos asignados', 'value' => (string) User::query()->whereHas('role', fn ($query) => $query->where('nombre', 'estudiante'))->whereNotNull('grupo_academico_id')->count()],
+                ['label' => 'Grupos en la carrera', 'value' => (string) $gruposTabla->count()],
+                ['label' => 'Alumnos en la carrera', 'value' => (string) $gruposTabla->sum('alumnos_count')],
                 ['label' => 'Docentes por carrera', 'value' => (string) $carreras->sum(fn ($carrera) => $carrera->docentes->count())],
             ],
         ];

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
 
 #[Fillable(['periodo_id', 'carrera_id', 'lider_proyecto_id', 'asignatura_lider_id', 'nombre', 'grado', 'grupo'])]
 class GrupoAcademico extends Model
@@ -59,5 +60,20 @@ class GrupoAcademico extends Model
     public function equipos(): HasMany
     {
         return $this->hasMany(Equipo::class, 'grupo_academico_id');
+    }
+
+    public function scopeConMateriaLiderDelDocente(Builder $query, int $docenteId): Builder
+    {
+        return $query
+            ->where('lider_proyecto_id', $docenteId)
+            ->whereNotNull('asignatura_lider_id')
+            ->whereExists(function ($asignacion) use ($docenteId): void {
+                $asignacion->selectRaw('1')
+                    ->from('docentes_asignatura')
+                    ->whereColumn('docentes_asignatura.asignatura_id', 'grupos_academicos.asignatura_lider_id')
+                    ->whereColumn('docentes_asignatura.periodo_id', 'grupos_academicos.periodo_id')
+                    ->where('docentes_asignatura.docente_id', $docenteId)
+                    ->where('docentes_asignatura.activo', true);
+            });
     }
 }

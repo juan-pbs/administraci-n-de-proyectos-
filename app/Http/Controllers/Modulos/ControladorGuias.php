@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Modulos\Soporte\AutorizaDireccion;
 use App\Models\ApartadoGuia;
 use App\Models\Asignatura;
+use App\Models\Carrera;
 use App\Models\FirmaApartadoGuia;
 use App\Models\GuiaIntegradora;
 use App\Models\Periodo;
@@ -14,6 +15,7 @@ use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class ControladorGuias extends Controller
 {
@@ -31,7 +33,7 @@ class ControladorGuias extends Controller
             'navegacion' => SistemaInterfaz::navegacionPara($rol),
             'pagina' => SistemaInterfaz::pagina('guias'),
             'roleName' => $usuario->role?->nombre_visible ?? 'Estudiante / Equipo',
-            ...$this->datos(),
+            ...$this->datos($request),
         ]);
     }
 
@@ -42,14 +44,27 @@ class ControladorGuias extends Controller
         $datos = $request->validate([
             'periodo_id' => ['required', 'exists:periodos,id'],
             'periodo_fin_id' => ['nullable', 'exists:periodos,id'],
-            'asignatura_id' => ['nullable', 'exists:asignaturas,id'],
+            'asignatura_id' => ['required', 'exists:asignaturas,id'],
             'nombre' => ['required', 'string', 'max:255'],
-            'cuatrimestre' => ['nullable', 'string', 'max:80'],
+            'cuatrimestre' => ['required', 'integer', 'between:1,12'],
             'competencias_evaluar' => ['nullable', 'string'],
             'objetivo_aprendizaje' => ['nullable', 'string'],
             'version' => ['required', 'string', 'max:30'],
             'estado' => ['required', 'string', 'max:30'],
         ]);
+
+        $asignatura = Asignatura::query()->findOrFail($datos['asignatura_id']);
+        $guiaDuplicada = GuiaIntegradora::query()
+            ->where('periodo_id', $datos['periodo_id'])
+            ->where('cuatrimestre', $datos['cuatrimestre'])
+            ->whereHas('asignatura', fn ($query) => $query->where('carrera_id', $asignatura->carrera_id))
+            ->exists();
+
+        if ($guiaDuplicada) {
+            throw ValidationException::withMessages([
+                'cuatrimestre' => 'Ya existe una guía para esta carrera, periodo y cuatrimestre. Esa guía se comparte con todos sus equipos.',
+            ]);
+        }
 
         GuiaIntegradora::query()->create([...$datos, 'creado_por' => $request->user()->id]);
 
@@ -139,36 +154,126 @@ class ControladorGuias extends Controller
         return redirect()->route('modulos.show', 'guias')->with('estado', 'Firma requerida guardada correctamente.');
     }
 
+    public function asignarDocenteCalificador(Request $request): RedirectResponse
+    {
+        $this->autorizarDireccion($request);
+
+        $datos = $request->validate([
+            'apartado_guia_id' => ['required', 'exists:apartados_guia,id'],
+            'docente_id' => ['required', 'exists:usuarios,id'],
+        ]);
+
+        $apartado = ApartadoGuia::query()
+            ->with('guiaIntegradora.asignatura:id,carrera_id')
+            ->findOrFail($datos['apartado_guia_id']);
+        $carreraId = $apartado->guiaIntegradora->asignatura?->carrera_id;
+        $docente = User::query()
+            ->whereKey($datos['docente_id'])
+            ->whereHas('role', fn ($query) => $query->whereIn('nombre', ['docente_lider', 'docente_materia']))
+            ->where(function ($query) use ($carreraId): void {
+                $query->where('carrera_id', $carreraId)
+                    ->orWhereHas('carrerasComoDocente', fn ($carreras) => $carreras
+                        ->where('carreras.id', $carreraId)
+                        ->where('docentes_carrera.activo', true));
+            })
+            ->firstOrFail();
+
+        if ($apartado->requiere_codigo && ! $docente->hasRole('docente_lider')) {
+            return back()->withErrors(['docente_id' => 'Los apartados de código solo pueden asignarse al docente líder.']);
+        }
+
+        FirmaApartadoGuia::query()->updateOrCreate(
+            ['apartado_guia_id' => $apartado->id, 'docente_id' => $docente->id],
+            [
+                'asignatura_id' => null,
+                'orden' => (int) FirmaApartadoGuia::query()->where('apartado_guia_id', $apartado->id)->max('orden') + 1,
+                'etiqueta' => 'Docente calificador',
+                'requerida' => true,
+            ],
+        );
+
+        return back()->with('estado', 'Docente asignado al apartado que calificará.');
+    }
+
+    public function quitarDocenteCalificador(Request $request): RedirectResponse
+    {
+        $this->autorizarDireccion($request);
+        $datos = $request->validate([
+            'apartado_guia_id' => ['required', 'exists:apartados_guia,id'],
+            'docente_id' => ['required', 'exists:usuarios,id'],
+        ]);
+
+        FirmaApartadoGuia::query()
+            ->where('apartado_guia_id', $datos['apartado_guia_id'])
+            ->where('docente_id', $datos['docente_id'])
+            ->delete();
+
+        return back()->with('estado', 'Docente retirado del apartado.');
+    }
+
     /**
      * @return array<string, mixed>
      */
-    private function datos(): array
+    private function datos(Request $request): array
     {
+        $periodos = Periodo::query()->orderByDesc('fecha_inicio')->get(['id', 'nombre', 'estado']);
+        $carreras = Carrera::query()->where('estado', 'activa')->orderBy('nombre')->get(['id', 'nombre', 'clave']);
+        $periodoSeleccionado = $request->query('periodo_guias')
+            ?: $periodos->firstWhere('estado', 'activo')?->id
+            ?: $periodos->first()?->id;
+        $carreraSeleccionada = $request->query('carrera_guias') ?: $carreras->first()?->id;
+        $filtros = [
+            'periodo_id' => $periodoSeleccionado,
+            'carrera_id' => $carreraSeleccionada,
+            'estado' => $request->query('estado_guias'),
+            'busqueda' => trim((string) $request->query('busqueda_guias', '')),
+        ];
+
         $guias = GuiaIntegradora::query()
             ->with([
                 'periodo:id,nombre',
                 'periodoFin:id,nombre',
-                'asignatura:id,nombre,clave',
+                'asignatura:id,carrera_id,nombre,clave',
                 'apartados.asignaturasContribuyentes:id,nombre,clave',
                 'apartados.firmas.asignatura:id,nombre,clave',
                 'apartados.firmas.docente:id,nombre,matricula',
             ])
             ->withCount(['apartados as apartados_count'])
+            ->when($filtros['periodo_id'], fn ($query) => $query->where('periodo_id', $filtros['periodo_id']))
+            ->when($filtros['carrera_id'], fn ($query) => $query->whereHas('asignatura', fn ($asignatura) => $asignatura->where('carrera_id', $filtros['carrera_id'])))
+            ->when($filtros['estado'], fn ($query) => $query->where('estado', $filtros['estado']))
+            ->when($filtros['busqueda'] !== '', function ($query) use ($filtros) {
+                $busqueda = $filtros['busqueda'];
+                $query->where(fn ($scope) => $scope
+                    ->where('nombre', 'like', "%{$busqueda}%")
+                    ->orWhere('version', 'like', "%{$busqueda}%")
+                    ->orWhere('cuatrimestre', 'like', "%{$busqueda}%")
+                    ->orWhereHas('asignatura', fn ($asignatura) => $asignatura
+                        ->where('nombre', 'like', "%{$busqueda}%")
+                        ->orWhere('clave', 'like', "%{$busqueda}%")));
+            })
             ->orderByDesc('creado_en')
             ->get();
 
         $apartados = ApartadoGuia::query()
             ->with('guiaIntegradora:id,nombre,version')
+            ->whereIn('guia_integradora_id', $guias->pluck('id'))
             ->orderBy('guia_integradora_id')
             ->orderBy('orden')
             ->get(['id', 'guia_integradora_id', 'orden', 'titulo']);
 
         return [
             'guias' => $guias,
-            'periodos' => Periodo::query()->orderByDesc('fecha_inicio')->get(['id', 'nombre', 'estado']),
+            'periodos' => $periodos,
+            'carreras' => $carreras,
+            'filtrosGuias' => $filtros,
             'asignaturas' => Asignatura::query()->with('carrera:id,clave')->orderBy('nombre')->get(['id', 'carrera_id', 'nombre', 'clave']),
             'apartados' => $apartados,
-            'docentes' => User::query()->whereHas('role', fn ($query) => $query->where('nombre', 'docente_asesor'))->orderBy('nombre')->get(['id', 'nombre', 'matricula']),
+            'docentes' => User::query()
+                ->with(['role:id,nombre,nombre_visible', 'carrerasComoDocente:id'])
+                ->whereHas('role', fn ($query) => $query->whereIn('nombre', ['docente_lider', 'docente_materia']))
+                ->orderBy('nombre')
+                ->get(['id', 'carrera_id', 'nombre', 'matricula', 'rol_id']),
             'metricasGuias' => [
                 ['label' => 'Guías', 'value' => (string) $guias->count()],
                 ['label' => 'Publicadas', 'value' => (string) $guias->where('estado', 'publicada')->count()],

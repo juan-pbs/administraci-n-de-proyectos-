@@ -67,6 +67,14 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Asignatura::class, 'docentes_asignatura', 'docente_id', 'asignatura_id')
             ->wherePivot('activo', true)
+            ->withPivot(['periodo_id', 'activo'])
+            ->withTimestamps('creado_en', 'actualizado_en');
+    }
+
+    public function equiposComoIntegrante(): BelongsToMany
+    {
+        return $this->belongsToMany(Equipo::class, 'integrantes_equipo', 'estudiante_id', 'equipo_id')
+            ->wherePivot('activo', true)
             ->withPivot(['activo'])
             ->withTimestamps('creado_en', 'actualizado_en');
     }

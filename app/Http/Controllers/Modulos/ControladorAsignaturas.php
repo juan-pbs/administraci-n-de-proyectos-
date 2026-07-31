@@ -6,12 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Modulos\Soporte\AutorizaDireccion;
 use App\Models\Asignatura;
 use App\Models\Carrera;
-use App\Models\EncargoProyecto;
+use App\Models\Periodo;
 use App\Models\User;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ControladorAsignaturas extends Controller
 {
@@ -29,24 +30,20 @@ class ControladorAsignaturas extends Controller
             'navegacion' => SistemaInterfaz::navegacionPara($rol),
             'pagina' => SistemaInterfaz::pagina('asignaturas'),
             'roleName' => $usuario->role?->nombre_visible ?? 'Estudiante / Equipo',
-            ...$this->datos($usuario),
+            ...$this->datos($request),
         ]);
     }
 
     public function guardar(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'encargado_proyectos'), 403);
+        abort_unless($request->user()?->hasRole('coordinacion'), 403);
 
         $datos = $request->validate([
             'carrera_id' => ['required', 'exists:carreras,id'],
             'nombre' => ['required', 'string', 'max:255'],
             'clave' => ['nullable', 'string', 'max:50', 'unique:asignaturas,clave'],
-            'grado' => ['nullable', 'integer', 'min:1', 'max:12'],
+            'grado' => ['required', 'integer', 'min:1', 'max:12'],
         ]);
-
-        if ($request->user()->hasRole('encargado_proyectos')) {
-            abort_unless($datos['grado'] && $this->tieneEncargo($request->user(), (int) $datos['carrera_id'], (int) $datos['grado']), 403);
-        }
 
         Asignatura::query()->create([...$datos, 'estado' => 'activo']);
 
@@ -55,44 +52,49 @@ class ControladorAsignaturas extends Controller
 
     public function asignarDocente(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'encargado_proyectos'), 403);
+        abort_unless($request->user()?->hasRole('coordinacion'), 403);
 
         $datos = $request->validate([
             'asignatura_id' => ['required', 'exists:asignaturas,id'],
             'docente_id' => ['required', 'exists:usuarios,id'],
+            'periodo_id' => ['required', 'exists:periodos,id'],
         ]);
 
         $docente = User::query()
             ->whereKey($datos['docente_id'])
-            ->whereHas('role', fn ($query) => $query->whereIn('nombre', ['lider_proyecto', 'docente_materia', 'docente_asesor']))
+            ->whereHas('role', fn ($query) => $query->whereIn('nombre', ['docente_lider', 'docente_materia']))
             ->firstOrFail();
 
         $asignatura = Asignatura::query()->findOrFail($datos['asignatura_id']);
-        $this->autorizarAsignatura($request, $asignatura);
+        abort_unless((int) $docente->carrera_id === (int) $asignatura->carrera_id, 422);
 
-        $asignatura->docentes()->syncWithoutDetaching([
-            $docente->id => ['activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
-        ]);
+        DB::table('docentes_asignatura')->updateOrInsert(
+            [
+                'periodo_id' => $datos['periodo_id'],
+                'asignatura_id' => $asignatura->id,
+                'docente_id' => $docente->id,
+            ],
+            ['activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
+        );
 
         return redirect()->route('modulos.show', 'asignaturas')->with('estado', 'Docente vinculado a la asignatura correctamente.');
     }
 
     public function quitarDocente(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->hasAnyRole('direccion_coordinacion', 'encargado_proyectos'), 403);
+        abort_unless($request->user()?->hasRole('coordinacion'), 403);
 
         $datos = $request->validate([
             'asignatura_id' => ['required', 'exists:asignaturas,id'],
             'docente_id' => ['required', 'exists:usuarios,id'],
+            'periodo_id' => ['required', 'exists:periodos,id'],
         ]);
 
-        $asignatura = Asignatura::query()->findOrFail($datos['asignatura_id']);
-        $this->autorizarAsignatura($request, $asignatura);
-
-        $asignatura->docentes()->updateExistingPivot($datos['docente_id'], [
-            'activo' => false,
-            'actualizado_en' => now(),
-        ]);
+        DB::table('docentes_asignatura')
+            ->where('periodo_id', $datos['periodo_id'])
+            ->where('asignatura_id', $datos['asignatura_id'])
+            ->where('docente_id', $datos['docente_id'])
+            ->update(['activo' => false, 'actualizado_en' => now()]);
 
         return redirect()->route('modulos.show', 'asignaturas')->with('estado', 'Docente retirado de la asignatura correctamente.');
     }
@@ -100,52 +102,66 @@ class ControladorAsignaturas extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function datos(User $usuario): array
+    private function datos(Request $request): array
     {
+        $periodos = Periodo::query()->orderByDesc('fecha_inicio')->get(['id', 'nombre', 'estado']);
+        $carreras = Carrera::query()->orderBy('nombre')->get(['id', 'nombre', 'clave']);
+        $periodoSeleccionado = $request->query('periodo_asignaturas')
+            ?: $periodos->firstWhere('estado', 'activo')?->id
+            ?: $periodos->first()?->id;
+        $carreraSeleccionada = $request->query('carrera_asignaturas') ?: $carreras->first()?->id;
+        $gradoSeleccionado = $request->query('grado_asignaturas') ?: Asignatura::query()
+            ->where('carrera_id', $carreraSeleccionada)->orderBy('grado')->value('grado');
+        $busqueda = trim((string) $request->query('busqueda_asignaturas', ''));
+
         $asignaturas = Asignatura::query()
-            ->with(['carrera:id,nombre,clave', 'docentes:id,nombre,matricula,carrera_id'])
-            ->when($usuario->hasRole('encargado_proyectos'), fn ($query) => $query->whereExists(function ($subquery) use ($usuario) {
-                $subquery->selectRaw('1')
-                    ->from('encargos_proyecto')
-                    ->whereColumn('encargos_proyecto.carrera_id', 'asignaturas.carrera_id')
-                    ->whereColumn('encargos_proyecto.cuatrimestre', 'asignaturas.grado')
-                    ->where('encargos_proyecto.encargado_id', $usuario->id)
-                    ->where('encargos_proyecto.activo', true);
-            }))
+            ->with('carrera:id,nombre,clave')
+            ->where('carrera_id', $carreraSeleccionada)
+            ->when($gradoSeleccionado, fn ($query) => $query->where('grado', $gradoSeleccionado))
+            ->when($busqueda !== '', fn ($query) => $query->where(fn ($scope) => $scope
+                ->where('nombre', 'like', "%{$busqueda}%")
+                ->orWhere('clave', 'like', "%{$busqueda}%")))
             ->orderBy('nombre')
             ->get();
         $docentes = User::query()
-            ->with('carrera:id,nombre,clave')
-            ->whereHas('role', fn ($query) => $query->whereIn('nombre', ['lider_proyecto', 'docente_materia', 'docente_asesor']))
+            ->with(['carrera:id,nombre,clave', 'role:id,nombre,nombre_visible'])
+            ->whereHas('role', fn ($query) => $query->whereIn('nombre', ['docente_lider', 'docente_materia']))
+            ->where('carrera_id', $carreraSeleccionada)
             ->orderBy('nombre')
-            ->get(['id', 'nombre', 'matricula', 'carrera_id']);
+            ->get(['id', 'nombre', 'matricula', 'carrera_id', 'rol_id']);
+        $asignaciones = DB::table('docentes_asignatura')
+            ->join('usuarios', 'usuarios.id', '=', 'docentes_asignatura.docente_id')
+            ->where('docentes_asignatura.periodo_id', $periodoSeleccionado)
+            ->where('docentes_asignatura.activo', true)
+            ->whereIn('docentes_asignatura.asignatura_id', $asignaturas->pluck('id'))
+            ->get([
+                'docentes_asignatura.asignatura_id',
+                'docentes_asignatura.docente_id',
+                'usuarios.nombre',
+                'usuarios.matricula',
+            ])
+            ->groupBy('asignatura_id');
+        $grados = Asignatura::query()->where('carrera_id', $carreraSeleccionada)->whereNotNull('grado')->distinct()->orderBy('grado')->pluck('grado');
 
         return [
             'asignaturas' => $asignaturas,
-            'carreras' => Carrera::query()->orderBy('nombre')->get(['id', 'nombre', 'clave']),
+            'carreras' => $carreras,
+            'periodos' => $periodos,
             'docentes' => $docentes,
+            'asignaciones' => $asignaciones,
+            'grados' => $grados,
+            'filtrosAsignaturas' => [
+                'periodo_id' => $periodoSeleccionado,
+                'carrera_id' => $carreraSeleccionada,
+                'grado' => $gradoSeleccionado,
+                'busqueda' => $busqueda,
+            ],
             'metricasAsignaturas' => [
                 ['label' => 'Asignaturas', 'value' => (string) $asignaturas->count()],
-                ['label' => 'Carreras vinculadas', 'value' => (string) $asignaturas->pluck('carrera_id')->filter()->unique()->count()],
-                ['label' => 'Docentes vinculados', 'value' => (string) $asignaturas->sum(fn (Asignatura $asignatura) => $asignatura->docentes->count())],
+                ['label' => 'Cuatrimestre', 'value' => (string) ($gradoSeleccionado ?: '-')],
+                ['label' => 'Docentes asignados', 'value' => (string) $asignaciones->flatten(1)->count()],
             ],
         ];
     }
 
-    private function autorizarAsignatura(Request $request, Asignatura $asignatura): void
-    {
-        if ($request->user()->hasRole('encargado_proyectos')) {
-            abort_unless($asignatura->grado !== null && $asignatura->carrera_id !== null && $this->tieneEncargo($request->user(), (int) $asignatura->carrera_id, (int) $asignatura->grado), 403);
-        }
-    }
-
-    private function tieneEncargo(User $usuario, int $carreraId, int $grado): bool
-    {
-        return EncargoProyecto::query()
-            ->where('encargado_id', $usuario->id)
-            ->where('carrera_id', $carreraId)
-            ->where('cuatrimestre', $grado)
-            ->where('activo', true)
-            ->exists();
-    }
 }

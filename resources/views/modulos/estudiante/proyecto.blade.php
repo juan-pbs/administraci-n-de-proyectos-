@@ -1,0 +1,16 @@
+<x-contenedor-aplicacion title="Mi proyecto | Administración de proyectos" active="mi-proyecto" :navegacion="$navegacion" :role-name="$roleName">
+    <section class="border-b border-slate-200 pb-5"><p class="text-sm font-semibold uppercase tracking-[.18em] text-[#21A366]">Espacio del equipo</p><h2 class="mt-3 text-2xl font-bold text-[#0D376D]">Mi proyecto</h2><p class="mt-2 text-sm text-slate-600">Información académica, integrantes y docentes relacionados con tu proyecto integrador.</p></section>
+    @if($equipo && $proyecto)
+        <section class="mt-5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div class="border-b-4 border-[#155AA3] px-5 py-5"><p class="text-xs font-bold uppercase text-[#21A366]">{{ $equipo->grupoAcademico?->carrera?->clave }} · Grupo {{ $equipo->grupoAcademico?->grado }}{{ $equipo->grupoAcademico?->grupo }}</p><div class="mt-2 flex flex-col gap-2 md:flex-row md:items-center md:justify-between"><div><h3 class="text-xl font-extrabold text-[#0D376D]">{{ $equipo->nombre }}</h3><p class="mt-1 font-semibold text-slate-800">{{ $proyecto->titulo }}</p></div><span class="w-fit rounded-full bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">{{ ucfirst(str_replace('_', ' ', $proyecto->estado)) }}</span></div>@if($proyecto->descripcion)<p class="mt-4 max-w-4xl text-sm leading-6 text-slate-600">{{ $proyecto->descripcion }}</p>@endif</div>
+            <div class="grid gap-0 divide-y divide-slate-200 lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+                <div class="p-5"><p class="text-xs font-bold uppercase text-slate-500">Docente líder</p><p class="mt-2 font-bold text-slate-800">{{ $equipo->grupoAcademico?->liderProyecto?->nombre ?? 'Sin asignar' }}</p><p class="mt-1 text-sm text-slate-500">{{ $equipo->grupoAcademico?->liderProyecto?->correo }}</p></div>
+                <div class="p-5"><p class="text-xs font-bold uppercase text-slate-500">Guía integradora</p><p class="mt-2 font-bold text-slate-800">{{ $proyecto->guiaIntegradora?->nombre }}</p><p class="mt-1 text-sm text-slate-500">{{ $proyecto->guiaIntegradora?->apartados?->count() }} apartados</p></div>
+                <div class="p-5"><p class="text-xs font-bold uppercase text-slate-500">Equipo</p><p class="mt-2 font-bold text-slate-800">{{ $equipo->integrantes->count() }} integrantes</p><p class="mt-1 text-sm text-slate-500">Número {{ $equipo->numero }}</p></div>
+            </div>
+        </section>
+        <section class="mt-5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"><div class="border-b border-slate-200 px-5 py-4"><h3 class="font-bold text-slate-900">Integrantes</h3></div><div class="divide-y divide-slate-200">@foreach($equipo->integrantes as $integrante)<div class="flex items-center justify-between gap-4 px-5 py-3"><p class="font-semibold text-slate-800">{{ $integrante->nombre }}</p><p class="text-sm text-slate-500">{{ $integrante->matricula }}</p></div>@endforeach</div></section>
+    @else
+        <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-5 py-10 text-center"><p class="font-bold text-amber-800">Todavía no tienes un equipo y proyecto asignados.</p><p class="mt-2 text-sm text-amber-700">El docente líder realizará esta asignación.</p></div>
+    @endif
+</x-contenedor-aplicacion>

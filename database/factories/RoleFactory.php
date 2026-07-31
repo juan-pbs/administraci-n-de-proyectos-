@@ -18,8 +18,9 @@ class RoleFactory extends Factory
     public function definition(): array
     {
         $name = fake()->randomElement([
-            'direccion_coordinacion',
-            'docente_asesor',
+            'coordinacion',
+            'docente_lider',
+            'docente_materia',
             'estudiante',
         ]).'-'.fake()->unique()->numberBetween(100, 999);
 

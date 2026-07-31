@@ -10,8 +10,9 @@ uses(RefreshDatabase::class);
 
 function usuarioConRol(string $rol): User
 {
-    $rolModelo = Role::query()->create([
+    $rolModelo = Role::query()->firstOrCreate([
         'nombre' => $rol,
+    ], [
         'nombre_visible' => str($rol)->replace('_', ' ')->title()->toString(),
         'descripcion' => 'Rol de prueba',
     ]);
@@ -22,7 +23,7 @@ function usuarioConRol(string $rol): User
 }
 
 test('direccion puede abrir carreras y grupos', function () {
-    $usuario = usuarioConRol('direccion_coordinacion');
+    $usuario = usuarioConRol('coordinacion');
 
     $this->actingAs($usuario)
         ->get('/modulos/carreras-grupos')
@@ -31,8 +32,8 @@ test('direccion puede abrir carreras y grupos', function () {
 });
 
 test('direccion puede registrar carrera grupo y docente por carrera', function () {
-    $direccion = usuarioConRol('direccion_coordinacion');
-    $docente = usuarioConRol('docente_asesor');
+    $direccion = usuarioConRol('coordinacion');
+    $docente = usuarioConRol('docente_lider');
 
     $periodo = Periodo::query()->create([
         'nombre' => 'Mayo - Agosto 2026',

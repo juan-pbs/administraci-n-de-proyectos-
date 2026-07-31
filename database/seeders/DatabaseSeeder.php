@@ -47,11 +47,9 @@ class DatabaseSeeder extends Seeder
     private function crearRoles(): array
     {
         $roles = [
-            'direccion_coordinacion' => ['Dirección / Coordinación', 'Administra usuarios, periodos, grupos, carga de alumnos, guías integradoras y seguimiento general.'],
-            'encargado_proyectos' => ['Encargado de proyectos', 'Administra una carrera por periodo y cuatrimestre; asigna líderes, grupos, docentes y materias evaluadoras.'],
-            'lider_proyecto' => ['Líder de proyecto', 'Docente de la materia líder; carga alumnos, organiza equipos y define el contexto del proyecto.'],
+            'coordinacion' => ['Coordinación', 'Administra usuarios, periodos, carreras, grupos, jerarquías, asignaturas, guías y proyectos.'],
+            'docente_lider' => ['Docente líder', 'Organiza alumnos y equipos, define el contexto del proyecto y revisa entregas.'],
             'docente_materia' => ['Docente de materia', 'Revisa y califica la parte del proyecto asignada a su materia.'],
-            'docente_asesor' => ['Docente / Asesor (anterior)', 'Rol conservado para compatibilidad con datos anteriores.'],
             'estudiante' => ['Alumno', 'Trabaja con su equipo y sube entregas, evidencias y productos del proyecto.'],
         ];
 
@@ -147,7 +145,7 @@ class DatabaseSeeder extends Seeder
             [
                 'nombre' => 'Dirección Coordinación UTVM',
                 'correo' => 'coordinacion@utvm.edu.mx',
-                'rol_id' => $roles['direccion_coordinacion']->id,
+                'rol_id' => $roles['coordinacion']->id,
                 'carrera_id' => null,
                 'grupo_academico_id' => null,
                 'estado' => 'activo',
@@ -157,7 +155,7 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        $docentesPorCarrera = $this->crearDocentes($roles['docente_asesor'], $carreras);
+        $docentesPorCarrera = $this->crearDocentes($roles['docente_lider'], $carreras);
         $alumnos = $this->crearAlumnos($roles['estudiante'], $carreras, $grupos);
 
         return [
