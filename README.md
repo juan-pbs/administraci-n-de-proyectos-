@@ -333,14 +333,4 @@ Regenerar la base de datos:
 php artisan migrate:fresh --seed
 ```
 
-## Validación
 
-La última revisión integral incluyó:
-
-- 27 pruebas automatizadas.
-- 104 aserciones.
-- Compilación correcta con Vite.
-- 61 rutas de aplicación registradas.
-- Migraciones ejecutadas desde una base limpia.
-- Revisión de acceso y autorización para los cuatro roles.
-- Validación de entregas colaborativas, revisión docente y productos de código.
