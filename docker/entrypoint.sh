@@ -1,6 +1,16 @@
 #!/usr/bin/env sh
 set -eu
 
+if [ -z "${APP_KEY:-}" ] && [ -f .env ]; then
+    APP_KEY="$(grep '^APP_KEY=' .env 2>/dev/null | cut -d= -f2- || true)"
+    export APP_KEY
+fi
+
+if [ -z "${APP_KEY:-}" ]; then
+    APP_KEY="$(php -r "echo 'base64:'.base64_encode(random_bytes(32));")"
+    export APP_KEY
+fi
+
 cat > .env <<EOF
 APP_NAME="${APP_NAME:-Laravel}"
 APP_ENV=${APP_ENV:-local}
@@ -23,16 +33,19 @@ SESSION_DRIVER=${SESSION_DRIVER:-database}
 CACHE_STORE=${CACHE_STORE:-database}
 QUEUE_CONNECTION=${QUEUE_CONNECTION:-database}
 MAIL_MAILER=${MAIL_MAILER:-log}
+FILESYSTEM_DISK=${FILESYSTEM_DISK:-local}
+VITE_APP_NAME="${APP_NAME:-Laravel}"
 EOF
 
 if [ "${DB_CONNECTION:-sqlite}" = "mysql" ] || [ "${DB_CONNECTION:-sqlite}" = "mariadb" ]; then
     echo "Waiting for database at ${DB_HOST}:${DB_PORT:-3306}..."
-    until php -r "new PDO('mysql:host=${DB_HOST};port=${DB_PORT:-3306};dbname=${DB_DATABASE}', '${DB_USERNAME}', '${DB_PASSWORD}');" >/dev/null 2>&1; do
+    until php -r "new PDO('mysql:host='.getenv('DB_HOST').';port='.(getenv('DB_PORT') ?: '3306').';dbname='.getenv('DB_DATABASE'), getenv('DB_USERNAME'), getenv('DB_PASSWORD'));" >/dev/null 2>&1; do
         sleep 2
     done
 fi
 
 php artisan migrate --force
+php artisan storage:link >/dev/null 2>&1 || true
 
 if [ "${AUTO_SEED:-false}" = "true" ]; then
     SHOULD_SEED="$(php -r "require 'vendor/autoload.php'; \$app = require 'bootstrap/app.php'; \$app->make(Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap(); echo Illuminate\\Support\\Facades\\DB::table('usuarios')->count() === 0 ? 'yes' : 'no';")"

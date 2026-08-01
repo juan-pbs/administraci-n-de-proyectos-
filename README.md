@@ -136,18 +136,22 @@ El repositorio también incluye plantillas históricas en `public/plantillas/`.
 
 ## Requisitos
 
-- PHP 8.4.1 o superior.
-- Composer.
-- Node.js y npm.
-- MariaDB o MySQL.
-- Extensiones de PHP requeridas por Laravel y PhpSpreadsheet.
-- Un servidor compatible con Laravel, como Herd, Laragon o `php artisan serve`.
+- Docker Engine o Docker Desktop con Docker Compose.
+
+No se necesita instalar PHP, Composer, Node.js, npm, Python, MariaDB ni MySQL en la máquina local.
 
 ## Ejecución con Docker
 
-Si se usa Docker, no es necesario instalar PHP, Composer, Node.js ni MariaDB en la máquina local. El contenedor construye las dependencias, compila los recursos de Vite, levanta MariaDB, ejecuta las migraciones y carga los datos demostrativos cuando la base está vacía.
+El proyecto está preparado para levantarse completo con Docker. El build instala dependencias de Composer, compila los recursos de Vite, levanta MariaDB, ejecuta las migraciones y carga datos demostrativos cuando la base está vacía.
 
-Construir y levantar el sistema:
+Clonar y entrar al proyecto:
+
+```bash
+git clone https://github.com/juan-pbs/administraci-n-de-proyectos-.git
+cd administraci-n-de-proyectos-
+```
+
+Construir y levantar todo:
 
 ```bash
 docker compose up -d --build
@@ -158,6 +162,8 @@ Abrir el sistema:
 ```text
 http://localhost:8000/login
 ```
+
+No es obligatorio crear un archivo `.env`. Si se necesita cambiar puertos o variables, se puede copiar `.env.example` a `.env` y ajustar los valores. El archivo `.env` real no debe subirse al repositorio.
 
 Credenciales demostrativas:
 
@@ -202,63 +208,6 @@ docker compose down -v
 - Laravel DOMPDF.
 - PHPWord.
 - Pest 4.
-
-## Instalación
-
-```bash
-git clone https://github.com/juan-pbs/administraci-n-de-proyectos-.git
-cd administraci-n-de-proyectos-
-composer install
-npm install
-```
-
-Crear el archivo de entorno y la clave:
-
-```bash
-copy .env.example .env
-php artisan key:generate
-```
-
-Configurar la conexión en `.env`:
-
-```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=administracion_proyectos
-DB_USERNAME=root
-DB_PASSWORD=
-```
-
-Preparar la base de datos y los datos demostrativos:
-
-```bash
-php artisan migrate:fresh --seed
-```
-
-Compilar los recursos:
-
-```bash
-npm run build
-```
-
-Iniciar el sistema:
-
-```bash
-php artisan serve
-```
-
-La pantalla de acceso estará disponible en:
-
-```text
-http://127.0.0.1:8000/login
-```
-
-También puede utilizarse el instalador automatizado:
-
-```bash
-composer run setup
-```
 
 ## Usuarios demostrativos
 
@@ -346,38 +295,21 @@ tests/
 
 ## Comandos útiles
 
-Ejecutar pruebas:
+Ejecutar pruebas dentro de Docker:
 
 ```bash
-php artisan test
+docker compose run --rm test
 ```
 
-Comprobar el estilo de PHP:
+Ver logs del contenedor principal:
 
 ```bash
-vendor/bin/pint --test
+docker compose logs -f app
 ```
 
-Compilar estilos y scripts:
+Reiniciar desde cero:
 
 ```bash
-npm run build
-```
-
-Ejecutar servidor, cola y Vite:
-
-```bash
-composer run dev
-```
-
-Limpiar cachés:
-
-```bash
-php artisan optimize:clear
-```
-
-Regenerar la base de datos:
-
-```bash
-php artisan migrate:fresh --seed
+docker compose down -v
+docker compose up -d --build
 ```

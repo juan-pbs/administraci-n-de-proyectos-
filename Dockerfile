@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:25-bookworm AS assets
+FROM node:24-bookworm-slim AS assets
 
 WORKDIR /app
 
@@ -54,6 +54,7 @@ FROM php-base AS app
 COPY --from=vendor /var/www/html/vendor ./vendor
 COPY --from=assets /app/public/build ./public/build
 COPY . .
+COPY docker/php.ini /usr/local/etc/php/conf.d/app.ini
 COPY docker/entrypoint.sh /usr/local/bin/docker-entrypoint
 
 RUN chmod +x /usr/local/bin/docker-entrypoint \

@@ -4,33 +4,34 @@ services:
       context: .
       target: app
     ports:
-      - "8000:8000"
+      - "${APP_PORT:-8000}:8000"
     environment:
-      APP_NAME: "Administracion de proyectos"
-      APP_ENV: local
-      APP_KEY: "base64:EIlLmssmfeGuD3BC/tH1VTkwMpGfdpVqfjMeUbDQpCI="
-      APP_DEBUG: "true"
-      APP_URL: "http://localhost:8000"
-      APP_LOCALE: es
-      APP_FALLBACK_LOCALE: es
-      APP_FAKER_LOCALE: es_MX
-      BCRYPT_ROUNDS: 4
-      LOG_CHANNEL: stack
-      LOG_STACK: single
-      DB_CONNECTION: mysql
-      DB_HOST: db
-      DB_PORT: 3306
-      DB_DATABASE: administracion_proyectos
-      DB_USERNAME: laravel
-      DB_PASSWORD: laravel
-      SESSION_DRIVER: database
-      CACHE_STORE: database
-      QUEUE_CONNECTION: database
-      MAIL_MAILER: log
-      AUTO_SEED: "true"
+      APP_NAME: "${APP_NAME:-Administracion de proyectos}"
+      APP_ENV: "${APP_ENV:-local}"
+      APP_KEY: "${APP_KEY:-}"
+      APP_DEBUG: "${APP_DEBUG:-true}"
+      APP_URL: "${APP_URL:-http://localhost:8000}"
+      APP_LOCALE: "${APP_LOCALE:-es}"
+      APP_FALLBACK_LOCALE: "${APP_FALLBACK_LOCALE:-es}"
+      APP_FAKER_LOCALE: "${APP_FAKER_LOCALE:-es_MX}"
+      BCRYPT_ROUNDS: "${BCRYPT_ROUNDS:-4}"
+      LOG_CHANNEL: "${LOG_CHANNEL:-stack}"
+      LOG_STACK: "${LOG_STACK:-single}"
+      DB_CONNECTION: "${DB_CONNECTION:-mysql}"
+      DB_HOST: "${DB_HOST:-db}"
+      DB_PORT: "${DB_PORT:-3306}"
+      DB_DATABASE: "${DB_DATABASE:-administracion_proyectos}"
+      DB_USERNAME: "${DB_USERNAME:-laravel}"
+      DB_PASSWORD: "${DB_PASSWORD:-laravel}"
+      SESSION_DRIVER: "${SESSION_DRIVER:-database}"
+      CACHE_STORE: "${CACHE_STORE:-database}"
+      QUEUE_CONNECTION: "${QUEUE_CONNECTION:-database}"
+      MAIL_MAILER: "${MAIL_MAILER:-log}"
+      AUTO_SEED: "${AUTO_SEED:-true}"
     depends_on:
       db:
         condition: service_healthy
+    restart: unless-stopped
 
   test:
     build:
@@ -39,13 +40,13 @@ services:
     profiles:
       - test
     environment:
-      APP_NAME: "Administracion de proyectos"
+      APP_NAME: "${APP_NAME:-Administracion de proyectos}"
       APP_ENV: testing
-      APP_KEY: "base64:EIlLmssmfeGuD3BC/tH1VTkwMpGfdpVqfjMeUbDQpCI="
+      APP_KEY: "${APP_KEY:-}"
       APP_DEBUG: "true"
-      APP_LOCALE: es
-      APP_FALLBACK_LOCALE: es
-      APP_FAKER_LOCALE: es_MX
+      APP_LOCALE: "${APP_LOCALE:-es}"
+      APP_FALLBACK_LOCALE: "${APP_FALLBACK_LOCALE:-es}"
+      APP_FAKER_LOCALE: "${APP_FAKER_LOCALE:-es_MX}"
       BCRYPT_ROUNDS: 4
       CACHE_STORE: array
       DB_CONNECTION: sqlite
@@ -56,14 +57,14 @@ services:
     command: ["php", "artisan", "test"]
 
   db:
-    image: mariadb:11.8
+    image: mariadb:11.8-noble
     ports:
-      - "3307:3306"
+      - "${DB_FORWARD_PORT:-3307}:3306"
     environment:
-      MARIADB_DATABASE: administracion_proyectos
-      MARIADB_USER: laravel
-      MARIADB_PASSWORD: laravel
-      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: "${DB_DATABASE:-administracion_proyectos}"
+      MARIADB_USER: "${DB_USERNAME:-laravel}"
+      MARIADB_PASSWORD: "${DB_PASSWORD:-laravel}"
+      MARIADB_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-root}"
     volumes:
       - mariadb-data:/var/lib/mysql
     healthcheck:
@@ -71,6 +72,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
 volumes:
   mariadb-data:
