@@ -13,6 +13,7 @@ El repositorio contiene una versión funcional con:
 - Carga masiva de alumnos mediante varias listas de Excel.
 - Conservación de docentes entre periodos, sin heredar sus asignaturas.
 - Gestión de carreras, grupos, asignaturas y materias líderes.
+- Datos demostrativos ligeros para validar los flujos principales sin llenar la base innecesariamente.
 - Configuración de guías integradoras por cuatrimestre.
 - Creación de equipos únicamente con alumnos libres del mismo grupo.
 - Creación y asignación de proyectos por el docente líder.
@@ -286,8 +287,8 @@ Otros docentes:
 
 ```text
 DOC-TI-01
-DOC-MECA-01
-DOC-ADM-01
+DOC-TI-02
+DOC-TI-04
 ```
 
 Estudiante:

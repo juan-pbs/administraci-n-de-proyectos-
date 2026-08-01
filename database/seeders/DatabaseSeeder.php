@@ -37,7 +37,7 @@ class DatabaseSeeder extends Seeder
         $asignaturas = $this->crearAsignaturas($carreras);
         $this->asignarDocentesAAsignaturas($asignaturas, $usuarios['docentesPorCarrera']);
         $this->asignarMateriasLiderAGrupos($grupos, $asignaturas, $usuarios['docentesPorCarrera']);
-        $guias = $this->crearGuias($periodos, $asignaturas, $usuarios['direccion']);
+        $guias = $this->crearGuias($periodos, $asignaturas, $usuarios['direccion'], $usuarios['docentesPorCarrera']);
         $equipos = $this->crearEquiposUniversidad($grupos, $usuarios);
         $this->crearProyectosUniversidad($guias, $equipos, $asignaturas, $usuarios['docentesPorCarrera']);
     }
@@ -88,8 +88,6 @@ class DatabaseSeeder extends Seeder
     {
         $carreras = [
             'TI' => 'Tecnologías de la Información',
-            'MECA' => 'Mecatrónica',
-            'ADM' => 'Administración',
         ];
 
         return collect($carreras)
@@ -110,9 +108,12 @@ class DatabaseSeeder extends Seeder
     {
         $grupos = [];
 
-        foreach (array_keys($carreras) as $claveCarrera) {
-            foreach ([5, 6, 7, 8, 9] as $grado) {
-                $letras = in_array($grado, [8, 9], true) ? ['A', 'B', 'C', 'D'] : ['A', 'B', 'C'];
+        $gruposDemo = [
+            'TI' => [9 => ['A', 'B']],
+        ];
+
+        foreach ($gruposDemo as $claveCarrera => $grados) {
+            foreach ($grados as $grado => $letras) {
 
                 foreach ($letras as $letra) {
                     $claveGrupo = "{$claveCarrera}-{$grado}{$letra}";
@@ -174,15 +175,13 @@ class DatabaseSeeder extends Seeder
     private function crearDocentes(array $roles, array $carreras): Collection
     {
         $docentesBase = [
-            'TI' => ['Miguel Espinal Botho', 'Laura Hernández Pérez', 'Fernanda Torres Aguilar', 'Roberto Nava Salinas', 'Daniela Cruz Morales', 'Arturo Ramírez León', 'Docente Asesor UTVM'],
-            'MECA' => ['Carlos Méndez Ruiz', 'Mariana Castillo Ríos', 'Jorge Alberto Sánchez Luna', 'Patricia Vargas León', 'Ernesto Salinas Torres', 'Gabriela Moreno Campos'],
-            'ADM' => ['Sandra López García', 'Hugo Molina Pacheco', 'Elena Jiménez Arce', 'Mario Reyes Ortega', 'Claudia Gómez Luna', 'Rafael Pérez Díaz'],
+            'TI' => ['Miguel Espinal Botho', 'Laura Hernández Pérez', 'Docente Líder UTVM', 'Roberto Nava Salinas', 'Daniela Cruz Morales'],
         ];
 
         return collect($docentesBase)->mapWithKeys(function (array $nombres, string $claveCarrera) use ($roles, $carreras) {
             $docentes = collect($nombres)->map(function (string $nombre, int $indice) use ($roles, $carreras, $claveCarrera) {
                 $numero = $indice + 1;
-                $matricula = $claveCarrera === 'TI' && $numero === 7
+                $matricula = $claveCarrera === 'TI' && $numero === 3
                     ? '20260002'
                     : 'DOC-'.$claveCarrera.'-'.str_pad((string) $numero, 2, '0', STR_PAD_LEFT);
                 $rol = $numero <= 3 ? $roles['docente_lider'] : $roles['docente_materia'];
@@ -224,7 +223,7 @@ class DatabaseSeeder extends Seeder
         foreach ($grupos as $claveGrupo => $grupo) {
             $claveCarrera = explode('-', $claveGrupo)[0];
 
-            for ($indice = 1; $indice <= 30; $indice++) {
+            for ($indice = 1; $indice <= 12; $indice++) {
                 $nombre = $nombres[($contador - 1) % count($nombres)];
                 $apellido = $apellidos[($contador + $indice) % count($apellidos)];
                 $segundoApellido = $segundosApellidos[($contador + $grupo->grado + $indice) % count($segundosApellidos)];
@@ -276,14 +275,12 @@ class DatabaseSeeder extends Seeder
     {
         $nombresPorCarrera = [
             'TI' => ['Integradora', 'Desarrollo de aplicaciones web', 'Base de datos para aplicaciones'],
-            'MECA' => ['Integradora', 'Automatización industrial', 'Diseño mecánico asistido'],
-            'ADM' => ['Integradora', 'Gestión de proyectos', 'Administración financiera'],
         ];
 
         $asignaturas = [];
 
         foreach ($nombresPorCarrera as $claveCarrera => $nombres) {
-            foreach ([5, 6, 7, 8, 9] as $grado) {
+            foreach ([9] as $grado) {
                 foreach ($nombres as $indice => $nombre) {
                     $clave = $claveCarrera.'-'.strtoupper(substr($this->sinAcentos($nombre), 0, 3)).'-'.str_pad((string) $grado, 2, '0', STR_PAD_LEFT).'-'.($indice + 1);
 
@@ -317,7 +314,12 @@ class DatabaseSeeder extends Seeder
                 continue;
             }
 
-            $docente = $docentes->values()[(int) $asignatura->grado % $docentes->count()];
+            $docentesOrdenados = $docentes->values();
+            $docente = $asignatura->nombre === 'Integradora'
+                ? $docentesOrdenados->first(fn (User $usuario) => $usuario->hasRole('docente_lider'))
+                : $docentesOrdenados->first(fn (User $usuario) => $usuario->hasRole('docente_materia'));
+            $docente ??= $docentesOrdenados->first();
+
             $asignatura->docentes()->syncWithoutDetaching([
                 $docente->id => ['activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
             ]);
@@ -361,14 +363,19 @@ class DatabaseSeeder extends Seeder
     /**
      * @param array<string, Periodo> $periodos
      * @param array<string, Asignatura> $asignaturas
+     * @param Collection<string, Collection<int, User>> $docentesPorCarrera
      * @return array<string, GuiaIntegradora>
      */
-    private function crearGuias(array $periodos, array $asignaturas, User $direccion): array
+    private function crearGuias(array $periodos, array $asignaturas, User $direccion, Collection $docentesPorCarrera): array
     {
         $guias = [];
 
-        foreach (['TI', 'MECA', 'ADM'] as $claveCarrera) {
-            foreach ([5, 6, 7, 8, 9] as $grado) {
+        foreach ($docentesPorCarrera->keys() as $claveCarrera) {
+            $docentes = $docentesPorCarrera[$claveCarrera]->values();
+            $docenteLider = $docentes->first(fn (User $usuario) => $usuario->hasRole('docente_lider'));
+            $docenteMateria = $docentes->first(fn (User $usuario) => $usuario->hasRole('docente_materia'));
+
+            foreach ([9] as $grado) {
                 $asignaturasGrado = collect($asignaturas)
                     ->filter(fn (Asignatura $asignatura) => str_starts_with($asignatura->clave, $claveCarrera.'-') && (int) $asignatura->grado === $grado)
                     ->values();
@@ -417,14 +424,16 @@ class DatabaseSeeder extends Seeder
                         ])->all(),
                     );
 
+                    $revisorPrincipal = $datosApartado['requiere_codigo'] ? $docenteLider : $docenteMateria;
+
                     FirmaApartadoGuia::query()->updateOrCreate(
                         ['apartado_guia_id' => $apartado->id, 'orden' => 1, 'etiqueta' => 'Primer asesor'],
-                        ['asignatura_id' => null, 'docente_id' => null, 'requerida' => true],
+                        ['asignatura_id' => null, 'docente_id' => $revisorPrincipal?->id, 'requerida' => true],
                     );
 
                     FirmaApartadoGuia::query()->updateOrCreate(
                         ['apartado_guia_id' => $apartado->id, 'orden' => 2, 'etiqueta' => 'Docente integrador'],
-                        ['asignatura_id' => $asignaturaPrincipal?->id, 'docente_id' => null, 'requerida' => true],
+                        ['asignatura_id' => $asignaturaPrincipal?->id, 'docente_id' => $docenteLider?->id, 'requerida' => true],
                     );
                 }
 
@@ -465,7 +474,7 @@ class DatabaseSeeder extends Seeder
                 ->values();
             $docentesCarrera = $usuarios['docentesPorCarrera'][$claveCarrera]->values();
 
-            foreach ($alumnosGrupo->chunk(6)->values() as $indiceEquipo => $integrantes) {
+            foreach ($alumnosGrupo->chunk(4)->values() as $indiceEquipo => $integrantes) {
                 $numeroEquipo = $indiceEquipo + 1;
                 $claveEquipo = "{$claveGrupo}-E{$numeroEquipo}";
                 $lider = $integrantes->first();
@@ -523,8 +532,8 @@ class DatabaseSeeder extends Seeder
             );
 
             $docentes = $docentesPorCarrera[$claveCarrera]->values();
-            $docenteAsesor = $docentes[0];
-            $docenteEvaluador = $docentes[1] ?? $docenteAsesor;
+            $docenteAsesor = $docentes->first(fn (User $usuario) => $usuario->hasRole('docente_lider')) ?? $docentes[0];
+            $docenteEvaluador = $docentes->first(fn (User $usuario) => $usuario->hasRole('docente_materia')) ?? $docenteAsesor;
 
             $proyecto->docentes()->syncWithoutDetaching([
                 $docenteAsesor->id => ['tipo_participacion' => 'asesor_evaluador', 'activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
@@ -538,7 +547,7 @@ class DatabaseSeeder extends Seeder
             $proyecto->asignaturas()->syncWithoutDetaching(
                 $asignaturasProyecto->mapWithKeys(fn (Asignatura $asignatura, int $indice) => [
                     $asignatura->id => [
-                        'docente_id' => $docentes[$indice % $docentes->count()]->id,
+                        'docente_id' => ($asignatura->nombre === 'Integradora' ? $docenteAsesor : $docenteEvaluador)->id,
                         'participa_evaluacion' => true,
                         'creado_en' => now(),
                         'actualizado_en' => now(),
