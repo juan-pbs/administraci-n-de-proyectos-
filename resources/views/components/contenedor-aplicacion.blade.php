@@ -5,6 +5,11 @@
     'roleName' => 'Estudiante / Equipo',
 ])
 
+@php
+    $rolUsuario = auth()->user()?->role?->nombre ?? 'estudiante';
+    $opcionesAyuda = \App\Soporte\SistemaInterfaz::opcionesAyudaPara($rolUsuario);
+@endphp
+
 <x-layouts.app title="{{ $title }}">
     <div class="h-screen overflow-hidden bg-slate-100">
         <div class="flex h-full min-h-0">
@@ -43,6 +48,27 @@
                                 <p class="text-sm font-semibold text-slate-900">{{ auth()->user()->nombre }}</p>
                                 <p class="text-xs text-slate-500">{{ $roleName }}</p>
                             </div>
+
+                            <details class="group relative">
+                                <summary class="flex cursor-pointer list-none items-center gap-2 rounded-md border border-[#2F6330] bg-[#2F6330] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#244F27] focus:outline-none focus:ring-2 focus:ring-[#2F6330]/30 [&::-webkit-details-marker]:hidden">
+                                    <span class="grid h-5 w-5 place-items-center rounded bg-white/95 text-xs font-black text-[#2F6330]">?</span>
+                                    <span>Ayuda</span>
+                                </summary>
+
+                                <div class="absolute right-0 z-50 mt-2 w-64 space-y-1 rounded-md border border-slate-200 bg-white p-2 shadow-xl">
+                                    @foreach($opcionesAyuda as $opcion)
+                                        <a
+                                            href="{{ $opcion['ruta'] }}"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onclick="window.open(this.href, '_blank', 'width=980,height=760,scrollbars=yes,resizable=yes'); return false;"
+                                            class="block rounded bg-[#2F6330] px-3 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#244F27] focus:outline-none focus:ring-2 focus:ring-[#2F6330]/30 [text-shadow:_0_1px_0_rgb(0_0_0_/_35%)]"
+                                        >
+                                            {{ $opcion['titulo'] }}
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </details>
 
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf

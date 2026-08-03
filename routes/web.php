@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Autenticacion\ControladorActualizacionContrasena;
+use App\Http\Controllers\ControladorAyuda;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
@@ -10,6 +11,8 @@ Route::get('/', function () {
         ? redirect()->route('dashboard')
         : redirect()->route('login');
 });
+
+Route::get('/ayuda/acceso', [ControladorAyuda::class, 'acceso'])->name('ayuda.acceso');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
@@ -24,6 +27,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::middleware('cambio.contrasena')->group(function (): void {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+        Route::get('/ayuda', ControladorAyuda::class)->name('ayuda');
         require __DIR__.'/modulos.php';
     });
 });

@@ -1,6 +1,10 @@
 <x-layouts.app title="Recuperar contraseña | Administración de proyectos">
     <main class="flex min-h-screen items-center justify-center bg-[#eef6fb] px-5 py-10">
-        <section class="w-full max-w-[460px] rounded-md border border-slate-200 bg-white p-8 shadow-sm">
+        <section class="relative w-full max-w-[460px] rounded-md border border-slate-200 bg-white p-8 shadow-sm">
+            <div class="mb-4 flex justify-center sm:absolute sm:right-4 sm:top-4 sm:mb-0">
+                <x-boton-ayuda-acceso seccion="recuperar-contrasena" />
+            </div>
+
             <div class="flex justify-center">
                 <img
                     src="{{ asset('assets/utvm/utvm-logo-transparente.png') }}"
