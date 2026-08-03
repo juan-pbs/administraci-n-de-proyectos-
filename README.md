@@ -163,7 +163,7 @@ Abrir el sistema:
 http://localhost:8000/login
 ```
 
-No es obligatorio crear un archivo `.env`. Si se necesita cambiar puertos o variables, se puede copiar `.env.example` a `.env` y ajustar los valores. El archivo `.env` real no debe subirse al repositorio.
+No es obligatorio crear un archivo `.env`. Si se necesita cambiar puertos o variables, se puede copiar `.env.example` a `.env` y ajustar los valores. Para credenciales internas de Docker se usan las variables `DOCKER_DB_*`, asi no chocan con un `.env` local de Laravel. El archivo `.env` real no debe subirse al repositorio.
 
 Credenciales demostrativas:
 
