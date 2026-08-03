@@ -23,7 +23,11 @@
 
             <section class="flex min-w-0 items-center justify-center px-5 py-10 sm:px-8">
                 <div class="w-full max-w-[460px]">
-                    <div class="rounded-md border border-slate-200 bg-white p-8 shadow-sm">
+                    <div class="relative rounded-md border border-slate-200 bg-white p-8 shadow-sm">
+                        <div class="mb-4 flex justify-center sm:absolute sm:right-4 sm:top-4 sm:mb-0">
+                            <x-boton-ayuda-acceso seccion="iniciar-sesion" />
+                        </div>
+
                         <div class="flex justify-center">
                             <img
                                 src="{{ asset('assets/utvm/utvm-logo-transparente.png') }}"

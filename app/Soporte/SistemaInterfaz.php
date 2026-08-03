@@ -41,7 +41,62 @@ class SistemaInterfaz
             ],
         };
 
-        return [...$base, ...$porRol];
+        return [
+            ...$base,
+            ...$porRol,
+        ];
+    }
+
+    /**
+     * @return array<int, array{titulo: string, ruta: string}>
+     */
+    public static function opcionesAyudaPara(string $rol): array
+    {
+        $inicio = [
+            ['titulo' => 'Iniciar Sesion', 'seccion' => 'iniciar-sesion'],
+        ];
+
+        $porRol = match ($rol) {
+            'coordinacion' => [
+                ['titulo' => 'Panel principal', 'seccion' => 'panel-principal'],
+                ['titulo' => 'Jerarquia de proyectos', 'seccion' => 'jerarquia-proyectos'],
+                ['titulo' => 'Periodos', 'seccion' => 'periodos'],
+                ['titulo' => 'Carreras y grupos', 'seccion' => 'carreras-grupos'],
+                ['titulo' => 'Usuarios', 'seccion' => 'usuarios'],
+                ['titulo' => 'Asignaturas', 'seccion' => 'asignaturas'],
+                ['titulo' => 'Guias', 'seccion' => 'guias'],
+            ],
+            'docente_lider' => [
+                ['titulo' => 'Panel principal', 'seccion' => 'panel-principal'],
+                ['titulo' => 'Lista de alumnos', 'seccion' => 'lista-alumnos'],
+                ['titulo' => 'Equipos', 'seccion' => 'equipos'],
+                ['titulo' => 'Proyectos', 'seccion' => 'proyectos'],
+                ['titulo' => 'Revision de codigo', 'seccion' => 'revision-codigo'],
+            ],
+            'docente_materia' => [
+                ['titulo' => 'Panel principal', 'seccion' => 'panel-principal'],
+                ['titulo' => 'Mis asignaciones', 'seccion' => 'mis-asignaciones'],
+                ['titulo' => 'Revisiones', 'seccion' => 'revisiones'],
+            ],
+            default => [
+                ['titulo' => 'Panel principal', 'seccion' => 'panel-principal'],
+                ['titulo' => 'Mi proyecto', 'seccion' => 'mi-proyecto'],
+                ['titulo' => 'Entregas', 'seccion' => 'entregas'],
+                ['titulo' => 'Codigo y repositorio', 'seccion' => 'codigo-repositorio'],
+            ],
+        };
+
+        $fin = [
+            ['titulo' => 'Cerrar Sesion', 'seccion' => 'cerrar-sesion'],
+            ['titulo' => 'Contactanos', 'seccion' => 'contactanos'],
+        ];
+
+        return collect([...$inicio, ...$porRol, ...$fin])
+            ->map(fn (array $opcion): array => [
+                'titulo' => $opcion['titulo'],
+                'ruta' => route('ayuda', ['seccion' => $opcion['seccion']]),
+            ])
+            ->all();
     }
 
     /**
