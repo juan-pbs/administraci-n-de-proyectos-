@@ -26,7 +26,7 @@ class ControladorJerarquiaProyectos extends Controller
         $carreraId = (int) $request->integer('carrera_id', (int) optional($carreras->first())->id);
 
         $grupos = GrupoAcademico::query()
-            ->with(['periodo:id,nombre', 'carrera:id,clave,nombre', 'liderProyecto:id,nombre,matricula', 'asignaturaLider:id,nombre,clave'])
+            ->with(['periodo:id,nombre', 'carrera:id,clave,nombre', 'liderProyecto:id,nombre,matricula', 'docenteMateriaLider:id,nombre,matricula', 'asignaturaLider:id,nombre,clave'])
             ->when($periodoId, fn ($query) => $query->where('periodo_id', $periodoId))
             ->when($carreraId, fn ($query) => $query->where('carrera_id', $carreraId))
             ->orderBy('grado')->orderBy('grupo')->get();
@@ -42,16 +42,19 @@ class ControladorJerarquiaProyectos extends Controller
             'carreraId' => $carreraId,
             'lideres' => User::query()
                 ->whereHas('role', fn ($q) => $q->where('nombre', 'docente_lider'))
-                ->whereHas('asignaturasComoDocente', fn ($asignaturas) => $asignaturas
-                    ->where('docentes_asignatura.periodo_id', $periodoId)
-                    ->where('docentes_asignatura.activo', true)
-                    ->when($carreraId, fn ($query) => $query->where('asignaturas.carrera_id', $carreraId)))
                 ->when($carreraId, fn ($query) => $query->where(function ($docentes) use ($carreraId) {
                     $docentes->where('carrera_id', $carreraId)
                         ->orWhereHas('carrerasComoDocente', fn ($carreras) => $carreras
                             ->where('carreras.id', $carreraId)
                             ->where('docentes_carrera.activo', true));
                 }))
+                ->orderBy('nombre')->get(),
+            'docentesMateria' => User::query()
+                ->whereHas('role', fn ($q) => $q->where('nombre', 'docente_materia'))
+                ->whereHas('asignaturasComoDocente', fn ($asignaturas) => $asignaturas
+                    ->where('docentes_asignatura.periodo_id', $periodoId)
+                    ->where('docentes_asignatura.activo', true)
+                    ->when($carreraId, fn ($query) => $query->where('asignaturas.carrera_id', $carreraId)))
                 ->orderBy('nombre')->get(),
             'asignaturas' => Asignatura::query()
                 ->where('estado', 'activo')
@@ -67,15 +70,18 @@ class ControladorJerarquiaProyectos extends Controller
         $datos = $request->validate([
             'grupo_academico_id' => ['required', 'exists:grupos_academicos,id'],
             'lider_proyecto_id' => ['required', 'exists:usuarios,id'],
+            'docente_materia_lider_id' => ['required', 'exists:usuarios,id'],
             'asignatura_lider_id' => ['required', 'exists:asignaturas,id'],
         ]);
         $grupo = GrupoAcademico::query()->findOrFail($datos['grupo_academico_id']);
         $lider = User::query()->with('role')->findOrFail($datos['lider_proyecto_id']);
         abort_unless($lider->hasRole('docente_lider'), 422);
+        $docenteMateria = User::query()->with('role')->findOrFail($datos['docente_materia_lider_id']);
+        abort_unless($docenteMateria->hasRole('docente_materia'), 422);
         $asignatura = Asignatura::query()->findOrFail($datos['asignatura_lider_id']);
         abort_unless((int) $asignatura->carrera_id === (int) $grupo->carrera_id && (int) $asignatura->grado === (int) $grupo->grado, 422);
         abort_unless(
-            $lider->asignaturasComoDocente()
+            $docenteMateria->asignaturasComoDocente()
                 ->where('asignaturas.id', $asignatura->id)
                 ->where('docentes_asignatura.periodo_id', $grupo->periodo_id)
                 ->where('docentes_asignatura.activo', true)
@@ -83,7 +89,11 @@ class ControladorJerarquiaProyectos extends Controller
             422,
             'El docente seleccionado no imparte esta materia en el periodo del grupo.'
         );
-        $grupo->update(['lider_proyecto_id' => $lider->id, 'asignatura_lider_id' => $asignatura->id]);
+        $grupo->update([
+            'lider_proyecto_id' => $lider->id,
+            'docente_materia_lider_id' => $docenteMateria->id,
+            'asignatura_lider_id' => $asignatura->id,
+        ]);
         return back()->with('estado', 'Líder de proyecto y materia líder asignados al grupo.');
     }
 }

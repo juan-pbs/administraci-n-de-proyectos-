@@ -194,7 +194,7 @@ class ControladorEquipos extends Controller
         $grupos = GrupoAcademico::query()
             ->with(['carrera:id,clave', 'periodo:id,nombre'])
             ->where('periodo_id', $periodoSeleccionado)
-            ->when($usuario->hasRole('docente_lider'), fn ($query) => $query->conMateriaLiderDelDocente($usuario->id))
+            ->when($usuario->hasRole('docente_lider'), fn ($query) => $query->conLiderProyectoDelDocente($usuario->id))
             ->orderBy('carrera_id')->orderBy('grado')->orderBy('grupo')
             ->get();
         $grupos->each(function (GrupoAcademico $grupo): void {
@@ -218,7 +218,7 @@ class ControladorEquipos extends Controller
                 'proyectos.guiaIntegradora:id,nombre,version',
             ])
             ->withCount(['integrantes as integrantes_count', 'asesores as asesores_count'])
-            ->when($usuario->hasRole('docente_lider'), fn ($q) => $q->whereHas('grupoAcademico', fn ($g) => $g->conMateriaLiderDelDocente($usuario->id)))
+            ->when($usuario->hasRole('docente_lider'), fn ($q) => $q->whereHas('grupoAcademico', fn ($g) => $g->conLiderProyectoDelDocente($usuario->id)))
             ->when($grupoSeleccionado, fn ($query) => $query->where('grupo_academico_id', $grupoSeleccionado))
             ->when(! $grupoSeleccionado, fn ($query) => $query->whereRaw('1 = 0'))
             ->orderBy('numero')->orderBy('nombre')
@@ -233,7 +233,7 @@ class ControladorEquipos extends Controller
             'estudiantes' => User::query()
                 ->whereHas('role', fn ($query) => $query->where('nombre', 'estudiante'))
                 ->whereDoesntHave('equiposComoIntegrante')
-                ->when($usuario->hasRole('docente_lider'), fn ($query) => $query->whereHas('grupoAcademico', fn ($grupo) => $grupo->conMateriaLiderDelDocente($usuario->id)))
+                ->when($usuario->hasRole('docente_lider'), fn ($query) => $query->whereHas('grupoAcademico', fn ($grupo) => $grupo->conLiderProyectoDelDocente($usuario->id)))
                 ->orderBy('nombre')
                 ->get(['id', 'nombre', 'matricula', 'grupo_academico_id']),
             'docentes' => User::query()->whereHas('role', fn ($query) => $query->whereIn('nombre', ['docente_lider', 'docente_materia']))->orderBy('nombre')->get(['id', 'nombre', 'matricula']),
@@ -257,7 +257,7 @@ class ControladorEquipos extends Controller
 
     private function autorizarGrupo(Request $request, GrupoAcademico $grupo): void
     {
-        abort_unless(GrupoAcademico::query()->whereKey($grupo->id)->conMateriaLiderDelDocente((int) $request->user()->id)->exists(), 403);
+        abort_unless(GrupoAcademico::query()->whereKey($grupo->id)->conLiderProyectoDelDocente((int) $request->user()->id)->exists(), 403);
     }
 
     private function volverEquipos(Request $request, string $mensaje): RedirectResponse

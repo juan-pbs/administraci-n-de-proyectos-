@@ -3,7 +3,7 @@
         <div>
             <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">Organización académica</p>
             <h2 class="mt-2 text-2xl font-bold text-[#0D376D]">Docentes líderes por grupo</h2>
-            <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Coordinación asigna el docente líder y la asignatura integradora. El docente líder será quien forme equipos y asigne sus proyectos.</p>
+            <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Coordinación asigna por separado al docente que organiza equipos y al docente de la materia líder que revisa los entregables principales.</p>
         </div>
 
         <form method="GET" action="{{ route('modulos.jerarquia') }}" class="grid gap-3 sm:grid-cols-2" data-async-form data-async-targets="mensajes panel-jerarquia">
@@ -40,7 +40,7 @@
 
             <div class="divide-y divide-slate-200">
                 @forelse($grupos as $grupo)
-                    <form method="POST" action="{{ route('jerarquia.lideres.guardar') }}" class="grid gap-4 p-5 lg:grid-cols-[150px_minmax(220px,1fr)_minmax(220px,1fr)_auto]" data-async-form data-async-targets="mensajes panel-jerarquia">
+                    <form method="POST" action="{{ route('jerarquia.lideres.guardar') }}" class="grid gap-4 p-5 xl:grid-cols-[130px_repeat(3,minmax(190px,1fr))_auto]" data-async-form data-async-targets="mensajes panel-jerarquia">
                         @csrf
                         <input type="hidden" name="grupo_academico_id" value="{{ $grupo->id }}">
                         <div>
@@ -49,11 +49,20 @@
                             <p class="mt-1 text-xs text-slate-500">{{ $grupo->periodo->nombre }}</p>
                         </div>
                         <label class="text-sm font-semibold text-slate-700">
-                            Docente líder
+                            Docente organizador
                             <select name="lider_proyecto_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">
                                 <option value="">Seleccionar docente</option>
                                 @foreach($lideres as $lider)
                                     <option value="{{ $lider->id }}" @selected($grupo->lider_proyecto_id === $lider->id)>{{ $lider->matricula }} - {{ $lider->nombre }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="text-sm font-semibold text-slate-700">
+                            Docente de materia líder
+                            <select name="docente_materia_lider_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">
+                                <option value="">Seleccionar docente</option>
+                                @foreach($docentesMateria as $docente)
+                                    <option value="{{ $docente->id }}" @selected($grupo->docente_materia_lider_id === $docente->id)>{{ $docente->matricula }} - {{ $docente->nombre }}</option>
                                 @endforeach
                             </select>
                         </label>

@@ -58,7 +58,7 @@ class ControladorUsuarios extends Controller
         if ($request->user()->hasRole('docente_lider')) {
             $rolEstudiante = Role::query()->where('nombre', 'estudiante')->firstOrFail();
             abort_unless((int) $datos['rol_id'] === (int) $rolEstudiante->id && $datos['grupo_academico_id'], 403);
-            abort_unless(GrupoAcademico::query()->whereKey($datos['grupo_academico_id'])->conMateriaLiderDelDocente((int) $request->user()->id)->exists(), 403);
+            abort_unless(GrupoAcademico::query()->whereKey($datos['grupo_academico_id'])->conLiderProyectoDelDocente((int) $request->user()->id)->exists(), 403);
         }
 
         $contrasenaTemporal = $this->generarContrasenaTemporal();
@@ -226,7 +226,7 @@ class ControladorUsuarios extends Controller
                 ], ['nombre' => $lista['grado'].$lista['grupo']]);
 
                 if ($request->user()->hasRole('docente_lider')) {
-                    abort_unless(GrupoAcademico::query()->whereKey($grupo->id)->conMateriaLiderDelDocente((int) $request->user()->id)->exists(), 403);
+                    abort_unless(GrupoAcademico::query()->whereKey($grupo->id)->conLiderProyectoDelDocente((int) $request->user()->id)->exists(), 403);
                 }
 
                 $creados = 0;
@@ -385,7 +385,7 @@ class ControladorUsuarios extends Controller
 
                 $claveGrupo = ['periodo_id' => $periodo->id, 'carrera_id' => $carrera->id, 'grado' => $grado, 'grupo' => $grupoLetra];
                 $grupoAcademico = $request->user()->hasRole('docente_lider')
-                    ? GrupoAcademico::query()->where($claveGrupo)->conMateriaLiderDelDocente((int) $request->user()->id)->first()
+                    ? GrupoAcademico::query()->where($claveGrupo)->conLiderProyectoDelDocente((int) $request->user()->id)->first()
                     : GrupoAcademico::query()->firstOrCreate($claveGrupo, ['nombre' => $grado.$grupoLetra]);
 
                 if (! $grupoAcademico) {
@@ -497,7 +497,7 @@ class ControladorUsuarios extends Controller
             ->with('carrera:id,clave')
             ->where('periodo_id', $periodoSeleccionado)
             ->where('carrera_id', $carreraSeleccionada)
-            ->when($request->user()->hasRole('docente_lider'), fn ($query) => $query->conMateriaLiderDelDocente((int) $request->user()->id))
+            ->when($request->user()->hasRole('docente_lider'), fn ($query) => $query->conLiderProyectoDelDocente((int) $request->user()->id))
             ->orderBy('grado')
             ->orderBy('grupo')
             ->get(['id', 'carrera_id', 'nombre', 'grado', 'grupo']);
@@ -525,7 +525,7 @@ class ControladorUsuarios extends Controller
             ->whereHas('role', fn ($query) => $query->where('nombre', 'estudiante'))
             ->when($grupoSeleccionado, fn ($query) => $query->where('grupo_academico_id', $grupoSeleccionado))
             ->when(! $grupoSeleccionado, fn ($query) => $query->whereRaw('1 = 0'))
-            ->when($request->user()->hasRole('docente_lider'), fn ($query) => $query->whereHas('grupoAcademico', fn ($grupo) => $grupo->conMateriaLiderDelDocente((int) $request->user()->id)));
+            ->when($request->user()->hasRole('docente_lider'), fn ($query) => $query->whereHas('grupoAcademico', fn ($grupo) => $grupo->conLiderProyectoDelDocente((int) $request->user()->id)));
 
         if ($filtrosAlumnos['busqueda'] !== '') {
             $busqueda = $filtrosAlumnos['busqueda'];
@@ -607,7 +607,7 @@ class ControladorUsuarios extends Controller
             'grupos' => GrupoAcademico::query()
                 ->with('carrera:id,clave')
                 ->when($periodoSeleccionado, fn ($query) => $query->where('periodo_id', $periodoSeleccionado))
-                ->when($request->user()->hasRole('docente_lider'), fn ($query) => $query->conMateriaLiderDelDocente((int) $request->user()->id))
+                ->when($request->user()->hasRole('docente_lider'), fn ($query) => $query->conLiderProyectoDelDocente((int) $request->user()->id))
                 ->orderBy('grado')
                 ->orderBy('grupo')
                 ->get(['id', 'carrera_id', 'nombre', 'grado', 'grupo']),

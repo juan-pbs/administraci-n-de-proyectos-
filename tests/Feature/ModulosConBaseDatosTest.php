@@ -202,6 +202,72 @@ test('coordinacion consulta docentes lideres por carrera en la jerarquia', funct
         ->assertSee('Docente Líder de Administración');
 });
 
+test('un docente de materia puede ser responsable de la materia lider pero no organizador', function () {
+    $coordinacion = direccionAutenticada();
+    $periodo = Periodo::query()->create([
+        'nombre' => 'Septiembre - Diciembre 2027',
+        'fecha_inicio' => '2027-09-01',
+        'fecha_fin' => '2027-12-15',
+        'estado' => 'activo',
+    ]);
+    $carrera = Carrera::query()->create([
+        'nombre' => 'Tecnologias de la Informacion',
+        'clave' => 'TI-NOLIDER',
+        'estado' => 'activa',
+    ]);
+    $asignatura = Asignatura::query()->create([
+        'carrera_id' => $carrera->id,
+        'nombre' => 'Integradora',
+        'clave' => 'TI-NOLIDER-09',
+        'grado' => 9,
+        'estado' => 'activo',
+    ]);
+    $grupo = GrupoAcademico::query()->create([
+        'periodo_id' => $periodo->id,
+        'carrera_id' => $carrera->id,
+        'nombre' => '9A',
+        'grado' => 9,
+        'grupo' => 'A',
+    ]);
+    $rolDocenteMateria = Role::query()->where('nombre', 'docente_materia')->firstOrFail();
+    $docenteMateria = User::factory()->create([
+        'rol_id' => $rolDocenteMateria->id,
+        'carrera_id' => $carrera->id,
+        'nombre' => 'Docente que no puede ser lider',
+    ]);
+    $docenteMateria->asignaturasComoDocente()->attach($asignatura->id, [
+        'periodo_id' => $periodo->id,
+        'activo' => true,
+    ]);
+    $rolDocenteLider = Role::query()->where('nombre', 'docente_lider')->firstOrFail();
+    $docenteOrganizador = User::factory()->create([
+        'rol_id' => $rolDocenteLider->id,
+        'carrera_id' => $carrera->id,
+        'nombre' => 'Docente organizador',
+    ]);
+
+    $this->actingAs($coordinacion)
+        ->get(route('modulos.jerarquia', [
+            'periodo_id' => $periodo->id,
+            'carrera_id' => $carrera->id,
+        ]))
+        ->assertOk()
+        ->assertSee('Docente que no puede ser lider');
+
+    $this->actingAs($coordinacion)
+        ->post(route('jerarquia.lideres.guardar'), [
+            'grupo_academico_id' => $grupo->id,
+            'lider_proyecto_id' => $docenteOrganizador->id,
+            'docente_materia_lider_id' => $docenteMateria->id,
+            'asignatura_lider_id' => $asignatura->id,
+        ])
+        ->assertRedirect();
+
+    expect($grupo->fresh()->lider_proyecto_id)->toBe($docenteOrganizador->id)
+        ->and($grupo->fresh()->docente_materia_lider_id)->toBe($docenteMateria->id)
+        ->and($grupo->fresh()->asignatura_lider_id)->toBe($asignatura->id);
+});
+
 test('coordinacion asigna docentes que califican cada apartado de la guia', function () {
     $coordinacion = direccionAutenticada();
     $periodo = Periodo::query()->create([

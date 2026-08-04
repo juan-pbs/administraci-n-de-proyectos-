@@ -120,10 +120,10 @@ class ControladorAyuda extends Controller
                     id: 'jerarquia-proyectos',
                     menu: 'Jerarquia de proyectos',
                     titulo: 'Jerarquia de proyectos',
-                    descripcion: 'Aqui se indica quien queda como responsable de cada grupo y que asignatura organiza el proyecto integrador.',
+                    descripcion: 'Aqui se asignan por separado el docente que organiza equipos y el docente de materia que revisa la asignatura líder.',
                     pasos: [
                         'Filtra por periodo o carrera cuando necesites trabajar con un bloque especifico.',
-                        'Selecciona el responsable del grupo y la asignatura principal en la fila correspondiente.',
+                        'Selecciona al docente organizador, al docente de materia líder y la asignatura principal.',
                         'Presiona Guardar asignacion en cada fila antes de pasar a equipos o proyectos.',
                     ],
                     imagen: 'assets/ayuda/coordinacion/02-jerarquia-proyectos.png',
@@ -213,7 +213,7 @@ class ControladorAyuda extends Controller
         return [
             'eyebrow' => 'Gestion de grupos',
             'titulo' => 'Ayuda de tu panel',
-            'descripcion' => 'Guia visual para consultar alumnos, formar equipos, asignar proyectos y revisar productos de codigo.',
+            'descripcion' => 'Guia visual para consultar alumnos, formar equipos y asignar proyectos. La revisión académica corresponde a los docentes de materia.',
             'secciones' => [
                 $this->seccionModulo(
                     id: 'panel-principal',
@@ -271,20 +271,6 @@ class ControladorAyuda extends Controller
                     ruta: $rutas['proyectos'] ?? null,
                     notas: ['Filtro por grupo', 'Proyecto por equipo', 'Docentes y asignaturas'],
                 ),
-                $this->seccionModulo(
-                    id: 'revision-codigo',
-                    menu: 'Revision de codigo',
-                    titulo: 'Revision de codigo',
-                    descripcion: 'Permite revisar repositorios, archivos tecnicos y comentarios sobre el producto final.',
-                    pasos: [
-                        'Filtra por grupo para ubicar entregas de codigo.',
-                        'Descarga archivos o abre el repositorio registrado por el equipo.',
-                        'Guarda resultado, calificacion y comentarios tecnicos cuando corresponda.',
-                    ],
-                    imagen: 'assets/ayuda/docente-lider/05-revision-codigo.png',
-                    ruta: $rutas['revision-codigo'] ?? null,
-                    notas: ['Filtro de grupo', 'Entregas tecnicas', 'Registro de revision'],
-                ),
             ],
         ];
     }
@@ -341,6 +327,20 @@ class ControladorAyuda extends Controller
                     imagen: 'assets/ayuda/docente-materia/03-revisiones.png',
                     ruta: $rutas['revisiones-docente'] ?? null,
                     notas: ['Filtros de revision', 'Entregas disponibles', 'Resultado y comentarios'],
+                ),
+                $this->seccionModulo(
+                    id: 'revision-principal',
+                    menu: 'Revision principal',
+                    titulo: 'Revision de codigo y entregables finales',
+                    descripcion: 'Esta opcion aparece cuando eres responsable de la materia lider de un grupo.',
+                    pasos: [
+                        'Ubica las entregas principales y productos de codigo de tus grupos.',
+                        'Descarga archivos o abre el repositorio registrado por el equipo.',
+                        'Guarda resultado, calificacion y comentarios tecnicos.',
+                    ],
+                    imagen: 'assets/ayuda/docente-lider/05-revision-codigo.png',
+                    ruta: $rutas['revision-principal'] ?? null,
+                    notas: ['Materia lider asignada', 'Entregables finales', 'Revision tecnica'],
                 ),
             ],
         ];
@@ -813,7 +813,7 @@ class ControladorAyuda extends Controller
             'assets/ayuda/docente-lider/01-panel-principal.png' => [
                 $this->detalle('Indicadores', 'Resumen de grupos, alumnos, equipos y proyectos bajo seguimiento.'),
                 $this->detalle('Grupos del periodo', 'Lista los grupos disponibles y permite confirmar si ya tienen equipos y proyectos.'),
-                $this->detalle('Accesos del menu', 'Usa Lista de alumnos, Equipos, Proyectos y Revision de codigo para continuar el flujo.'),
+                $this->detalle('Accesos del menu', 'Usa Lista de alumnos, Equipos y Proyectos para organizar el flujo. Las revisiones corresponden a docentes de materia.'),
             ],
             'assets/ayuda/docente-lider/02-lista-alumnos.png' => [
                 $this->detalle('Grupo activo', 'Selecciona el grupo que quieres revisar para evitar consultar alumnos de otro grupo.'),

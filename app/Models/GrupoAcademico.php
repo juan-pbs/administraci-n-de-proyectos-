@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
 
-#[Fillable(['periodo_id', 'carrera_id', 'lider_proyecto_id', 'asignatura_lider_id', 'nombre', 'grado', 'grupo'])]
+#[Fillable(['periodo_id', 'carrera_id', 'lider_proyecto_id', 'docente_materia_lider_id', 'asignatura_lider_id', 'nombre', 'grado', 'grupo'])]
 class GrupoAcademico extends Model
 {
     use HasFactory;
@@ -46,6 +46,11 @@ class GrupoAcademico extends Model
         return $this->belongsTo(Asignatura::class, 'asignatura_lider_id');
     }
 
+    public function docenteMateriaLider(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'docente_materia_lider_id');
+    }
+
     /**
      * @return HasMany<User, $this>
      */
@@ -65,7 +70,7 @@ class GrupoAcademico extends Model
     public function scopeConMateriaLiderDelDocente(Builder $query, int $docenteId): Builder
     {
         return $query
-            ->where('lider_proyecto_id', $docenteId)
+            ->where('docente_materia_lider_id', $docenteId)
             ->whereNotNull('asignatura_lider_id')
             ->whereExists(function ($asignacion) use ($docenteId): void {
                 $asignacion->selectRaw('1')
@@ -75,5 +80,10 @@ class GrupoAcademico extends Model
                     ->where('docentes_asignatura.docente_id', $docenteId)
                     ->where('docentes_asignatura.activo', true);
             });
+    }
+
+    public function scopeConLiderProyectoDelDocente(Builder $query, int $docenteId): Builder
+    {
+        return $query->where('lider_proyecto_id', $docenteId);
     }
 }

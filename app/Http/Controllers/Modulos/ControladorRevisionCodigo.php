@@ -19,7 +19,7 @@ class ControladorRevisionCodigo extends Controller
 {
     public function mostrar(Request $request): View
     {
-        $docente = $this->lider($request);
+        $docente = $this->responsableMateriaLider($request);
         $periodo = Periodo::query()->where('estado', 'activo')->latest('fecha_inicio')->first()
             ?? Periodo::query()->latest('fecha_inicio')->first();
         $entregas = Entrega::query()
@@ -45,14 +45,14 @@ class ControladorRevisionCodigo extends Controller
         return view('modulos.docente-lider.revision-codigo', [
             'periodo' => $periodo,
             'entregas' => $entregas,
-            'navegacion' => SistemaInterfaz::navegacionPara('docente_lider'),
+            'navegacion' => SistemaInterfaz::navegacionPara('docente_materia'),
             'roleName' => $docente->role->nombre_visible,
         ]);
     }
 
     public function guardarRevision(Request $request, Entrega $entrega): RedirectResponse
     {
-        $docente = $this->lider($request);
+        $docente = $this->responsableMateriaLider($request);
         $this->autorizar($docente->id, $entrega);
         $datos = $request->validate([
             'resultado' => ['required', 'in:aprobada,correccion,rechazada'],
@@ -70,7 +70,7 @@ class ControladorRevisionCodigo extends Controller
 
     public function guardarComentario(Request $request, Entrega $entrega): RedirectResponse
     {
-        $docente = $this->lider($request);
+        $docente = $this->responsableMateriaLider($request);
         $this->autorizar($docente->id, $entrega);
         $datos = $request->validate(['comentario' => ['required', 'string', 'max:1500']]);
         $revision = Revision::query()->where('entrega_id', $entrega->id)->where('revisor_id', $docente->id)->first();
@@ -82,7 +82,7 @@ class ControladorRevisionCodigo extends Controller
 
     public function descargar(Request $request, ArchivoEntrega $archivo): BinaryFileResponse
     {
-        $docente = $this->lider($request);
+        $docente = $this->responsableMateriaLider($request);
         $archivo->loadMissing('entrega');
         $this->autorizar($docente->id, $archivo->entrega);
         $ruta = Storage::path($archivo->ruta);
@@ -94,10 +94,14 @@ class ControladorRevisionCodigo extends Controller
         return response()->download($ruta, $archivo->nombre_original);
     }
 
-    private function lider(Request $request)
+    private function responsableMateriaLider(Request $request)
     {
         $docente = $request->user()->loadMissing('role');
-        abort_unless($docente->hasRole('docente_lider'), 403);
+        abort_unless(
+            $docente->hasRole('docente_materia')
+            && \App\Models\GrupoAcademico::query()->conMateriaLiderDelDocente($docente->id)->exists(),
+            403
+        );
         return $docente;
     }
 

@@ -36,7 +36,7 @@ Integra las funciones de dirección/coordinación y encargado de proyectos.
 - Carga varias listas de alumnos y revisa una vista previa antes de confirmar.
 - Configura asignaturas y asigna docentes por periodo.
 - Define qué asignatura es la materia líder de cada grupo.
-- Asigna docentes líderes mediante la materia líder.
+- Asigna por separado al docente organizador y al docente de la materia líder.
 - Configura las guías y sus apartados para todos los equipos del mismo cuatrimestre.
 - Define qué parte de la guía calificará cada docente.
 
@@ -44,7 +44,7 @@ El dashboard de Coordinación es informativo y no funciona como un conjunto de a
 
 ### Docente líder
 
-Integra las funciones de docente asesor y líder de proyecto.
+Organiza la operación de equipos y proyectos del grupo.
 
 - Visualiza únicamente los grupos que le fueron asignados.
 - Consulta las listas de alumnos, pero no puede crear ni importar alumnos.
@@ -52,8 +52,7 @@ Integra las funciones de docente asesor y líder de proyecto.
 - Asigna o retira alumnos respetando que todos pertenezcan al mismo grupo.
 - Crea proyectos y los asigna a los equipos.
 - Consulta el avance de sus grupos.
-- Revisa productos de código solamente cuando su asignatura fue configurada como materia líder.
-- Visualiza repositorios, archivos y comprimidos enviados por los alumnos.
+- No necesita revisar entregas académicas ni productos de código.
 
 El número de un equipo se genera con el consecutivo siguiente dentro de su grupo.
 
@@ -65,8 +64,9 @@ El número de un equipo se genera con el consecutivo siguiente dentro de su grup
 - Agrega comentarios.
 - Califica, valida, rechaza o solicita correcciones.
 - Consulta entregas pendientes de revisión y actividades vencidas sin avance.
+- Cuando es responsable de la materia líder, revisa código, repositorios y entregables finales.
 
-Ser docente líder de un grupo y tener asignada la materia líder son condiciones independientes.
+El docente organizador y el docente responsable de la materia líder son personas independientes y pueden ser distintos.
 
 ### Estudiante
 
@@ -84,13 +84,13 @@ Ser docente líder de un grupo y tener asignada la materia líder son condicione
 2. Configura las carreras y los grupos del periodo.
 3. Carga las listas de alumnos y registra o conserva a los docentes.
 4. Configura las asignaturas y asigna sus docentes para el periodo.
-5. Define la materia líder y, mediante ella, el docente responsable de cada grupo.
+5. Asigna al docente organizador y, por separado, la materia líder con su docente responsable.
 6. Configura una guía por carrera, cuatrimestre y periodo.
 7. Define los apartados, fechas, ponderaciones, evidencias y docentes calificadores.
 8. El docente líder organiza equipos con alumnos del mismo grupo.
 9. El docente líder crea los proyectos y los asigna a los equipos.
 10. Los integrantes realizan entregas y registran el producto de código.
-11. Los docentes asignados revisan, comentan, califican o solicitan correcciones.
+11. Los docentes de materia revisan, comentan, califican o solicitan correcciones; el responsable de la materia líder atiende código y entregables finales.
 
 Al iniciar un periodo nuevo no se heredan alumnos, grupos, asignaciones, guías, equipos ni proyectos. Los docentes permanecen registrados, pero sus materias se configuran nuevamente.
 
@@ -176,11 +176,14 @@ Matrícula: 20260001
 Docente líder:
 Matrícula: DOC-TI-02
 
-Docente líder con materia líder:
+Docente organizador principal:
 Matrícula: DOC-TI-01
 
 Docente de materia:
 Matrícula: DOC-TI-04
+
+Docente responsable de la materia líder (Integradora):
+Matrícula: DOC-TI-05
 
 Alumno:
 Matrícula: 202600001
@@ -238,6 +241,7 @@ Otros docentes:
 DOC-TI-01
 DOC-TI-02
 DOC-TI-04
+DOC-TI-05 (docente de materia líder; revisa código y entregables finales)
 ```
 
 Estudiante:

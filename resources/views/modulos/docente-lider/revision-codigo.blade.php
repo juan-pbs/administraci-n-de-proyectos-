@@ -49,7 +49,7 @@
                                             <p class="truncate text-sm font-bold text-slate-800">{{ $archivo->nombre_original }}</p>
                                             <p class="mt-0.5 text-xs text-slate-500">{{ $archivo->esComprimido() ? 'Archivo comprimido' : 'Evidencia técnica' }} · {{ $archivo->tamano ? number_format($archivo->tamano / 1024, 1).' KB' : 'Tamaño no disponible' }}</p>
                                         </div>
-                                        <a href="{{ route('docente-lider.codigo.archivo', $archivo) }}" class="shrink-0 rounded-md border border-[#155AA3] px-3 py-1.5 text-xs font-bold text-[#155AA3] hover:bg-blue-50">Descargar</a>
+                                        <a href="{{ route('docente-materia.principal.archivo', $archivo) }}" class="shrink-0 rounded-md border border-[#155AA3] px-3 py-1.5 text-xs font-bold text-[#155AA3] hover:bg-blue-50">Descargar</a>
                                     </div>
                                 @empty
                                     <p class="text-sm text-slate-500">Sin archivos adjuntos.</p>
@@ -57,7 +57,7 @@
                             </div>
                         </div>
                     </div>
-                    <form method="POST" action="{{ route('docente-lider.codigo.revisar', $entrega) }}" class="mt-4 grid gap-3 lg:grid-cols-[180px_150px_minmax(0,1fr)_150px] lg:items-end">
+                    <form method="POST" action="{{ route('docente-materia.principal.revisar', $entrega) }}" class="mt-4 grid gap-3 lg:grid-cols-[180px_150px_minmax(0,1fr)_150px] lg:items-end">
                         @csrf @method('PUT')
                         <label><span class="text-xs font-bold uppercase text-slate-500">Resultado</span><select name="resultado" class="mt-2 w-full rounded-md border-slate-300 text-sm"><option value="aprobada" @selected($revision?->resultado === 'aprobada')>Aprobada</option><option value="correccion" @selected($revision?->resultado === 'correccion')>Solicitar corrección</option><option value="rechazada" @selected($revision?->resultado === 'rechazada')>Rechazada</option></select></label>
                         <label><span class="text-xs font-bold uppercase text-slate-500">Calificación</span><input required name="calificacion" type="number" min="0" max="10" step=".1" value="{{ $revision?->calificacion }}" class="mt-2 w-full rounded-md border-slate-300 text-sm"></label>
@@ -67,7 +67,7 @@
                     @if($revision)
                         <div class="mt-4 border-t border-slate-200 pt-4">
                             @foreach($revision->comentarios as $comentario)<div class="mb-2 rounded-md bg-white px-4 py-3 text-sm"><span class="font-bold">{{ $comentario->autor?->nombre }}:</span> {{ $comentario->comentario }}</div>@endforeach
-                            <form method="POST" action="{{ route('docente-lider.codigo.comentar', $entrega) }}" class="flex flex-col gap-2 md:flex-row">@csrf<input required maxlength="1500" name="comentario" placeholder="Agregar comentario técnico" class="min-w-0 flex-1 rounded-md border-slate-300 text-sm"><button class="rounded-md border border-[#155AA3] px-4 py-2 text-sm font-bold text-[#155AA3]">Comentar</button></form>
+                            <form method="POST" action="{{ route('docente-materia.principal.comentar', $entrega) }}" class="flex flex-col gap-2 md:flex-row">@csrf<input required maxlength="1500" name="comentario" placeholder="Agregar comentario técnico" class="min-w-0 flex-1 rounded-md border-slate-300 text-sm"><button class="rounded-md border border-[#155AA3] px-4 py-2 text-sm font-bold text-[#155AA3]">Comentar</button></form>
                         </div>
                     @endif
                 </div>

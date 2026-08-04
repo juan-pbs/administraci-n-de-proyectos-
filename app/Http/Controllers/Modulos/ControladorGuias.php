@@ -178,8 +178,8 @@ class ControladorGuias extends Controller
             })
             ->firstOrFail();
 
-        if ($apartado->requiere_codigo && ! $docente->hasRole('docente_lider')) {
-            return back()->withErrors(['docente_id' => 'Los apartados de código solo pueden asignarse al docente líder.']);
+        if ($apartado->requiere_codigo && ! $docente->hasRole('docente_materia')) {
+            return back()->withErrors(['docente_id' => 'Los apartados de código y entregables finales deben asignarse a un docente de materia.']);
         }
 
         FirmaApartadoGuia::query()->updateOrCreate(

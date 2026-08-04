@@ -99,6 +99,11 @@ class User extends Authenticatable
         return $this->hasMany(GrupoAcademico::class, 'lider_proyecto_id');
     }
 
+    public function gruposComoDocenteMateriaLider(): HasMany
+    {
+        return $this->hasMany(GrupoAcademico::class, 'docente_materia_lider_id');
+    }
+
     public function getAuthPasswordName(): string
     {
         return 'contrasena';

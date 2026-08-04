@@ -30,7 +30,6 @@ class ControladorDocenteMateria extends Controller
                 'apartadoGuia.guiaIntegradora.periodo:id,nombre',
             ])
             ->where('docente_id', $usuario->id)
-            ->whereHas('apartadoGuia', fn ($apartado) => $apartado->where('requiere_codigo', false))
             ->when($periodo, fn ($query) => $query->whereHas('apartadoGuia.guiaIntegradora', fn ($guia) => $guia->where('periodo_id', $periodo->id)))
             ->orderBy('apartado_guia_id')
             ->get();
@@ -44,7 +43,6 @@ class ControladorDocenteMateria extends Controller
         $periodo = $this->periodoActual();
         $apartados = FirmaApartadoGuia::query()
             ->where('docente_id', $usuario->id)
-            ->whereHas('apartadoGuia', fn ($apartado) => $apartado->where('requiere_codigo', false))
             ->when($periodo, fn ($query) => $query->whereHas('apartadoGuia.guiaIntegradora', fn ($guia) => $guia->where('periodo_id', $periodo->id)))
             ->pluck('apartado_guia_id');
 
@@ -125,7 +123,6 @@ class ControladorDocenteMateria extends Controller
 
     private function autorizarApartado(int $usuarioId, Entrega $entrega): void
     {
-        abort_unless($entrega->apartado()->where('requiere_codigo', false)->exists(), 403);
         abort_unless(FirmaApartadoGuia::query()->where('docente_id', $usuarioId)->where('apartado_guia_id', $entrega->apartado_guia_id)->exists(), 403);
         abort_unless(
             $this->proyectosAsignados(\App\Models\Proyecto::query()->whereKey($entrega->proyecto_id), $usuarioId)->exists(),

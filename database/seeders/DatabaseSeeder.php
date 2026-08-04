@@ -6,11 +6,15 @@ use App\Models\ApartadoGuia;
 use App\Models\Asignatura;
 use App\Models\Carrera;
 use App\Models\Equipo;
+use App\Models\Entrega;
 use App\Models\FirmaApartadoGuia;
 use App\Models\GuiaIntegradora;
 use App\Models\GrupoAcademico;
 use App\Models\Periodo;
 use App\Models\Proyecto;
+use App\Models\ProductoCodigo;
+use App\Models\Revision;
+use App\Models\ComentarioRevision;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -39,7 +43,8 @@ class DatabaseSeeder extends Seeder
         $this->asignarMateriasLiderAGrupos($grupos, $asignaturas, $usuarios['docentesPorCarrera']);
         $guias = $this->crearGuias($periodos, $asignaturas, $usuarios['direccion'], $usuarios['docentesPorCarrera']);
         $equipos = $this->crearEquiposUniversidad($grupos, $usuarios);
-        $this->crearProyectosUniversidad($guias, $equipos, $asignaturas, $usuarios['docentesPorCarrera']);
+        $proyectos = $this->crearProyectosUniversidad($guias, $equipos, $asignaturas, $usuarios['docentesPorCarrera']);
+        $this->crearEntregasDemostrativas($proyectos, $usuarios['alumnos']);
     }
 
     /**
@@ -323,6 +328,17 @@ class DatabaseSeeder extends Seeder
             $asignatura->docentes()->syncWithoutDetaching([
                 $docente->id => ['activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
             ]);
+
+            // Escenario demo: DOC-TI-05 imparte Integradora, pero conserva el rol
+            // docente_materia y por ello nunca puede ser líder de un grupo.
+            if ($asignatura->nombre === 'Integradora') {
+                $docenteMateriaIntegradora = $docentesOrdenados->firstWhere('matricula', 'DOC-TI-05');
+                if ($docenteMateriaIntegradora) {
+                    $asignatura->docentes()->syncWithoutDetaching([
+                        $docenteMateriaIntegradora->id => ['activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
+                    ]);
+                }
+            }
         }
     }
 
@@ -335,17 +351,21 @@ class DatabaseSeeder extends Seeder
     {
         foreach ($grupos as $claveGrupo => $grupo) {
             $claveCarrera = explode('-', $claveGrupo)[0];
-            $docenteLider = ($docentesPorCarrera[$claveCarrera] ?? collect())
-                ->first(fn (User $docente) => $docente->hasRole('docente_lider'));
+            $docentesCarrera = $docentesPorCarrera[$claveCarrera] ?? collect();
+            $lideresProyecto = $docentesCarrera->filter(fn (User $docente) => $docente->hasRole('docente_lider'))->values();
+            $indiceGrupo = str_ends_with($claveGrupo, 'B') ? 1 : 0;
+            $docenteLider = $lideresProyecto[$indiceGrupo % max(1, $lideresProyecto->count())] ?? null;
+            $docenteMateriaLider = $docentesCarrera->firstWhere('matricula', 'DOC-TI-05');
             $asignaturaLider = collect($asignaturas)
                 ->first(fn (Asignatura $asignatura) => str_starts_with($asignatura->clave, $claveCarrera.'-') && (int) $asignatura->grado === (int) $grupo->grado);
 
-            if (! $docenteLider || ! $asignaturaLider) {
+            if (! $docenteLider || ! $docenteMateriaLider || ! $asignaturaLider) {
                 continue;
             }
 
             $grupo->update([
                 'lider_proyecto_id' => $docenteLider->id,
+                'docente_materia_lider_id' => $docenteMateriaLider->id,
                 'asignatura_lider_id' => $asignaturaLider->id,
             ]);
 
@@ -357,6 +377,18 @@ class DatabaseSeeder extends Seeder
                     'actualizado_en' => now(),
                 ],
             ]);
+
+            $docenteMateriaIntegradora = $docenteMateriaLider;
+            if ($docenteMateriaIntegradora) {
+                $asignaturaLider->docentes()->syncWithoutDetaching([
+                    $docenteMateriaIntegradora->id => [
+                        'periodo_id' => $grupo->periodo_id,
+                        'activo' => true,
+                        'creado_en' => now(),
+                        'actualizado_en' => now(),
+                    ],
+                ]);
+            }
         }
     }
 
@@ -373,7 +405,8 @@ class DatabaseSeeder extends Seeder
         foreach ($docentesPorCarrera->keys() as $claveCarrera) {
             $docentes = $docentesPorCarrera[$claveCarrera]->values();
             $docenteLider = $docentes->first(fn (User $usuario) => $usuario->hasRole('docente_lider'));
-            $docenteMateria = $docentes->first(fn (User $usuario) => $usuario->hasRole('docente_materia'));
+            $docentesMateria = $docentes->filter(fn (User $usuario) => $usuario->hasRole('docente_materia'))->values();
+            $docenteMateriaLider = $docentes->firstWhere('matricula', 'DOC-TI-05');
 
             foreach ([9] as $grado) {
                 $asignaturasGrado = collect($asignaturas)
@@ -424,7 +457,9 @@ class DatabaseSeeder extends Seeder
                         ])->all(),
                     );
 
-                    $revisorPrincipal = $datosApartado['requiere_codigo'] ? $docenteLider : $docenteMateria;
+                    $revisorPrincipal = $datosApartado['requiere_codigo']
+                        ? $docenteMateriaLider
+                        : $docentesMateria[($datosApartado['orden'] - 1) % max(1, $docentesMateria->count())] ?? null;
 
                     FirmaApartadoGuia::query()->updateOrCreate(
                         ['apartado_guia_id' => $apartado->id, 'orden' => 1, 'etiqueta' => 'Primer asesor'],
@@ -511,8 +546,9 @@ class DatabaseSeeder extends Seeder
      * @param array<string, Asignatura> $asignaturas
      * @param Collection<string, Collection<int, User>> $docentesPorCarrera
      */
-    private function crearProyectosUniversidad(array $guias, array $equipos, array $asignaturas, Collection $docentesPorCarrera): void
+    private function crearProyectosUniversidad(array $guias, array $equipos, array $asignaturas, Collection $docentesPorCarrera): array
     {
+        $proyectos = [];
         foreach ($equipos as $claveEquipo => $equipo) {
             [$claveCarrera, $grupo] = explode('-', $claveEquipo);
             $grado = (int) substr($grupo, 0, -1);
@@ -535,10 +571,16 @@ class DatabaseSeeder extends Seeder
             $docenteAsesor = $docentes->first(fn (User $usuario) => $usuario->hasRole('docente_lider')) ?? $docentes[0];
             $docenteEvaluador = $docentes->first(fn (User $usuario) => $usuario->hasRole('docente_materia')) ?? $docenteAsesor;
 
-            $proyecto->docentes()->syncWithoutDetaching([
-                $docenteAsesor->id => ['tipo_participacion' => 'asesor_evaluador', 'activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
-                $docenteEvaluador->id => ['tipo_participacion' => 'evaluador', 'activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
-            ]);
+            $docentesParticipantes = $docentes
+                ->filter(fn (User $usuario) => $usuario->hasAnyRole('docente_lider', 'docente_materia'))
+                ->mapWithKeys(fn (User $docente) => [$docente->id => [
+                    'tipo_participacion' => $docente->hasRole('docente_lider') ? 'asesor_evaluador' : 'evaluador',
+                    'activo' => true,
+                    'creado_en' => now(),
+                    'actualizado_en' => now(),
+                ]]);
+
+            $proyecto->docentes()->syncWithoutDetaching($docentesParticipantes->all());
 
             $asignaturasProyecto = collect($asignaturas)
                 ->filter(fn (Asignatura $asignatura) => str_starts_with($asignatura->clave, $claveCarrera.'-') && (int) $asignatura->grado === $grado)
@@ -554,6 +596,69 @@ class DatabaseSeeder extends Seeder
                     ],
                 ])->all(),
             );
+
+            $proyectos[$claveEquipo] = $proyecto;
+        }
+
+        return $proyectos;
+    }
+
+    private function crearEntregasDemostrativas(array $proyectos, Collection $alumnos): void
+    {
+        foreach (array_values($proyectos) as $indiceProyecto => $proyecto) {
+            $proyecto->loadMissing(['guiaIntegradora.apartados.firmas', 'equipo.integrantes']);
+            $autor = $proyecto->equipo->integrantes->first()
+                ?? $alumnos->firstWhere('grupo_academico_id', $proyecto->equipo->grupo_academico_id);
+
+            foreach ($proyecto->guiaIntegradora->apartados as $indiceApartado => $apartado) {
+                if (! $autor || ($indiceProyecto + $indiceApartado) % 3 === 2) {
+                    continue;
+                }
+
+                $entrega = Entrega::query()->updateOrCreate(
+                    [
+                        'proyecto_id' => $proyecto->id,
+                        'apartado_guia_id' => $apartado->id,
+                        'equipo_id' => $proyecto->equipo_id,
+                        'version' => 1,
+                    ],
+                    [
+                        'entregado_por_id' => $autor->id,
+                        'estado' => $indiceApartado % 2 === 0 ? 'aprobada' : 'correccion',
+                        'entregado_en' => now()->subDays(max(1, 12 - $indiceApartado - $indiceProyecto)),
+                    ],
+                );
+
+                $revisor = $apartado->firmas->first()?->docente_id;
+                if ($revisor) {
+                    $revision = Revision::query()->updateOrCreate(
+                        ['entrega_id' => $entrega->id, 'revisor_id' => $revisor],
+                        [
+                            'resultado' => $entrega->estado,
+                            'calificacion' => $entrega->estado === 'aprobada' ? 9.2 : 7.5,
+                            'observaciones' => $entrega->estado === 'aprobada'
+                                ? 'Entrega completa y bien estructurada.'
+                                : 'Atender las observaciones y enviar una nueva versión.',
+                            'revisado_en' => now()->subDays(max(0, 10 - $indiceApartado - $indiceProyecto)),
+                        ],
+                    );
+
+                    ComentarioRevision::query()->updateOrCreate(
+                        ['revision_id' => $revision->id, 'autor_id' => $revisor],
+                        ['comentario' => 'Comentario demostrativo de seguimiento académico.', 'visible_estudiante' => true],
+                    );
+                }
+
+                if ($apartado->requiere_codigo) {
+                    ProductoCodigo::query()->updateOrCreate(
+                        ['proyecto_id' => $proyecto->id, 'entrega_id' => $entrega->id],
+                        [
+                            'repositorio_url' => 'https://github.com/utvm-demo/proyecto-integrador-'.$proyecto->id,
+                            'version' => 'v1.0-demo',
+                        ],
+                    );
+                }
+            }
         }
     }
 

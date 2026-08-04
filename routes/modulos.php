@@ -64,10 +64,10 @@ Route::get('/docente-materia/revisiones', [ControladorDocenteMateria::class, 're
 Route::put('/docente-materia/revisiones/{entrega}', [ControladorDocenteMateria::class, 'guardarRevision'])->name('docente-materia.revisiones.guardar');
 Route::post('/docente-materia/revisiones/{entrega}/comentarios', [ControladorDocenteMateria::class, 'guardarComentario'])->name('docente-materia.comentarios.guardar');
 Route::get('/docente-materia/archivos/{archivo}', [ControladorDocenteMateria::class, 'descargarArchivo'])->name('docente-materia.archivos.descargar');
-Route::get('/docente-lider/revision-codigo', [ControladorRevisionCodigo::class, 'mostrar'])->name('docente-lider.codigo');
-Route::put('/docente-lider/revision-codigo/{entrega}', [ControladorRevisionCodigo::class, 'guardarRevision'])->name('docente-lider.codigo.revisar');
-Route::post('/docente-lider/revision-codigo/{entrega}/comentarios', [ControladorRevisionCodigo::class, 'guardarComentario'])->name('docente-lider.codigo.comentar');
-Route::get('/docente-lider/revision-codigo/archivos/{archivo}', [ControladorRevisionCodigo::class, 'descargar'])->name('docente-lider.codigo.archivo');
+Route::get('/docente-materia/revision-principal', [ControladorRevisionCodigo::class, 'mostrar'])->name('docente-materia.principal');
+Route::put('/docente-materia/revision-principal/{entrega}', [ControladorRevisionCodigo::class, 'guardarRevision'])->name('docente-materia.principal.revisar');
+Route::post('/docente-materia/revision-principal/{entrega}/comentarios', [ControladorRevisionCodigo::class, 'guardarComentario'])->name('docente-materia.principal.comentar');
+Route::get('/docente-materia/revision-principal/archivos/{archivo}', [ControladorRevisionCodigo::class, 'descargar'])->name('docente-materia.principal.archivo');
 Route::get('/estudiante/proyecto', [ControladorEstudiante::class, 'proyecto'])->name('estudiante.proyecto');
 Route::get('/estudiante/entregas', [ControladorEstudiante::class, 'entregas'])->name('estudiante.entregas');
 Route::post('/estudiante/entregas/{apartado}', [ControladorEstudiante::class, 'guardarEntrega'])->name('estudiante.entregas.guardar');

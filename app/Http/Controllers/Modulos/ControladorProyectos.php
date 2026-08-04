@@ -46,7 +46,7 @@ class ControladorProyectos extends Controller
         ]);
 
         $equipo = Equipo::query()->with('grupoAcademico')->findOrFail($datos['equipo_id']);
-        abort_unless(GrupoAcademico::query()->whereKey($equipo->grupo_academico_id)->conMateriaLiderDelDocente((int) $request->user()->id)->exists(), 403);
+        abort_unless(GrupoAcademico::query()->whereKey($equipo->grupo_academico_id)->conLiderProyectoDelDocente((int) $request->user()->id)->exists(), 403);
         $guia = GuiaIntegradora::query()->with('asignatura')->findOrFail($datos['guia_integradora_id']);
         abort_unless(
             (int) $guia->periodo_id === (int) $equipo->grupoAcademico->periodo_id
@@ -171,7 +171,7 @@ class ControladorProyectos extends Controller
         $grupos = GrupoAcademico::query()
             ->with(['carrera:id,clave', 'periodo:id,nombre'])
             ->where('periodo_id', $periodoSeleccionado)
-            ->when($usuario->hasRole('docente_lider'), fn ($query) => $query->conMateriaLiderDelDocente($usuario->id))
+            ->when($usuario->hasRole('docente_lider'), fn ($query) => $query->conLiderProyectoDelDocente($usuario->id))
             ->orderBy('carrera_id')->orderBy('grado')->orderBy('grupo')
             ->get();
         $grupoSeleccionado = $grupos->contains('id', (int) $request->query('grupo_proyectos'))
@@ -187,7 +187,7 @@ class ControladorProyectos extends Controller
                 'asignaturas:id,nombre,clave',
             ])
             ->withCount(['docentes as docentes_count', 'asignaturas as asignaturas_count'])
-            ->when($usuario->hasRole('docente_lider'), fn ($q) => $q->whereHas('equipo.grupoAcademico', fn ($g) => $g->conMateriaLiderDelDocente($usuario->id)))
+            ->when($usuario->hasRole('docente_lider'), fn ($q) => $q->whereHas('equipo.grupoAcademico', fn ($g) => $g->conLiderProyectoDelDocente($usuario->id)))
             ->when($usuario->hasRole('docente_materia'), fn ($q) => $q->where(function ($scope) use ($usuario) {
                 $scope->whereHas('docentes', fn ($d) => $d->where('usuarios.id', $usuario->id))->orWhereHas('asignaturas', fn ($a) => $a->where('asignaturas_proyecto.docente_id', $usuario->id));
             }))
@@ -204,7 +204,7 @@ class ControladorProyectos extends Controller
             'grupoSeleccionado' => $grupoSeleccionado,
             'equipos' => Equipo::query()
                 ->with('grupoAcademico.carrera:id,clave')
-                ->when($usuario->hasRole('docente_lider'), fn ($q) => $q->whereHas('grupoAcademico', fn ($g) => $g->conMateriaLiderDelDocente($usuario->id)))
+                ->when($usuario->hasRole('docente_lider'), fn ($q) => $q->whereHas('grupoAcademico', fn ($g) => $g->conLiderProyectoDelDocente($usuario->id)))
                 ->orderBy('nombre')
                 ->get(),
             'guias' => GuiaIntegradora::query()->orderBy('nombre')->get(['id', 'nombre', 'version', 'estado']),
@@ -223,7 +223,7 @@ class ControladorProyectos extends Controller
     {
         abort_unless(
             $request->user()?->hasRole('docente_lider')
-            && GrupoAcademico::query()->whereKey($proyecto->equipo->grupo_academico_id)->conMateriaLiderDelDocente((int) $request->user()->id)->exists(),
+            && GrupoAcademico::query()->whereKey($proyecto->equipo->grupo_academico_id)->conLiderProyectoDelDocente((int) $request->user()->id)->exists(),
             403,
         );
     }

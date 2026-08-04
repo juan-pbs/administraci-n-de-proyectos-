@@ -24,15 +24,17 @@ class SistemaInterfaz
                 ['clave' => 'asignaturas', 'titulo' => 'Asignaturas', 'ruta' => route('modulos.show', 'asignaturas'), 'icono' => '◇'],
                 ['clave' => 'guias', 'titulo' => 'Guías', 'ruta' => route('modulos.show', 'guias'), 'icono' => '▣'],
             ],
-            'docente_lider' => auth()->check() && GrupoAcademico::query()->conMateriaLiderDelDocente((int) auth()->id())->exists() ? [
+            'docente_lider' => auth()->check() && GrupoAcademico::query()->conLiderProyectoDelDocente((int) auth()->id())->exists() ? [
                 ['clave' => 'usuarios', 'titulo' => 'Lista de alumnos', 'ruta' => route('modulos.show', 'usuarios'), 'icono' => '◉'],
                 ['clave' => 'equipos', 'titulo' => 'Equipos', 'ruta' => route('modulos.show', 'equipos'), 'icono' => '◫'],
                 ['clave' => 'proyectos', 'titulo' => 'Proyectos', 'ruta' => route('modulos.show', 'proyectos'), 'icono' => '□'],
-                ['clave' => 'revision-codigo', 'titulo' => 'Revisión de código', 'ruta' => route('docente-lider.codigo'), 'icono' => '</>'],
             ] : [],
             'docente_materia' => [
                 ['clave' => 'asignaciones-docente', 'titulo' => 'Mis asignaciones', 'ruta' => route('docente-materia.asignaciones'), 'icono' => '◇'],
                 ['clave' => 'revisiones-docente', 'titulo' => 'Revisiones', 'ruta' => route('docente-materia.revisiones'), 'icono' => '✓'],
+                ...(auth()->check() && GrupoAcademico::query()->conMateriaLiderDelDocente((int) auth()->id())->exists() ? [
+                    ['clave' => 'revision-principal', 'titulo' => 'Revisión principal', 'ruta' => route('docente-materia.principal'), 'icono' => '</>'],
+                ] : []),
             ],
             default => [
                 ['clave' => 'mi-proyecto', 'titulo' => 'Mi proyecto', 'ruta' => route('estudiante.proyecto'), 'icono' => '◇'],
@@ -71,12 +73,14 @@ class SistemaInterfaz
                 ['titulo' => 'Lista de alumnos', 'seccion' => 'lista-alumnos'],
                 ['titulo' => 'Equipos', 'seccion' => 'equipos'],
                 ['titulo' => 'Proyectos', 'seccion' => 'proyectos'],
-                ['titulo' => 'Revision de codigo', 'seccion' => 'revision-codigo'],
             ],
             'docente_materia' => [
                 ['titulo' => 'Panel principal', 'seccion' => 'panel-principal'],
                 ['titulo' => 'Mis asignaciones', 'seccion' => 'mis-asignaciones'],
                 ['titulo' => 'Revisiones', 'seccion' => 'revisiones'],
+                ...(auth()->check() && GrupoAcademico::query()->conMateriaLiderDelDocente((int) auth()->id())->exists() ? [
+                    ['titulo' => 'Revision principal', 'seccion' => 'revision-principal'],
+                ] : []),
             ],
             default => [
                 ['titulo' => 'Panel principal', 'seccion' => 'panel-principal'],
@@ -122,9 +126,9 @@ class SistemaInterfaz
                 ],
             ],
             'docente_lider' => [
-                'eyebrow' => 'Materia líder y organización de equipos',
+                'eyebrow' => 'Organización de equipos y proyectos',
                 'title' => 'Panel del docente líder',
-                'description' => 'Consulta sus grupos, organiza alumnos y equipos, y asigna los proyectos integradores.',
+                'description' => 'Consulta sus grupos, organiza alumnos y equipos, y asigna proyectos sin asumir necesariamente su revisión académica.',
                 'badge' => 'Docente líder',
                 'stats' => [['label' => 'Grupos', 'value' => 'Asignados'], ['label' => 'Alumnos', 'value' => 'Por cargar'], ['label' => 'Equipos', 'value' => 'Por organizar'], ['label' => 'Proyectos', 'value' => 'En seguimiento']],
                 'modules' => [['title' => 'Lista de alumnos', 'description' => 'Carga y consulta por grupo.', 'status' => 'Editable', 'route' => 'usuarios'], ['title' => 'Equipos', 'description' => 'Distribución de integrantes.', 'status' => 'Editable', 'route' => 'equipos'], ['title' => 'Proyectos', 'description' => 'Asignación y participación docente.', 'status' => 'Editable', 'route' => 'proyectos']],

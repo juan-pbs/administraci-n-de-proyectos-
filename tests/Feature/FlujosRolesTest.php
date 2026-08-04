@@ -30,9 +30,10 @@ function escenarioFlujosRoles(): array
     $matter = User::factory()->create(['rol_id' => $roles['docente_materia']->id, 'carrera_id' => $career->id]);
     $studentA = User::factory()->create(['rol_id' => $roles['estudiante']->id, 'carrera_id' => $career->id]);
     $studentB = User::factory()->create(['rol_id' => $roles['estudiante']->id, 'carrera_id' => $career->id]);
-    $leader->asignaturasComoDocente()->attach($subject->id, ['periodo_id' => $period->id, 'activo' => true]);
+    $matter->asignaturasComoDocente()->attach($subject->id, ['periodo_id' => $period->id, 'activo' => true]);
     $group = GrupoAcademico::query()->create([
         'periodo_id' => $period->id, 'carrera_id' => $career->id, 'lider_proyecto_id' => $leader->id,
+        'docente_materia_lider_id' => $matter->id,
         'asignatura_lider_id' => $subject->id, 'nombre' => '5A', 'grado' => 5, 'grupo' => 'A',
     ]);
     $studentA->update(['grupo_academico_id' => $group->id]);
@@ -54,6 +55,7 @@ function escenarioFlujosRoles(): array
     $project = Proyecto::query()->create(['guia_integradora_id' => $guide->id, 'equipo_id' => $team->id, 'titulo' => 'Proyecto', 'estado' => 'en_proceso']);
     $project->docentes()->attach($matter->id, ['tipo_participacion' => 'evaluador', 'activo' => true]);
     FirmaApartadoGuia::query()->create(['apartado_guia_id' => $section->id, 'docente_id' => $matter->id, 'orden' => 1, 'etiqueta' => 'Evaluador', 'requerida' => true]);
+    FirmaApartadoGuia::query()->create(['apartado_guia_id' => $codeSection->id, 'docente_id' => $matter->id, 'orden' => 1, 'etiqueta' => 'Materia líder', 'requerida' => true]);
 
     return compact('leader', 'matter', 'studentA', 'studentB', 'team', 'project', 'section', 'codeSection');
 }
@@ -74,7 +76,7 @@ test('integrantes del equipo comparten entregas y conservan autoria por version'
     expect(\App\Models\ArchivoEntrega::query()->count())->toBe(3);
 });
 
-test('codigo pertenece al docente lider de la materia lider y acepta repositorio y comprimido', function () {
+test('codigo pertenece al docente de la materia lider y acepta repositorio y comprimido', function () {
     Storage::fake('local');
     $data = escenarioFlujosRoles();
 
@@ -84,9 +86,9 @@ test('codigo pertenece al docente lider de la materia lider y acepta repositorio
         'archivos' => [UploadedFile::fake()->create('fuentes.zip', 100)],
     ])->assertRedirect();
 
-    $this->actingAs($data['leader'])->get(route('docente-lider.codigo'))
+    $this->actingAs($data['matter'])->get(route('docente-materia.principal'))
         ->assertOk()->assertSee('https://github.com/ejemplo/proyecto')->assertSee('fuentes.zip');
-    $this->actingAs($data['matter'])->get(route('docente-lider.codigo'))->assertForbidden();
+    $this->actingAs($data['leader'])->get(route('docente-materia.principal'))->assertForbidden();
 });
 
 test('docente de materia revisa solo el apartado y proyecto asignados', function () {

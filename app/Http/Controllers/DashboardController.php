@@ -31,7 +31,7 @@ class DashboardController extends Controller
             ->with(['carrera:id,clave', 'periodo:id,nombre', 'liderProyecto:id,nombre'])
             ->withCount(['alumnos', 'equipos'])
             ->when($periodo, fn ($query) => $query->where('periodo_id', $periodo->id))
-            ->when($role === 'docente_lider', fn ($query) => $query->conMateriaLiderDelDocente($user->id))
+            ->when($role === 'docente_lider', fn ($query) => $query->conLiderProyectoDelDocente($user->id))
             ->when($role === 'docente_materia', fn ($query) => $query->whereHas('equipos.proyectos', fn ($proyectos) => $proyectos->where(function ($scope) use ($user) {
                 $scope->whereHas('docentes', fn ($docentes) => $docentes->where('usuarios.id', $user->id))
                     ->orWhereHas('asignaturas', fn ($asignaturas) => $asignaturas->where('asignaturas_proyecto.docente_id', $user->id));
@@ -45,7 +45,6 @@ class DashboardController extends Controller
             $asignacionesDocente = FirmaApartadoGuia::query()
                 ->with(['asignatura:id,nombre,clave', 'apartadoGuia:id,guia_integradora_id,orden,titulo,ponderacion,fecha_limite', 'apartadoGuia.guiaIntegradora:id,periodo_id,nombre'])
                 ->where('docente_id', $user->id)
-                ->whereHas('apartadoGuia', fn ($apartado) => $apartado->where('requiere_codigo', false))
                 ->when($periodo, fn ($query) => $query->whereHas('apartadoGuia.guiaIntegradora', fn ($guia) => $guia->where('periodo_id', $periodo->id)))
                 ->orderBy('apartado_guia_id')->limit(6)->get();
         }
@@ -75,7 +74,7 @@ class DashboardController extends Controller
             ->when($periodoId, fn ($query) => $query->where('periodo_id', $periodoId));
 
         if ($rol === 'docente_lider') {
-            $grupos->conMateriaLiderDelDocente($usuarioId);
+            $grupos->conLiderProyectoDelDocente($usuarioId);
         } elseif ($rol === 'docente_materia') {
             $grupos->whereHas('equipos.proyectos', fn ($proyectos) => $proyectos->where(function ($scope) use ($usuarioId) {
                 $scope->whereHas('docentes', fn ($docentes) => $docentes->where('usuarios.id', $usuarioId))
@@ -101,7 +100,6 @@ class DashboardController extends Controller
         if ($rol === 'docente_materia') {
             $apartados = FirmaApartadoGuia::query()
                 ->where('docente_id', $usuarioId)
-                ->whereHas('apartadoGuia', fn ($apartado) => $apartado->where('requiere_codigo', false))
                 ->when($periodoId, fn ($query) => $query->whereHas('apartadoGuia.guiaIntegradora', fn ($guia) => $guia->where('periodo_id', $periodoId)))
                 ->pluck('apartado_guia_id');
             $entregas = Entrega::query()->whereIn('apartado_guia_id', $apartados)
@@ -144,7 +142,6 @@ class DashboardController extends Controller
             $apartados = FirmaApartadoGuia::query()
                 ->with('apartadoGuia:id,guia_integradora_id,fecha_limite')
                 ->where('docente_id', $usuarioId)
-                ->whereHas('apartadoGuia', fn ($apartado) => $apartado->where('requiere_codigo', false))
                 ->when($periodoId, fn ($query) => $query->whereHas('apartadoGuia.guiaIntegradora', fn ($guia) => $guia->where('periodo_id', $periodoId)))
                 ->get()->pluck('apartadoGuia')->filter();
 
