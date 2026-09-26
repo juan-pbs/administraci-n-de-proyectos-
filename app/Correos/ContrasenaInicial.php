@@ -15,7 +15,7 @@ class ContrasenaInicial extends Mailable
     public function __construct(
         public string $nombre,
         public string $matricula,
-        public string $contrasenaTemporal,
+        public string $contrasenaInicial,
     ) {}
 
     public function envelope(): Envelope

@@ -109,7 +109,7 @@ test('la ayuda publica de acceso solo muestra temas de ingreso', function () {
         ->assertOk()
         ->assertSee('Recuperar contrasena')
         ->assertSee('Correo registrado')
-        ->assertSee('Enviar instrucciones')
+        ->assertSee('Enviar codigo')
         ->assertDontSee('Mi proyecto')
         ->assertDontSee('Periodos academicos')
         ->assertDontSee('Guias integradoras');

@@ -61,7 +61,7 @@ class ControladorUsuarios extends Controller
             abort_unless(GrupoAcademico::query()->whereKey($datos['grupo_academico_id'])->conMateriaLiderDelDocente((int) $request->user()->id)->exists(), 403);
         }
 
-        $contrasenaTemporal = $this->generarContrasenaTemporal();
+        $contrasenaInicial = $this->generarContrasenaAleatoria();
 
         $usuario = User::query()->create([
             'nombre' => $datos['nombre'],
@@ -71,17 +71,17 @@ class ControladorUsuarios extends Controller
             'carrera_id' => $datos['carrera_id'] ?? null,
             'grupo_academico_id' => $datos['grupo_academico_id'] ?? null,
             'estado' => 'activo',
-            'contrasena' => $contrasenaTemporal,
-            'debe_cambiar_contrasena' => true,
+            'contrasena' => $contrasenaInicial,
+            'debe_cambiar_contrasena' => false,
         ]);
 
         Mail::to($usuario->correo)->send(new ContrasenaInicial(
             nombre: $usuario->nombre,
             matricula: $usuario->matricula,
-            contrasenaTemporal: $contrasenaTemporal,
+            contrasenaInicial: $contrasenaInicial,
         ));
 
-        return redirect()->route('modulos.show', 'usuarios')->with('estado', 'Usuario registrado correctamente. La contrasena temporal fue enviada al correo registrado.');
+        return redirect()->route('modulos.show', 'usuarios')->with('estado', 'Usuario registrado correctamente. La contrasena fue enviada al correo registrado.');
     }
 
     public function guardarDocentes(Request $request): RedirectResponse
@@ -102,7 +102,7 @@ class ControladorUsuarios extends Controller
 
         DB::transaction(function () use ($datos, $roles, &$correosPendientes): void {
             foreach ($datos['docentes'] as $datosDocente) {
-                $contrasenaTemporal = $this->generarContrasenaTemporal();
+                $contrasenaInicial = $this->generarContrasenaAleatoria();
                 $docente = User::query()->create([
                     'nombre' => $datosDocente['nombre'],
                     'matricula' => $datosDocente['matricula'],
@@ -110,23 +110,23 @@ class ControladorUsuarios extends Controller
                     'rol_id' => $roles[$datosDocente['rol']],
                     'carrera_id' => $datosDocente['carrera_id'],
                     'estado' => 'activo',
-                    'contrasena' => $contrasenaTemporal,
-                    'debe_cambiar_contrasena' => true,
+                    'contrasena' => $contrasenaInicial,
+                    'debe_cambiar_contrasena' => false,
                 ]);
                 $docente->carrerasComoDocente()->syncWithoutDetaching([
                     $datosDocente['carrera_id'] => ['activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
                 ]);
-                $correosPendientes[] = [$docente, $contrasenaTemporal];
+                $correosPendientes[] = [$docente, $contrasenaInicial];
             }
         });
 
         $correosFallidos = 0;
-        foreach ($correosPendientes as [$docente, $contrasenaTemporal]) {
+        foreach ($correosPendientes as [$docente, $contrasenaInicial]) {
             try {
                 Mail::to($docente->correo)->send(new ContrasenaInicial(
                     nombre: $docente->nombre,
                     matricula: $docente->matricula,
-                    contrasenaTemporal: $contrasenaTemporal,
+                    contrasenaInicial: $contrasenaInicial,
                 ));
             } catch (Throwable) {
                 $correosFallidos++;
@@ -174,8 +174,7 @@ class ControladorUsuarios extends Controller
                 ->values()
                 ->all();
 
-            $filasInvalidas = collect($alumnos)->filter(fn (array $alumno) =>
-                $alumno['matricula'] === ''
+            $filasInvalidas = collect($alumnos)->filter(fn (array $alumno) => $alumno['matricula'] === ''
                 || $alumno['nombre_completo'] === ''
                 || ! filter_var($alumno['correo_electronico'], FILTER_VALIDATE_EMAIL)
             );
@@ -236,7 +235,7 @@ class ControladorUsuarios extends Controller
                         throw ValidationException::withMessages(['listas' => "La lista {$lista['nombre']} contiene datos incompletos o un correo inválido."]);
                     }
                     $existente = User::query()->where('matricula', $fila['matricula'])->first();
-                    $contrasena = $existente ? null : $this->generarContrasenaTemporal();
+                    $contrasena = $existente ? null : $this->generarContrasenaAleatoria();
                     $alumno = User::query()->updateOrCreate(['matricula' => $fila['matricula']], [
                         'nombre' => $fila['nombre_completo'],
                         'correo' => $fila['correo_electronico'],
@@ -244,7 +243,7 @@ class ControladorUsuarios extends Controller
                         'carrera_id' => $lista['carrera_id'],
                         'grupo_academico_id' => $grupo->id,
                         'estado' => 'activo',
-                        ...($contrasena ? ['contrasena' => $contrasena, 'debe_cambiar_contrasena' => true] : []),
+                        ...($contrasena ? ['contrasena' => $contrasena, 'debe_cambiar_contrasena' => false] : []),
                     ]);
                     if ($contrasena) {
                         $correosPendientes[] = [$alumno, $contrasena];
@@ -261,7 +260,7 @@ class ControladorUsuarios extends Controller
                 Mail::to($alumno->correo)->send(new ContrasenaInicial(
                     nombre: $alumno->nombre,
                     matricula: $alumno->matricula,
-                    contrasenaTemporal: $contrasena,
+                    contrasenaInicial: $contrasena,
                 ));
             } catch (Throwable) {
                 $correosFallidos++;
@@ -399,7 +398,7 @@ class ControladorUsuarios extends Controller
                 }
 
                 $alumnoExistente = User::query()->where('matricula', $matricula)->first();
-                $contrasenaTemporal = $alumnoExistente ? null : $this->generarContrasenaTemporal();
+                $contrasenaInicial = $alumnoExistente ? null : $this->generarContrasenaAleatoria();
 
                 $alumno = User::query()->updateOrCreate(
                     ['matricula' => $matricula],
@@ -410,21 +409,21 @@ class ControladorUsuarios extends Controller
                         'carrera_id' => $carrera->id,
                         'grupo_academico_id' => $grupoAcademico->id,
                         'estado' => 'activo',
-                        ...($contrasenaTemporal ? [
-                            'contrasena' => $contrasenaTemporal,
-                            'debe_cambiar_contrasena' => true,
+                        ...($contrasenaInicial ? [
+                            'contrasena' => $contrasenaInicial,
+                            'debe_cambiar_contrasena' => false,
                         ] : []),
                     ],
                 );
 
                 $alumnoExistente ? $resumen['actualizados']++ : $resumen['creados']++;
 
-                if ($contrasenaTemporal) {
+                if ($contrasenaInicial) {
                     $correosPendientes[] = [
                         'correo' => $alumno->correo,
                         'nombre' => $alumno->nombre,
                         'matricula' => $alumno->matricula,
-                        'contrasena_temporal' => $contrasenaTemporal,
+                        'contrasena_inicial' => $contrasenaInicial,
                     ];
                 }
 
@@ -468,7 +467,7 @@ class ControladorUsuarios extends Controller
                 Mail::to($correoPendiente['correo'])->send(new ContrasenaInicial(
                     nombre: $correoPendiente['nombre'],
                     matricula: $correoPendiente['matricula'],
-                    contrasenaTemporal: $correoPendiente['contrasena_temporal'],
+                    contrasenaInicial: $correoPendiente['contrasena_inicial'],
                 ));
             } catch (Throwable) {
                 $resumen['correos_fallidos']++;
@@ -632,9 +631,9 @@ class ControladorUsuarios extends Controller
         ];
     }
 
-    private function generarContrasenaTemporal(): string
+    private function generarContrasenaAleatoria(): string
     {
-        return 'Tmp-'.Str::upper(Str::random(4)).'-'.random_int(1000, 9999);
+        return Str::password(14);
     }
 
     /**

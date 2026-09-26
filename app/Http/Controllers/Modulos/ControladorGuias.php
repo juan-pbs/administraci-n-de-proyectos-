@@ -11,6 +11,7 @@ use App\Models\FirmaApartadoGuia;
 use App\Models\GuiaIntegradora;
 use App\Models\Periodo;
 use App\Models\User;
+use App\Servicios\CicloAcademico;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -50,10 +51,15 @@ class ControladorGuias extends Controller
             'competencias_evaluar' => ['nullable', 'string'],
             'objetivo_aprendizaje' => ['nullable', 'string'],
             'version' => ['required', 'string', 'max:30'],
-            'estado' => ['required', 'string', 'max:30'],
+            'estado' => ['sometimes', 'in:borrador'],
         ]);
 
         $asignatura = Asignatura::query()->findOrFail($datos['asignatura_id']);
+        $inicio = Periodo::findOrFail($datos['periodo_id']);
+        $fin = isset($datos['periodo_fin_id']) ? Periodo::findOrFail($datos['periodo_fin_id']) : $inicio;
+        if ($inicio->estado === 'cerrado' || $fin->estado === 'cerrado' || $fin->fecha_fin < $inicio->fecha_fin) {
+            throw ValidationException::withMessages(['periodo_id' => 'Selecciona periodos abiertos y un periodo final igual o posterior al inicial.']);
+        }
         $guiaDuplicada = GuiaIntegradora::query()
             ->where('periodo_id', $datos['periodo_id'])
             ->where('cuatrimestre', $datos['cuatrimestre'])
@@ -66,9 +72,17 @@ class ControladorGuias extends Controller
             ]);
         }
 
-        GuiaIntegradora::query()->create([...$datos, 'creado_por' => $request->user()->id]);
+        GuiaIntegradora::query()->create([...$datos, 'estado' => 'borrador', 'creado_por' => $request->user()->id]);
 
         return redirect()->route('modulos.show', 'guias')->with('estado', 'Guía integradora guardada correctamente.');
+    }
+
+    public function publicar(Request $request, GuiaIntegradora $guia, CicloAcademico $ciclo): RedirectResponse
+    {
+        $this->autorizarDireccion($request);
+        $ciclo->publicar($guia);
+
+        return back()->with('estado', 'Guía publicada. Ya puede asignarse a los proyectos.');
     }
 
     public function guardarApartado(Request $request): RedirectResponse
@@ -231,8 +245,8 @@ class ControladorGuias extends Controller
 
         $guias = GuiaIntegradora::query()
             ->with([
-                'periodo:id,nombre',
-                'periodoFin:id,nombre',
+                'periodo:id,nombre,estado',
+                'periodoFin:id,nombre,estado',
                 'asignatura:id,carrera_id,nombre,clave',
                 'apartados.asignaturasContribuyentes:id,nombre,clave',
                 'apartados.firmas.asignatura:id,nombre,clave',
@@ -255,15 +269,17 @@ class ControladorGuias extends Controller
             ->orderByDesc('creado_en')
             ->get();
 
+        $editables = $guias->filter(fn ($guia) => $guia->estado !== 'cerrada' && ($guia->periodoFin ?? $guia->periodo)->estado !== 'cerrado');
         $apartados = ApartadoGuia::query()
             ->with('guiaIntegradora:id,nombre,version')
-            ->whereIn('guia_integradora_id', $guias->pluck('id'))
+            ->whereIn('guia_integradora_id', $editables->pluck('id'))
             ->orderBy('guia_integradora_id')
             ->orderBy('orden')
             ->get(['id', 'guia_integradora_id', 'orden', 'titulo']);
 
         return [
             'guias' => $guias,
+            'guiasEditables' => $editables,
             'periodos' => $periodos,
             'carreras' => $carreras,
             'filtrosGuias' => $filtros,

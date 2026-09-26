@@ -17,11 +17,11 @@
             <td style="border: 1px solid #cbd5e1; padding: 8px 12px;">{{ $matricula }}</td>
         </tr>
         <tr>
-            <td style="border: 1px solid #cbd5e1; padding: 8px 12px; font-weight: bold;">Contraseña temporal</td>
-            <td style="border: 1px solid #cbd5e1; padding: 8px 12px;">{{ $contrasenaTemporal }}</td>
+            <td style="border: 1px solid #cbd5e1; padding: 8px 12px; font-weight: bold;">Contraseña</td>
+            <td style="border: 1px solid #cbd5e1; padding: 8px 12px;">{{ $contrasenaInicial }}</td>
         </tr>
     </table>
 
-    <p>En tu primer inicio de sesión el sistema te solicitará actualizar la contraseña.</p>
+    <p>Esta es tu contraseña de acceso. Puedes cambiarla cuando lo necesites desde el sistema.</p>
 </body>
 </html>

@@ -18,6 +18,14 @@
         </div>
     </section>
 
+    @if(in_array($role, ['coordinacion', 'docente_lider'], true))
+        @include('modulos.busqueda-panel')
+    @endif
+
+    @if($role === 'docente_lider' && collect($navegacion)->contains('clave', 'estado-guias'))
+        <section class="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-5"><h3 class="font-bold text-[#0D376D]">Estado de las guías de tus equipos</h3><p class="mt-2 text-sm text-slate-600">Consulta cuáles están finalizadas, dónde faltan entregas o firmas y qué equipos necesitan una decisión de prórroga.</p><a href="{{ route('docente-lider.estado-guias') }}" class="mt-3 inline-block rounded bg-[#155AA3] px-4 py-2 text-sm font-bold text-white">Ver estado de las guías</a></section>
+    @endif
+
     @if($role !== 'estudiante')
     <section class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         @foreach ($panel['stats'] as $stat)

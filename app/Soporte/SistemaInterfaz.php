@@ -28,6 +28,8 @@ class SistemaInterfaz
                 ['clave' => 'usuarios', 'titulo' => 'Lista de alumnos', 'ruta' => route('modulos.show', 'usuarios'), 'icono' => '◉'],
                 ['clave' => 'equipos', 'titulo' => 'Equipos', 'ruta' => route('modulos.show', 'equipos'), 'icono' => '◫'],
                 ['clave' => 'proyectos', 'titulo' => 'Proyectos', 'ruta' => route('modulos.show', 'proyectos'), 'icono' => '□'],
+                ['clave' => 'estado-guias', 'titulo' => 'Estado de las guías', 'ruta' => route('docente-lider.estado-guias'), 'icono' => '▣'],
+                ['clave' => 'cierres', 'titulo' => 'Cierres y prórrogas', 'ruta' => route('docente-lider.cierres'), 'icono' => '◷'],
                 ['clave' => 'revision-codigo', 'titulo' => 'Revisión de código', 'ruta' => route('docente-lider.codigo'), 'icono' => '</>'],
             ] : [],
             'docente_materia' => [
@@ -41,10 +43,28 @@ class SistemaInterfaz
             ],
         };
 
-        return [
+        $navegacion = [
             ...$base,
             ...$porRol,
+            ...($rol === 'docente_lider' ? [
+                ['clave' => 'asignaciones-docente', 'titulo' => 'Mis asignaciones', 'ruta' => route('docente-materia.asignaciones'), 'icono' => '◇'],
+                ['clave' => 'revisiones-docente', 'titulo' => 'Revisiones de apartados', 'ruta' => route('docente-materia.revisiones'), 'icono' => '✓'],
+            ] : []),
+            ...(in_array($rol, ['docente_lider', 'docente_materia'], true) ? [
+                ['clave' => 'mi-firma', 'titulo' => 'Mi firma', 'ruta' => route('docente.firma'), 'icono' => '✎'],
+            ] : []),
         ];
+        $contexto = request()->input('proyecto_contexto');
+        if ($rol === 'estudiante' && is_scalar($contexto) && filter_var($contexto, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]])) {
+            foreach ($navegacion as &$item) {
+                if (in_array($item['clave'], ['mi-proyecto', 'mis-entregas', 'codigo-estudiante'], true)) {
+                    $item['ruta'] .= '?proyecto_contexto='.(int) $contexto;
+                }
+            }
+            unset($item);
+        }
+
+        return $navegacion;
     }
 
     /**

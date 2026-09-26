@@ -51,7 +51,7 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"npm run dev\" --names='server,queue,vite'"
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fdba74,#86efac\" \"cd public && php -d upload_max_filesize=150M -d post_max_size=512M -S 127.0.0.1:8000 -t . ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php\" \"php artisan queue:work --tries=4 --timeout=60\" \"npm run dev\" \"php artisan schedule:work\" --names='server,queue,vite,scheduler'"
         ],
         "test": [
             "@php artisan config:clear --ansi @no_additional_args",

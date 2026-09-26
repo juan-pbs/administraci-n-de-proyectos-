@@ -26,7 +26,7 @@ test('users can authenticate using the login screen', function () {
     $response->assertRedirect('/dashboard');
 });
 
-test('users with temporary password must update it on first login', function () {
+test('assigned passwords allow direct login without a mandatory change', function () {
     $user = User::factory()->create([
         'contrasena' => 'password',
         'debe_cambiar_contrasena' => true,
@@ -38,9 +38,9 @@ test('users with temporary password must update it on first login', function () 
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('contrasena.editar'));
+    $response->assertRedirect('/dashboard');
 
-    $this->get('/dashboard')->assertRedirect(route('contrasena.editar'));
+    $this->get('/dashboard')->assertOk();
 
     $this->post(route('contrasena.actualizar'), [
         'contrasena_actual' => 'password',

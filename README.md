@@ -1,315 +1,176 @@
 # Sistema de Administración de Proyectos Integradores
 
-Aplicación web desarrollada con Laravel para organizar el proceso académico de los proyectos integradores de la UTVM. El sistema administra periodos, carreras, grupos, usuarios, asignaturas, guías, equipos, proyectos, entregas y revisiones de acuerdo con el alcance de cada rol.
+Aplicación Laravel para administrar periodos, carreras, grupos, alumnos, docentes, guías, equipos, entregas, firmas y documentos finales de la UTVM.
 
-## Estado del proyecto
+## Funciones
 
-El repositorio contiene una versión funcional con:
+- Acceso por matrícula y contraseña, permisos y paneles por rol.
+- Alta individual y carga de varias listas de alumnos por Excel, con vista previa y validación antes de importar.
+- Contraseña inicial aleatoria normal; cambio voluntario con contraseña actual.
+- Recuperación dentro del sistema: correo registrado → código de ocho dígitos → nueva contraseña → login. Código con vigencia de diez minutos y reenvío después de tres minutos, controlado en servidor y con cuenta regresiva. Sin bloqueo por intentos fallidos de login.
+- Vistas de acceso sin caché y limpieza de campos al regresar con el navegador. Al recuperar la contraseña se invalidan las sesiones y las cookies de acceso anteriores.
+- Búsqueda de acciones para coordinación y docente líder mediante sinónimos, palabras incompletas, acentos y errores leves. Solo ofrece módulos autorizados; no depende de servicios externos de IA.
+- Periodos: borrador → activo → cerrado. Solo puede existir un periodo activo. Coordinación revisa pendientes antes de cerrar.
+- Guías: borrador → publicada → cerrada. La publicación valida apartados, ponderaciones y evaluadores; el cierre corresponde al fin de su periodo final.
+- Entregas colaborativas con varios archivos y versiones, revisiones, comentarios, calificaciones y correcciones.
+- Firma docente por imagen PNG/JPG o dibujo en el navegador, confirmada con la contraseña actual. Normalización de imagen, cifrado y aprobación explícita por versión y contexto del proyecto.
+- Vista previa de guías y apartados antes de guardar. PDF institucional con contenido, materias contribuyentes y firmas por apartado.
+- PDF finales completos guardados como bytes cifrados e inmutables, con hash de integridad. Las descargas recuperan el archivo emitido; cambiar los datos actuales no reconstruye el historial.
+- Repositorio y URL HTTPS de trabajo alojado opcional, con instaladores APK/EXE/MSI/DMG/AppImage/DEB y comprimidos. Repositorio, URL y aplicación mantienen los mismos permisos de la materia líder del grupo.
+- Avisos de asignaciones y cambios, recordatorios previos al vencimiento y avisos al líder por entregas o firmas pendientes. Cola y programador independientes.
+- Cierre con constancia de pendientes o prórroga del líder para un equipo, fecha y apartados concretos. El resto de la guía permanece bloqueado.
+- Estado de las guías para el líder: finalizadas, listas para PDF, pendientes, prórrogas activas/vencidas y cierres incompletos. Filtros y paginación de 10, 20 o 40 equipos; resumen global. El formato tiene botones para regresar a la página y filtros de origen.
 
-- Autenticación por matrícula y contraseña.
-- Recuperación de acceso y cambio obligatorio de contraseña inicial.
-- Navegación, permisos y dashboard diferenciados por rol.
-- Operación independiente por periodo académico.
-- Carga masiva de alumnos mediante varias listas de Excel.
-- Conservación de docentes entre periodos, sin heredar sus asignaturas.
-- Gestión de carreras, grupos, asignaturas y materias líderes.
-- Datos demostrativos ligeros para validar los flujos principales sin llenar la base innecesariamente.
-- Configuración de guías integradoras por cuatrimestre.
-- Creación de equipos únicamente con alumnos libres del mismo grupo.
-- Creación y asignación de proyectos por el docente líder.
-- Entregas colaborativas con varios archivos y registro del integrante que entregó.
-- Revisión, comentarios, solicitud de correcciones y calificación.
-- Registro de repositorios y descarga de archivos comprimidos.
-- Filtros asíncronos que actualizan únicamente el apartado consultado.
-- Vistas de error personalizadas y autorización de rutas por rol.
-
-Las vistas de notificaciones, bitácora, reportes y respaldos fueron retiradas del sistema.
+El formato PDF es una guía institucional de seguimiento. No concatena automáticamente los archivos Word, Excel o PDF entregados por los alumnos. Las firmas visibles en un PDF o una pantalla pueden capturarse; el sistema protege su almacenamiento, acceso y vínculo con la aprobación, pero no puede impedir una captura de pantalla.
 
 ## Roles
 
-### Coordinación
+| Rol | Alcance |
+| --- | --- |
+| Coordinación | Periodos, carreras, grupos, usuarios, asignaturas, jerarquía y estructura de las guías. |
+| Docente líder | Sus grupos y equipos, proyectos, revisión de código de su materia líder, estado de las guías, cierres y prórrogas. |
+| Docente de materia | Apartados y equipos asignados, archivos documentales, revisiones, comentarios y firma. |
+| Alumno | Su equipo y proyectos, entregas y versiones, observaciones, repositorio y aplicación cuando se soliciten. |
 
-Integra las funciones de dirección/coordinación y encargado de proyectos.
-
-- Administra periodos, carreras, grupos y usuarios.
-- Registra varios docentes desde un mismo formulario.
-- Carga varias listas de alumnos y revisa una vista previa antes de confirmar.
-- Configura asignaturas y asigna docentes por periodo.
-- Define qué asignatura es la materia líder de cada grupo.
-- Asigna docentes líderes mediante la materia líder.
-- Configura las guías y sus apartados para todos los equipos del mismo cuatrimestre.
-- Define qué parte de la guía calificará cada docente.
-
-El dashboard de Coordinación es informativo y no funciona como un conjunto de accesos rápidos.
-
-### Docente líder
-
-Integra las funciones de docente asesor y líder de proyecto.
-
-- Visualiza únicamente los grupos que le fueron asignados.
-- Consulta las listas de alumnos, pero no puede crear ni importar alumnos.
-- Crea equipos cuando existen alumnos libres en el grupo seleccionado.
-- Asigna o retira alumnos respetando que todos pertenezcan al mismo grupo.
-- Crea proyectos y los asigna a los equipos.
-- Consulta el avance de sus grupos.
-- Revisa productos de código solamente cuando su asignatura fue configurada como materia líder.
-- Visualiza repositorios, archivos y comprimidos enviados por los alumnos.
-
-El número de un equipo se genera con el consecutivo siguiente dentro de su grupo.
-
-### Docente de materia
-
-- Consulta los apartados de la guía que Coordinación le asignó.
-- Visualiza únicamente los equipos que debe revisar.
-- Descarga los archivos entregados.
-- Agrega comentarios.
-- Califica, valida, rechaza o solicita correcciones.
-- Consulta entregas pendientes de revisión y actividades vencidas sin avance.
-
-Ser docente líder de un grupo y tener asignada la materia líder son condiciones independientes.
-
-### Estudiante
-
-- Consulta su equipo, integrantes, docente líder, guía y proyecto.
-- Visualiza el estado de las entregas de su propio equipo.
-- Sube varios archivos por apartado.
-- Puede reemplazar una entrega mientras la actividad continúe dentro del plazo.
-- Visualiza qué integrante realizó la entrega.
-- Consulta entregas validadas, rechazadas y no entregadas.
-- Registra el repositorio del proyecto y adjunta archivos de código o comprimidos.
-
-## Flujo académico
-
-1. Coordinación crea o activa el periodo académico.
-2. Configura las carreras y los grupos del periodo.
-3. Carga las listas de alumnos y registra o conserva a los docentes.
-4. Configura las asignaturas y asigna sus docentes para el periodo.
-5. Define la materia líder y, mediante ella, el docente responsable de cada grupo.
-6. Configura una guía por carrera, cuatrimestre y periodo.
-7. Define los apartados, fechas, ponderaciones, evidencias y docentes calificadores.
-8. El docente líder organiza equipos con alumnos del mismo grupo.
-9. El docente líder crea los proyectos y los asigna a los equipos.
-10. Los integrantes realizan entregas y registran el producto de código.
-11. Los docentes asignados revisan, comentan, califican o solicitan correcciones.
-
-Al iniciar un periodo nuevo no se heredan alumnos, grupos, asignaciones, guías, equipos ni proyectos. Los docentes permanecen registrados, pero sus materias se configuran nuevamente.
-
-## Carga de alumnos por Excel
-
-La carga principal se realiza en **Usuarios > Alumnos**. Es posible seleccionar varias listas en una sola operación y revisar cada lista completa antes de confirmarla.
-
-Por cada archivo se seleccionan desde el formulario:
-
-- Periodo.
-- Carrera.
-- Grado.
-- Grupo.
-
-La hoja debe llamarse `Carga alumnos` y contener estas columnas:
-
-| CÉDULA | NÓMINA | CORREO |
-| --- | --- | --- |
-| Matrícula o cédula | Nombre completo | Correo válido |
-
-También se reconocen encabezados equivalentes como `matricula`, `nombre_completo` y `correo_electronico`.
-
-Reglas importantes:
-
-- No incluir filas incompletas.
-- No repetir un correo para matrículas diferentes.
-- La matrícula se conserva como identificador de texto.
-- Cada archivo representa una lista completa de un grupo.
-- El docente líder no puede cargar alumnos.
-- El sistema admite archivos `.xlsx`, `.xls`, `.csv` y `.txt` de hasta 10 MB por lista.
-
-El repositorio también incluye plantillas históricas en `public/plantillas/`.
-
-## Entregas y archivos
-
-- Cada entrega puede incluir varios archivos.
-- Cada archivo comprimido admite hasta 150 MB.
-- El servidor debe permitir un tamaño total de solicitud suficiente para cargas múltiples.
-- El sistema registra al integrante que realizó o reemplazó la entrega.
-- Otro integrante del mismo equipo puede actualizarla mientras el plazo siga vigente.
-- Los docentes autorizados pueden visualizar y descargar las evidencias.
-- Los archivos y repositorios de código se muestran únicamente al docente cuya materia fue definida como líder.
-
-## Requisitos
-
-- Docker Engine o Docker Desktop con Docker Compose.
-
-No se necesita instalar PHP, Composer, Node.js, npm, Python, MariaDB ni MySQL en la máquina local.
+Los docentes permanecen registrados al cambiar de periodo; grupos, alumnos y asignaciones se configuran por ciclo. Los proyectos históricos y sus documentos conservan los permisos correspondientes. Un alumno puede seleccionar un proyecto anterior de su equipo para atender una prórroga.
 
 ## Ejecución con Docker
 
-El proyecto está preparado para levantarse completo con Docker. El build instala dependencias de Composer, compila los recursos de Vite, levanta MariaDB, ejecuta las migraciones y carga datos demostrativos cuando la base está vacía.
-
-Clonar y entrar al proyecto:
+Requiere Docker Engine/Desktop con Compose. No requiere instalar PHP, Composer, Node o MariaDB en el equipo anfitrión.
 
 ```bash
 git clone https://github.com/juan-pbs/administraci-n-de-proyectos-.git
 cd administraci-n-de-proyectos-
-```
-
-Construir y levantar todo:
-
-```bash
 docker compose up -d --build
 ```
 
-Abrir el sistema:
+Acceso: <http://localhost:8000/login>.
 
-```text
-http://localhost:8000/login
-```
+El stack incluye `app`, `db` (MariaDB), `worker` para la cola y `scheduler` para avisos y cierres. El servicio `test` usa SQLite en memoria, sin ejecutar migraciones sobre MariaDB ni cargar datos del entorno de aplicación.
 
-No es obligatorio crear un archivo `.env`. Si se necesita cambiar puertos o variables, se puede copiar `.env.example` a `.env` y ajustar los valores. Para credenciales internas de Docker se usan las variables `DOCKER_DB_*`, asi no chocan con un `.env` local de Laravel. El archivo `.env` real no debe subirse al repositorio.
+El arranque migra la base y carga `EscenariosAcademicosSeeder` únicamente cuando no existen usuarios. Repetir el arranque conserva los datos. `AUTO_SEED=false` desactiva la carga. Si el entorno es producción, el seeder de práctica no está permitido; configura `AUTO_SEED=false`.
 
-Credenciales demostrativas:
-
-```text
-Contraseña para todos: password
-
-Coordinación:
-Matrícula: 20260001
-
-Docente líder:
-Matrícula: DOC-TI-02
-
-Docente líder con materia líder:
-Matrícula: DOC-TI-01
-
-Docente de materia:
-Matrícula: DOC-TI-04
-
-Alumno:
-Matrícula: 202600001
-```
-
-Comandos útiles:
+No es obligatorio crear `.env`. Para personalizar la instalación, copia `.env.example`: `APP_PORT`, `DB_FORWARD_PORT`, `APP_URL`, `APP_TIMEZONE`, `MAIL_*` y `DOCKER_DB_*`. Estas últimas configuran las credenciales internas de Docker sin cambiar la conexión local de Herd.
 
 ```bash
-docker compose logs -f app
-docker compose run --rm test
+docker compose ps
+docker compose logs -f app worker scheduler
+docker compose --profile test run --rm test
+docker compose exec app php artisan schedule:list
 docker compose down
-docker compose down -v
 ```
 
-`docker compose down -v` elimina también la base de datos del contenedor para empezar desde cero.
+Los volúmenes `mariadb-data` y `app-storage` conservan base y archivos. Cuando no se proporciona `APP_KEY`, el arranque conserva una clave privada en el volumen de almacenamiento y la comparte entre app, worker y scheduler. No cambies la clave en una instalación con firmas o PDF cifrados. `docker compose down -v` elimina los volúmenes: úsalo únicamente si quieres descartar esa instalación y tienes respaldo.
 
-## Tecnologías principales
+Para validar un stack separado, cambia los puertos y usa un proyecto Compose distinto; no reutilices los volúmenes de otra instalación.
 
-- Laravel 13.
-- PHP 8.4.
-- MariaDB/MySQL.
-- Tailwind CSS 4.
-- Vite 8.
-- Maatwebsite Excel y PhpSpreadsheet.
-- Laravel DOMPDF.
-- PHPWord.
-- Pest 4.
+## Ejecución local con Herd/PHP
 
-## Usuarios demostrativos
-
-Los usuarios creados por el seeder utilizan la contraseña:
-
-```text
-password
-```
-
-Coordinación:
-
-```text
-Matrícula: 20260001
-Correo: coordinacion@utvm.edu.mx
-Contraseña: password
-```
-
-Docente líder con información demostrativa:
-
-```text
-Matrícula: 20260002
-Contraseña: password
-```
-
-Otros docentes:
-
-```text
-DOC-TI-01
-DOC-TI-02
-DOC-TI-04
-```
-
-Estudiante:
-
-```text
-Matrícula: 202600001
-Contraseña: password
-```
-
-Las asignaciones exactas dependen de la base de datos cargada y del periodo activo.
-
-## Estructura relevante
-
-```text
-app/
-  Correos/
-  Http/Controllers/
-    Auth/
-    Autenticacion/
-    Modulos/
-  Models/
-  Soporte/
-
-database/
-  factories/
-  migrations/
-  seeders/
-
-public/
-  assets/utvm/
-  plantillas/
-
-resources/
-  css/
-  js/
-  views/
-    components/
-    correos/
-    errors/
-    modulos/
-      control-academico/
-      docente-lider/
-      docente-materia/
-      estudiante/
-      gestion-proyectos/
-
-routes/
-  web.php
-  modulos.php
-
-tests/
-  Feature/
-  Unit/
-```
-
-## Comandos útiles
-
-Ejecutar pruebas dentro de Docker:
+Requiere PHP 8.4.1 o superior, Composer, Node.js compatible con Vite 8 y MySQL/MariaDB. Las extensiones necesarias están declaradas por Composer e instaladas en el Dockerfile.
 
 ```bash
-docker compose run --rm test
+composer install
+npm ci
+npm run build
 ```
 
-Ver logs del contenedor principal:
+Crea `.env` desde `.env.example`, configura tu base local y una `APP_KEY` solo si es una instalación nueva. En una base nueva:
 
 ```bash
-docker compose logs -f app
+php artisan migrate
+php artisan db:seed
+php artisan serve
+php artisan queue:work --tries=4 --timeout=60
+php artisan schedule:work
 ```
 
-Reiniciar desde cero:
+`composer dev` inicia servidor, Vite, cola y programador. Para una instalación existente, respalda antes de migrar; revisa las migraciones pendientes. La migración histórica `2026_08_01_000001_clean_project_database` elimina las antiguas tablas de bitácora y notificaciones.
+
+Las cinco migraciones de septiembre agregan firmas/PDF/avisos, vínculo de firmas con su contexto, recuperación por código, restricción de periodo activo y cierres/prórrogas. No ejecutes `key:generate` para actualizar una instalación existente.
+
+## Datos de práctica y accesos
+
+La carga utiliza nombres, matrículas y títulos normales. Todos los datos personales, evidencias y firmas son ficticios. Los enlaces de repositorio pertenecen a `juan-pbs` y sirven como referencias; los paquetes adjuntos no son versiones compiladas de esos repositorios.
+
+Contenido inicial:
+
+- Dos carreras, cinco periodos (tres cerrados, uno activo y uno borrador), veinte grupos y seis asignaturas.
+- 325 usuarios: coordinación, doce docentes y 312 alumnos; docentes con y sin firma y usuarios inactivos.
+- 104 equipos, incluyendo equipos sin integrantes, y alumnos libres para probar la organización.
+- 24 guías y 84 proyectos con ocho estados distintos; 24 PDF finales.
+- Entregas completas, parciales, faltantes, corregidas, rechazadas y versiones anteriores; firmas válidas y pendientes, comentarios, comprimidos y paquetes Debian de práctica.
+- Repositorios públicos `comedor`, `e-support-system`, `equipo_dinamita` y `universidad-`. La URL de trabajo alojado queda vacía cuando no existe un despliegue confirmado.
+
+Contraseña de todas las cuentas iniciales: **password**. Solo las cuentas de práctica usan esta contraseña conocida; el alta normal genera una aleatoria.
+
+| Matrícula | Cuenta |
+| --- | --- |
+| `20260001` | Patricia Hernández, coordinación |
+| `DOC-TI-01` | Elena Rivera, líder de 8A de TI |
+| `DOC-TI-02` | Carlos Mendoza, líder de 8B de TI |
+| `DOC-TI-03` | Tomás Vega, docente con firma |
+| `DOC-TI-04` | Lucía Montes, docente con firma |
+| `DOC-TI-05` | Ana Torres, docente sin firma |
+| `DOC-MEC-01` | Sofía Ortega, líder de 8A de Mecatrónica |
+| `DOC-MEC-02` | Daniel Castillo, líder de 8B de Mecatrónica |
+| `TI41011` | Alumno del periodo activo, sin entregas |
+| `TI41031` | Alumno con correcciones pendientes |
+| `TI41051` | Alumno con aprobación de docente sin firma pendiente |
+| `TI41071` | Alumno con PDF final |
+| `TI31041` | Alumno de periodo cerrado, con prórroga activa |
+| `TI31051` | Alumno con prórroga vencida |
+| `TI41991` | Alumno libre del grupo 8A de TI |
+
+Como líder, abre **Estado de las guías** con todos los periodos para ver el historial y sus páginas. Selecciona **Mayo - Agosto 2026** para los cierres y prórrogas y **Septiembre - Diciembre 2026** para las entregas actuales. La lista completa de alumnos y docentes está en **Usuarios**.
+
+### Reemplazar la base local con respaldo
 
 ```bash
-docker compose down -v
-docker compose up -d --build
+php artisan datos:reiniciar --confirmar=administracion_proyectos
 ```
+
+En Docker:
+
+```bash
+docker compose exec app php artisan datos:reiniciar --confirmar=administracion_proyectos
+```
+
+El comando exige entorno `local` o `testing` y el nombre exacto de la base. Guarda un ZIP privado en `storage/app/private/respaldos/` con registros, archivos y la clave necesaria para descifrar el respaldo. Después reemplaza los registros en una transacción y conserva las migraciones. El ZIP contiene información sensible: conserva el acceso privado y no lo publiques. El comando no elimina los archivos antiguos ni envía mensajes durante la carga. En una instalación con cola/programador activos, detén esos servicios antes de reemplazar registros y reinícialos al terminar.
+
+Los seeders históricos anteriores permanecen como fixtures de pruebas; la carga predeterminada ya no los utiliza.
+
+## Correo y tareas programadas
+
+`MAIL_MAILER=log` guarda mensajes localmente y no entrega correo real. Las cuentas de práctica usan `example.invalid`. Para enviar correos configura SMTP y direcciones reales. El alta, la recuperación y los avisos usan esa misma configuración.
+
+```bash
+php artisan asignaciones:notificar
+php artisan cierres:revisar
+php artisan schedule:list
+```
+
+Estos comandos se programan cada minuto. La cola envía los avisos y conserva el estado para evitar duplicaciones; revisa `failed_jobs` si el proveedor falla. Los recordatorios se configuran en `config/asignaciones.php`.
+
+## Carga de alumnos y archivos
+
+En **Usuarios > Alumnos**, selecciona varias listas y revisa la vista previa. La hoja `Carga alumnos` debe contener `CÉDULA`, `NÓMINA`, `CORREO`; también se aceptan encabezados equivalentes como `matricula`, `nombre_completo` y `correo_electronico`. Cada archivo representa un grupo con periodo, carrera y grado elegidos. No se permiten matrículas/correos duplicados ni filas incompletas.
+
+Cada entrega admite varios archivos y conserva qué integrante la envió. Las rutas de descarga comprueban permisos. Los instaladores se validan por extensión y estructura básica; no se ejecutan en el servidor. Las URL HTTPS públicas no se consultan desde el servidor; la vista integrada utiliza un iframe aislado y ofrece apertura externa cuando el sitio impide incrustarse. No se ejecutan contenedores de repositorios enviados por alumnos.
+
+Docker permite archivos de hasta 150 MB y solicitudes de 512 MB. Herd utiliza `public/.user.ini`; puede necesitar reiniciar PHP. En `php artisan serve` prevalecen los límites del PHP CLI.
+
+## Pruebas y documentación
+
+```bash
+php artisan test --compact
+npm run build
+docker compose --profile test run --rm test
+```
+
+- [Cambios realizados en esta etapa](documentacion/CAMBIOS-2026-09.md)
+- [Periodos, guías, cierres, prórrogas y PDF](documentacion/CICLO-ACADEMICO.md)
+- [Recorrido por los datos de práctica](documentacion/DATOS-PRACTICA.md)
+
+Tecnologías: Laravel 13, PHP 8.4, MariaDB/MySQL, Tailwind 4, Vite 8, Maatwebsite Excel/PhpSpreadsheet, Dompdf, PHPWord y Pest 4.
+
+`.env`, respaldos, archivos privados, salidas de revisión y dependencias locales están excluidos de Git y del contexto de Docker. La exclusión de `.env` no borra su contenido de commits antiguos.

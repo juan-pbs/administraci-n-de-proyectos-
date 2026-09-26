@@ -20,7 +20,7 @@ class ControladorActualizacionContrasena extends Controller
     {
         $datos = $request->validate([
             'contrasena_actual' => ['required', 'string'],
-            'contrasena' => ['required', 'string', 'min:8', 'confirmed', 'different:contrasena_actual'],
+            'contrasena' => ['required', 'string', 'min:8', 'max:255', 'confirmed', 'different:contrasena_actual'],
         ]);
 
         if (! Hash::check($datos['contrasena_actual'], $request->user()->getAuthPassword())) {

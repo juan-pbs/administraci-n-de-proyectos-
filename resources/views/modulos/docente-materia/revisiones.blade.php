@@ -13,6 +13,7 @@
     @if(session('status'))
         <div class="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{{ session('status') }}</div>
     @endif
+    <x-mensajes-formulario />
 
     @php($apartadosPaginacion = $entregas->map(fn($entrega) => $entrega->apartado)->filter()->unique('id')->sortBy('orden')->values())
     @if($apartadosPaginacion->isNotEmpty())
@@ -69,6 +70,7 @@
                         <div class="flex items-center justify-between gap-2"><span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $revision ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700' }}">{{ $revision ? ucfirst($revision->resultado) : 'Pendiente' }}</span><span class="text-lg text-slate-400">⌄</span></div>
                     </button>
                     <div class="detalle-entrega hidden border-t border-slate-100 bg-slate-50 px-5 py-5">
+                        <a href="{{ route('documentos.mostrar', ['proyecto' => $entrega->proyecto_id, 'origen' => 'docente-materia.revisiones', 'contexto' => request()->only('page')]) }}" class="mb-4 block text-sm font-bold text-[#155AA3] underline">Consultar formato final y firmas</a>
                         <div class="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                             <div class="rounded-lg border border-slate-200 bg-white p-4">
                                 <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Evidencias entregadas</p>
@@ -89,13 +91,17 @@
                                 <p class="mt-1 text-sm text-slate-500">Ponderación: {{ number_format($entrega->apartado?->ponderacion ?? 0, 0) }}% · Versión recibida: {{ $entrega->version }}</p>
                             </div>
                         </div>
+                        <p class="mb-3 text-sm text-slate-500">{{ $entrega->habilitada_para_revision ? 'Disponible para revisión' : 'Apartado cerrado: solo consulta' }} · Plazo: {{ $entrega->fecha_limite_revision?->format('d/m/Y H:i') ?? 'Sin fecha' }}</p>
+                        <fieldset @disabled(!$entrega->habilitada_para_revision)>
                         <form method="POST" action="{{ route('docente-materia.revisiones.guardar', $entrega) }}" class="grid gap-4 lg:grid-cols-[180px_160px_minmax(0,1fr)_140px] lg:items-end">
                             @csrf @method('PUT')
                             <label><span class="text-xs font-bold uppercase text-slate-500">Resultado</span><select name="resultado" required class="mt-2 w-full rounded-md border-slate-300 text-sm"><option value="aprobada" @selected($revision?->resultado === 'aprobada')>Aprobada</option><option value="correccion" @selected($revision?->resultado === 'correccion')>Requiere corrección</option><option value="rechazada" @selected($revision?->resultado === 'rechazada')>Rechazada</option></select></label>
                             <label><span class="text-xs font-bold uppercase text-slate-500">Calificación (0–10)</span><input name="calificacion" type="number" min="0" max="10" step="0.1" required value="{{ $revision?->calificacion }}" class="mt-2 w-full rounded-md border-slate-300 text-sm"></label>
                             <label><span class="text-xs font-bold uppercase text-slate-500">Observaciones</span><textarea name="observaciones" rows="2" maxlength="2000" class="mt-2 w-full rounded-md border-slate-300 text-sm" placeholder="Indica aciertos o correcciones necesarias">{{ $revision?->observaciones }}</textarea></label>
+                            <label class="text-sm text-slate-700 lg:col-span-4"><input type="checkbox" name="autorizar_firma" value="1"> Al aprobar, autorizo incluir mi firma en esta entrega (versión {{ $entrega->version }}). <a class="font-bold text-[#155AA3] underline" href="{{ route('docente.firma') }}">Registrar mi firma</a></label>
                             <button class="rounded-md bg-[#155AA3] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#0D376D]">Guardar revisión</button>
                         </form>
+                        </fieldset>
                         <div class="mt-5 border-t border-slate-200 pt-5">
                             <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Comentarios de seguimiento</p>
                             <div class="mt-3 space-y-2">
@@ -108,11 +114,12 @@
                                     <p class="text-sm text-slate-500">Aún no hay comentarios de seguimiento.</p>
                                 @endforelse
                             </div>
-                            <form method="POST" action="{{ route('docente-materia.comentarios.guardar', $entrega) }}" class="mt-3 flex flex-col gap-3 md:flex-row md:items-end">
+                            <fieldset @disabled(!$entrega->habilitada_para_revision)><form method="POST" action="{{ route('docente-materia.comentarios.guardar', $entrega) }}" class="mt-3 flex flex-col gap-3 md:flex-row md:items-end">
                                 @csrf
                                 <label class="min-w-0 flex-1"><span class="sr-only">Nuevo comentario</span><textarea name="comentario" rows="2" maxlength="1500" required class="w-full rounded-md border-slate-300 text-sm" placeholder="Escribe una aclaración o indicación para el equipo"></textarea></label>
                                 <button class="rounded-md border border-[#155AA3] px-4 py-2.5 text-sm font-bold text-[#155AA3] hover:bg-blue-50">Agregar comentario</button>
                             </form>
+                            </fieldset>
                             @unless($revision)
                                 <p class="mt-2 text-xs text-amber-700">Guarda primero la evaluación para iniciar el seguimiento.</p>
                             @endunless

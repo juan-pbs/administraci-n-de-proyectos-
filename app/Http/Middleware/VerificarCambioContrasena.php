@@ -10,10 +10,13 @@ class VerificarCambioContrasena
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user()?->debe_cambiar_contrasena && ! $request->routeIs('contrasena.*', 'logout')) {
-            return redirect()->route('contrasena.editar');
-        }
+        abort_unless($request->user()?->estado === 'activo', 403, 'La cuenta no está activa.');
+        $respuesta = $next($request);
+        $respuesta->headers->set('Cache-Control', 'no-store, private');
+        $respuesta->headers->set('X-Content-Type-Options', 'nosniff');
+        $respuesta->headers->set('X-Frame-Options', 'SAMEORIGIN');
+        $respuesta->headers->set('Referrer-Policy', 'no-referrer');
 
-        return $next($request);
+        return $respuesta;
     }
 }

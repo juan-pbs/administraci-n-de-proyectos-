@@ -79,6 +79,7 @@
                     </summary>
 
                     <div class="border-t border-slate-200 bg-slate-50/60 p-5">
+                        <a href="{{ route('documentos.mostrar', ['proyecto' => $proyecto, 'origen' => 'modulos.proyectos', 'contexto' => request()->only('periodo_proyectos', 'grupo_proyectos')]) }}" class="mb-4 inline-block text-sm font-bold text-[#155AA3] underline">Formato final y firmas</a>
                         <div class="grid gap-5 xl:grid-cols-2">
                             <article class="rounded-lg border border-slate-200 bg-white">
                                 <div class="border-b border-slate-200 px-4 py-3">

@@ -18,12 +18,13 @@
             <summary class="cursor-pointer list-none p-5"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Alta periódica</p><div class="mt-1 flex items-center justify-between"><h3 class="font-bold text-[#0D376D]">Crear nueva guía</h3><span class="text-xl text-[#15529A]">＋</span></div></summary>
             <form method="POST" action="{{ route('guias.guardar') }}" class="grid gap-4 border-t border-slate-200 p-5 md:grid-cols-2">
                 @csrf
-                <div><label class="text-sm font-semibold text-slate-700">Periodo</label><select name="periodo_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($periodos as $periodo)<option value="{{ $periodo->id }}" @selected((string) old('periodo_id', $filtrosGuias['periodo_id']) === (string) $periodo->id)>{{ $periodo->nombre }}</option>@endforeach</select></div>
+                <div><label class="text-sm font-semibold text-slate-700">Periodo</label><select name="periodo_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($periodos->where('estado', '!=', 'cerrado') as $periodo)<option value="{{ $periodo->id }}" @selected((string) old('periodo_id', $filtrosGuias['periodo_id']) === (string) $periodo->id)>{{ $periodo->nombre }}</option>@endforeach</select></div>
                 <div><label class="text-sm font-semibold text-slate-700">Asignatura principal</label><select name="asignatura_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($asignaturas as $asignatura)<option value="{{ $asignatura->id }}">{{ $asignatura->carrera?->clave }} - {{ $asignatura->nombre }}</option>@endforeach</select></div>
                 <div class="md:col-span-2"><label class="text-sm font-semibold text-slate-700">Nombre</label><input name="nombre" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
                 <div><label class="text-sm font-semibold text-slate-700">Cuatrimestre</label><input name="cuatrimestre" type="number" min="1" max="12" value="{{ old('cuatrimestre') }}" placeholder="4" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
-                <div class="grid grid-cols-2 gap-3"><div><label class="text-sm font-semibold text-slate-700">Versión</label><input name="version" value="{{ old('version', '1.0') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div><div><label class="text-sm font-semibold text-slate-700">Estado</label><select name="estado" class="mt-2 block w-full rounded-md border-slate-300 text-sm"><option value="borrador">Borrador</option><option value="publicada">Publicada</option><option value="cerrada">Cerrada</option></select></div></div>
-                <input type="hidden" name="periodo_fin_id" value="">
+                <div><label class="text-sm font-semibold text-slate-700">Versión</label><input name="version" value="{{ old('version', '1.0') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
+                <div><label class="text-sm font-semibold text-slate-700">Periodo final, si abarca varios ciclos</label><select name="periodo_fin_id" class="mt-2 block w-full rounded-md border-slate-300 text-sm"><option value="">Mismo periodo inicial</option>@foreach($periodos->where('estado', '!=', 'cerrado') as $periodo)<option value="{{ $periodo->id }}" @selected((string) old('periodo_fin_id') === (string) $periodo->id)>{{ $periodo->nombre }}</option>@endforeach</select></div>
+                <p class="text-sm text-slate-500 md:col-span-2">Estado inicial: <strong>Borrador</strong>. Configura sus apartados y evaluadores; después pulsa Publicar guía.</p>
                 <div><label class="text-sm font-semibold text-slate-700">Competencias</label><textarea name="competencias_evaluar" rows="3" class="mt-2 block w-full rounded-md border-slate-300 text-sm">{{ old('competencias_evaluar') }}</textarea></div>
                 <div><label class="text-sm font-semibold text-slate-700">Objetivo de aprendizaje</label><textarea name="objetivo_aprendizaje" rows="3" class="mt-2 block w-full rounded-md border-slate-300 text-sm">{{ old('objetivo_aprendizaje') }}</textarea></div>
                 <div class="md:col-span-2"><button class="rounded-md bg-[#15529A] px-5 py-2.5 text-sm font-bold text-white">Guardar guía</button></div>
@@ -33,17 +34,20 @@
         <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
             <summary class="cursor-pointer list-none p-5"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Configuración</p><div class="mt-1 flex items-center justify-between"><h3 class="font-bold text-[#0D376D]">Apartados y materias</h3><span class="text-xl text-[#15529A]">＋</span></div></summary>
             <div class="space-y-5 border-t border-slate-200 p-5">
-                <form method="POST" action="{{ route('guias.apartados.guardar') }}" class="grid gap-3 rounded-md bg-slate-50 p-4 md:grid-cols-2">
+                <form method="POST" action="{{ route('guias.apartados.guardar') }}" data-preview-apartado data-preview-url="{{ route('guias.preview-apartado') }}" class="grid gap-3 rounded-md bg-slate-50 p-4 md:grid-cols-2">
                     @csrf
-                    <h4 class="font-bold text-slate-900 md:col-span-2">Nuevo apartado</h4>
-                    <select name="guia_integradora_id" required class="rounded-md border-slate-300 text-sm">@foreach($guias as $guia)<option value="{{ $guia->id }}">{{ $guia->nombre }} v{{ $guia->version }}</option>@endforeach</select>
+                    <h4 class="font-bold text-slate-900 md:col-span-2">Crear o actualizar apartado</h4>
+                    <p class="text-xs text-slate-500 md:col-span-2">Usar un orden existente actualiza ese apartado. La vista previa no guarda los cambios.</p>
+                    <select name="guia_integradora_id" required class="rounded-md border-slate-300 text-sm">@foreach($guiasEditables as $guia)<option value="{{ $guia->id }}">{{ $guia->nombre }} v{{ $guia->version }}</option>@endforeach</select>
                     <div class="grid grid-cols-2 gap-2"><input name="orden" type="number" min="1" value="1" required placeholder="Orden" class="rounded-md border-slate-300 text-sm"><input name="ponderacion" type="number" min="0" max="100" value="10" required placeholder="%" class="rounded-md border-slate-300 text-sm"></div>
                     <input name="titulo" required placeholder="Título del apartado" class="rounded-md border-slate-300 text-sm md:col-span-2">
                     <textarea name="descripcion" rows="3" placeholder="Descripción y puntos requeridos" class="rounded-md border-slate-300 text-sm md:col-span-2"></textarea>
                     <input name="fecha_limite" type="datetime-local" class="rounded-md border-slate-300 text-sm">
                     <div class="flex gap-4 text-sm"><label><input name="requiere_documento" value="1" type="checkbox" checked> Documento</label><label><input name="requiere_codigo" value="1" type="checkbox"> Código</label></div>
                     <button class="w-fit rounded-md bg-[#15529A] px-4 py-2 text-sm font-bold text-white">Guardar apartado</button>
+                    <button type="button" data-actualizar-preview class="w-fit rounded-md border border-[#15529A] px-4 py-2 text-sm font-bold text-[#15529A]">Actualizar vista previa</button>
                 </form>
+                <div class="rounded-md border bg-white p-3"><h4 class="font-bold text-[#0D376D]">Vista previa de la guía</h4><p data-preview-estado aria-live="polite" class="my-2 text-sm text-slate-500">Completa el título para ver cómo quedará el apartado antes de guardarlo.</p><iframe data-preview-frame title="Vista previa con cambios sin guardar" class="h-[65vh] w-full border"></iframe></div>
 
                 <div>
                     <form method="POST" action="{{ route('guias.apartados.asignaturas.guardar') }}" class="space-y-3 rounded-md border border-slate-200 p-4">
@@ -89,6 +93,12 @@
                         <span class="text-sm font-bold text-[#15529A]">{{ $guia->apartados_count }} apartados ▾</span>
                     </summary>
                     <div class="border-t border-slate-100 bg-slate-50 p-5">
+                        @if($guia->estado === 'borrador' && $guiasEditables->contains('id', $guia->id))
+                            <form method="POST" action="{{ route('guias.publicar', $guia) }}" class="mb-4">@csrf @method('PATCH')<button class="rounded-md bg-[#21A366] px-4 py-2 text-sm font-bold text-white">Publicar guía</button><p class="mt-2 text-xs text-slate-500">Se comprueba que las ponderaciones sumen 100% y que cada apartado tenga evidencia y evaluadores requeridos.</p></form>
+                        @elseif(! $guiasEditables->contains('id', $guia->id))
+                            <p class="mb-4 text-sm font-semibold text-slate-600">Guía disponible para consulta. El ciclo ya está cerrado.</p>
+                        @endif
+                        <details class="mb-4 rounded-md border bg-white p-3"><summary class="cursor-pointer font-bold text-[#15529A]">Vista previa del PDF de esta guía</summary><a href="{{ route('guias.preview', $guia) }}" target="_blank" rel="noopener noreferrer" class="my-3 block text-sm underline">Abrir PDF de la guía</a><iframe loading="lazy" title="Vista previa de {{ $guia->nombre }}" src="{{ route('guias.preview', $guia) }}" class="h-[65vh] w-full border"></iframe></details>
                         <div class="mb-4 grid gap-3 lg:grid-cols-2"><div class="rounded-md bg-white p-3 text-sm"><strong>Competencias:</strong> {{ $guia->competencias_evaluar ?: '-' }}</div><div class="rounded-md bg-white p-3 text-sm"><strong>Objetivo:</strong> {{ $guia->objetivo_aprendizaje ?: '-' }}</div></div>
                         <div class="overflow-x-auto rounded-md border border-slate-200 bg-white">
                             <table class="min-w-full divide-y divide-slate-200 text-sm"><thead class="bg-[#0D376D] text-white"><tr><th class="px-4 py-3 text-left">Orden</th><th class="px-4 py-3 text-left">Apartado</th><th class="px-4 py-3 text-left">Fecha</th><th class="px-4 py-3 text-left">Ponderación</th><th class="px-4 py-3 text-left">Docentes que califican</th></tr></thead><tbody class="divide-y divide-slate-100">
@@ -110,17 +120,17 @@
                                                 @forelse($calificadores as $asignacion)
                                                     <div class="flex items-center justify-between gap-3 rounded-md bg-slate-50 px-3 py-2">
                                                         <div><p class="font-semibold text-slate-800">{{ $asignacion->docente->nombre }}</p><p class="text-xs text-slate-500">{{ $asignacion->docente->matricula }}</p></div>
-                                                        <form method="POST" action="{{ route('guias.apartados.calificadores.quitar') }}" data-async-form data-async-targets="mensajes guides-list guide-metrics">
+                                                        @if($guiasEditables->contains('id', $guia->id))<form method="POST" action="{{ route('guias.apartados.calificadores.quitar') }}" data-async-form data-async-targets="mensajes guides-list guide-metrics">
                                                             @csrf @method('DELETE')
                                                             <input type="hidden" name="apartado_guia_id" value="{{ $apartado->id }}"><input type="hidden" name="docente_id" value="{{ $asignacion->docente_id }}">
                                                             <button class="text-xs font-bold text-red-700">Quitar</button>
-                                                        </form>
+                                                        </form>@endif
                                                     </div>
                                                 @empty
                                                     <p class="text-sm font-semibold text-amber-700">Sin docente asignado.</p>
                                                 @endforelse
                                                 @if($docentesCarrera->isNotEmpty())
-                                                    <form method="POST" action="{{ route('guias.apartados.calificadores.guardar') }}" class="flex gap-2" data-async-form data-async-targets="mensajes guides-list guide-metrics">
+                                                    @if($guiasEditables->contains('id', $guia->id))<form method="POST" action="{{ route('guias.apartados.calificadores.guardar') }}" class="flex gap-2" data-async-form data-async-targets="mensajes guides-list guide-metrics">
                                                         @csrf
                                                         <input type="hidden" name="apartado_guia_id" value="{{ $apartado->id }}">
                                                         <select name="docente_id" required class="min-w-0 flex-1 rounded-md border-slate-300 text-xs">
@@ -128,7 +138,7 @@
                                                             @foreach($docentesCarrera as $docente)<option value="{{ $docente->id }}">{{ $docente->nombre }} · {{ $docente->role->nombre_visible }}</option>@endforeach
                                                         </select>
                                                         <button class="rounded-md bg-[#15529A] px-3 py-2 text-xs font-bold text-white">Asignar</button>
-                                                    </form>
+                                                    </form>@endif
                                                 @endif
                                             </div>
                                         </td>

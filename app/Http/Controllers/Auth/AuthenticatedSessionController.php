@@ -11,8 +11,10 @@ use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
-    public function create(): View
+    public function create(Request $request): View
     {
+        $request->session()->forget('recuperacion');
+
         return view('auth.login');
     }
 
@@ -23,17 +25,14 @@ class AuthenticatedSessionController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (! Auth::attempt([...$credentials, 'estado' => 'activo'], $request->boolean('remember'))) {
             throw ValidationException::withMessages([
                 'matricula' => 'Las credenciales no coinciden con nuestros registros.',
             ]);
         }
 
         $request->session()->regenerate();
-
-        if ($request->user()->debe_cambiar_contrasena) {
-            return redirect()->route('contrasena.editar');
-        }
+        $request->session()->forget('recuperacion');
 
         return redirect()->intended(route('dashboard', absolute: false));
     }

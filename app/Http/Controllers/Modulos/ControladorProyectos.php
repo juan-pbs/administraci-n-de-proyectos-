@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\ApartadoGuia;
 use App\Models\Asignatura;
 use App\Models\Equipo;
-use App\Models\GuiaIntegradora;
 use App\Models\GrupoAcademico;
+use App\Models\GuiaIntegradora;
 use App\Models\Periodo;
 use App\Models\Proyecto;
 use App\Models\User;
@@ -48,6 +48,7 @@ class ControladorProyectos extends Controller
         $equipo = Equipo::query()->with('grupoAcademico')->findOrFail($datos['equipo_id']);
         abort_unless(GrupoAcademico::query()->whereKey($equipo->grupo_academico_id)->conMateriaLiderDelDocente((int) $request->user()->id)->exists(), 403);
         $guia = GuiaIntegradora::query()->with('asignatura')->findOrFail($datos['guia_integradora_id']);
+        abort_unless($guia->estado === 'publicada', 422, 'Publica la guía antes de asignarla a un proyecto.');
         abort_unless(
             (int) $guia->periodo_id === (int) $equipo->grupoAcademico->periodo_id
             && (int) $guia->asignatura?->carrera_id === (int) $equipo->grupoAcademico->carrera_id
@@ -207,7 +208,7 @@ class ControladorProyectos extends Controller
                 ->when($usuario->hasRole('docente_lider'), fn ($q) => $q->whereHas('grupoAcademico', fn ($g) => $g->conMateriaLiderDelDocente($usuario->id)))
                 ->orderBy('nombre')
                 ->get(),
-            'guias' => GuiaIntegradora::query()->orderBy('nombre')->get(['id', 'nombre', 'version', 'estado']),
+            'guias' => GuiaIntegradora::query()->where('estado', 'publicada')->whereHas('periodo', fn ($q) => $q->where('estado', '!=', 'cerrado'))->orderBy('nombre')->get(['id', 'nombre', 'version', 'estado']),
             'docentes' => User::query()->whereHas('role', fn ($query) => $query->whereIn('nombre', ['docente_lider', 'docente_materia']))->orderBy('nombre')->get(['id', 'nombre', 'matricula', 'carrera_id']),
             'asignaturas' => Asignatura::query()->orderBy('nombre')->get(['id', 'carrera_id', 'grado', 'nombre', 'clave']),
             'apartados' => ApartadoGuia::query()->with('guiaIntegradora:id,nombre')->orderBy('orden')->get(['id', 'guia_integradora_id', 'orden', 'titulo']),

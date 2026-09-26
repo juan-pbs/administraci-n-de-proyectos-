@@ -5,7 +5,7 @@ services:
       target: app
     ports:
       - "${APP_PORT:-8000}:8000"
-    environment:
+    environment: &app-environment
       APP_NAME: "${APP_NAME:-Administracion de proyectos}"
       APP_ENV: "${APP_ENV:-local}"
       APP_KEY: "${APP_KEY:-}"
@@ -14,7 +14,8 @@ services:
       APP_LOCALE: "${APP_LOCALE:-es}"
       APP_FALLBACK_LOCALE: "${APP_FALLBACK_LOCALE:-es}"
       APP_FAKER_LOCALE: "${APP_FAKER_LOCALE:-es_MX}"
-      BCRYPT_ROUNDS: "${BCRYPT_ROUNDS:-4}"
+      APP_TIMEZONE: "${APP_TIMEZONE:-America/Mexico_City}"
+      BCRYPT_ROUNDS: "${BCRYPT_ROUNDS:-12}"
       LOG_CHANNEL: "${LOG_CHANNEL:-stack}"
       LOG_STACK: "${LOG_STACK:-single}"
       DB_CONNECTION: mysql
@@ -27,10 +28,63 @@ services:
       CACHE_STORE: "${CACHE_STORE:-database}"
       QUEUE_CONNECTION: "${QUEUE_CONNECTION:-database}"
       MAIL_MAILER: "${MAIL_MAILER:-log}"
+      MAIL_SCHEME: "${MAIL_SCHEME:-}"
+      MAIL_HOST: "${MAIL_HOST:-127.0.0.1}"
+      MAIL_PORT: "${MAIL_PORT:-2525}"
+      MAIL_USERNAME: "${MAIL_USERNAME:-}"
+      MAIL_PASSWORD: "${MAIL_PASSWORD:-}"
+      MAIL_FROM_ADDRESS: "${MAIL_FROM_ADDRESS:-noreply@example.com}"
+      MAIL_FROM_NAME: "${MAIL_FROM_NAME:-Administracion de proyectos}"
       AUTO_SEED: "${AUTO_SEED:-true}"
+    volumes:
+      - app-storage:/var/www/html/storage
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8000/up') === false ? 1 : 0);"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     depends_on:
       db:
         condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      target: app
+    environment:
+      <<: *app-environment
+      SKIP_BOOTSTRAP: "true"
+    volumes:
+      - app-storage:/var/www/html/storage
+    depends_on:
+      app:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    command: ["php", "artisan", "queue:work", "--tries=4", "--timeout=60", "--sleep=3"]
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+
+  scheduler:
+    build:
+      context: .
+      target: app
+    environment:
+      <<: *app-environment
+      SKIP_BOOTSTRAP: "true"
+    volumes:
+      - app-storage:/var/www/html/storage
+    depends_on:
+      app:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    command: ["php", "artisan", "schedule:work"]
+    healthcheck:
+      disable: true
     restart: unless-stopped
 
   test:
@@ -76,3 +130,4 @@ services:
 
 volumes:
   mariadb-data:
+  app-storage:

@@ -6,11 +6,13 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['entrega_id', 'nombre_original', 'ruta', 'tipo_archivo', 'tamano'])]
+#[Fillable(['entrega_id', 'nombre_original', 'ruta', 'tipo_archivo', 'tamano', 'es_aplicacion'])]
 class ArchivoEntrega extends Model
 {
     protected $table = 'archivos_entrega';
+
     public const CREATED_AT = 'creado_en';
+
     public const UPDATED_AT = 'actualizado_en';
 
     public function entrega(): BelongsTo

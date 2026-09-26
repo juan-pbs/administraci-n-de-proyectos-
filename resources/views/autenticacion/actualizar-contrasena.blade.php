@@ -14,16 +14,16 @@
             </div>
 
             <div class="mt-7 text-center">
-                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">Primer inicio de sesión</p>
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">Seguridad de tu cuenta</p>
                 <h1 class="mt-2 text-2xl font-bold text-[#0D376D]">Actualiza tu contraseña</h1>
-                <p class="mt-2 text-sm leading-6 text-slate-600">Por seguridad, cambia la contraseña temporal antes de entrar al sistema.</p>
+                <p class="mt-2 text-sm leading-6 text-slate-600">Puedes cambiar tu contraseña cuando lo necesites.</p>
             </div>
 
-            <form method="POST" action="{{ route('contrasena.actualizar') }}" class="mt-8 space-y-5">
+            <form method="POST" action="{{ route('contrasena.actualizar') }}" class="mt-8 space-y-5" data-auth-privado>
                 @csrf
 
                 <div>
-                    <label for="contrasena_actual" class="block text-sm font-semibold text-slate-700">Contraseña temporal</label>
+                    <label for="contrasena_actual" class="block text-sm font-semibold text-slate-700">Contraseña actual</label>
                     <input
                         id="contrasena_actual"
                         name="contrasena_actual"

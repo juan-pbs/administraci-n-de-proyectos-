@@ -6,6 +6,13 @@
 .zed
 documentacion
 tools
+tmp
+output
+storage/framework/lsp-*.php
+storage/framework/*.php
+storage/framework/down
+bootstrap/cache/*.php
+storage/fonts
 node_modules
 vendor
 public/build

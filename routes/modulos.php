@@ -2,20 +2,43 @@
 
 use App\Http\Controllers\Modulos\ControladorAsignaturas;
 use App\Http\Controllers\Modulos\ControladorCarrerasGrupos;
+use App\Http\Controllers\Modulos\ControladorCierresProyectos;
+use App\Http\Controllers\Modulos\ControladorDemostracion;
 use App\Http\Controllers\Modulos\ControladorDocenteMateria;
-use App\Http\Controllers\Modulos\ControladorRevisionCodigo;
-use App\Http\Controllers\Modulos\ControladorEstudiante;
+use App\Http\Controllers\Modulos\ControladorDocumentos;
 use App\Http\Controllers\Modulos\ControladorEquipos;
+use App\Http\Controllers\Modulos\ControladorEstadoGuias;
+use App\Http\Controllers\Modulos\ControladorEstudiante;
+use App\Http\Controllers\Modulos\ControladorFirmaDocente;
 use App\Http\Controllers\Modulos\ControladorGuias;
+use App\Http\Controllers\Modulos\ControladorJerarquiaProyectos;
 use App\Http\Controllers\Modulos\ControladorModuloGeneral;
 use App\Http\Controllers\Modulos\ControladorPeriodos;
 use App\Http\Controllers\Modulos\ControladorProyectos;
+use App\Http\Controllers\Modulos\ControladorRevisionCodigo;
 use App\Http\Controllers\Modulos\ControladorUsuarios;
-use App\Http\Controllers\Modulos\ControladorJerarquiaProyectos;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/docente-lider/cierres', [ControladorCierresProyectos::class, 'indice'])->name('docente-lider.cierres');
+Route::get('/docente-lider/estado-guias', [ControladorEstadoGuias::class, 'mostrar'])->name('docente-lider.estado-guias');
+Route::post('/docente-lider/estado-guias/{proyecto}/cierre', [ControladorEstadoGuias::class, 'prepararCierre'])->name('docente-lider.estado-guias.preparar-cierre');
+Route::get('/docente-lider/cierres/{proyecto}', [ControladorCierresProyectos::class, 'mostrar'])->name('docente-lider.cierres.mostrar');
+Route::post('/docente-lider/cierres/{proyecto}', [ControladorCierresProyectos::class, 'decidir'])->name('docente-lider.cierres.decidir');
+
+Route::get('/docente/firma', [ControladorFirmaDocente::class, 'mostrar'])->name('docente.firma');
+Route::post('/docente/firma', [ControladorFirmaDocente::class, 'guardar'])->middleware('throttle:6,1')->name('docente.firma.guardar');
+Route::get('/guias/{guia}/preview', [ControladorDocumentos::class, 'previewGuia'])->name('guias.preview');
+Route::post('/guias/preview-apartado', [ControladorDocumentos::class, 'previewApartado'])->middleware('throttle:60,1')->name('guias.preview-apartado');
+Route::get('/proyectos/{proyecto}/documento', [ControladorDocumentos::class, 'mostrar'])->name('documentos.mostrar');
+Route::get('/proyectos/{proyecto}/documento/preview', [ControladorDocumentos::class, 'previewProyecto'])->name('documentos.preview');
+Route::post('/proyectos/{proyecto}/documento', [ControladorDocumentos::class, 'generar'])->middleware('throttle:10,1')->name('documentos.generar');
+Route::get('/proyectos/{proyecto}/documento/{documento}', [ControladorDocumentos::class, 'descargar'])->name('documentos.descargar');
+Route::get('/docente-lider/demostracion/{producto}', [ControladorDemostracion::class, 'mostrar'])->name('docente-lider.demostracion');
 
 Route::get('/modulos/periodos', [ControladorPeriodos::class, 'mostrar'])->name('modulos.periodos');
 Route::post('/periodos', [ControladorPeriodos::class, 'guardar'])->name('periodos.guardar');
+Route::patch('/periodos/{periodo}/activar', [ControladorPeriodos::class, 'activar'])->name('periodos.activar');
+Route::patch('/periodos/{periodo}/cerrar', [ControladorPeriodos::class, 'cerrar'])->name('periodos.cerrar');
 
 Route::get('/modulos/carreras-grupos', [ControladorCarrerasGrupos::class, 'mostrar'])->name('modulos.carreras-grupos');
 Route::post('/carreras', [ControladorCarrerasGrupos::class, 'guardarCarrera'])->name('carreras.guardar');
@@ -40,6 +63,7 @@ Route::delete('/asignaturas/docentes', [ControladorAsignaturas::class, 'quitarDo
 
 Route::get('/modulos/guias', [ControladorGuias::class, 'mostrar'])->name('modulos.guias');
 Route::post('/guias', [ControladorGuias::class, 'guardar'])->name('guias.guardar');
+Route::patch('/guias/{guia}/publicar', [ControladorGuias::class, 'publicar'])->name('guias.publicar');
 Route::post('/guias/apartados', [ControladorGuias::class, 'guardarApartado'])->name('guias.apartados.guardar');
 Route::post('/guias/apartados/asignaturas', [ControladorGuias::class, 'asignarAsignaturaApartado'])->name('guias.apartados.asignaturas.guardar');
 Route::post('/guias/apartados/firmas', [ControladorGuias::class, 'guardarFirmaApartado'])->name('guias.apartados.firmas.guardar');

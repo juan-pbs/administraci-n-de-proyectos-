@@ -1,0 +1,3 @@
+@if($contextoProyectos->count() > 1)
+<form method="GET" action="{{ url()->current() }}" class="mt-5 rounded-lg border bg-white p-4"><label class="block text-sm font-bold">Proyecto y periodo<select name="proyecto_contexto" class="mt-2 block w-full rounded border-slate-300" onchange="this.form.requestSubmit()">@foreach($contextoProyectos as $opcion)<option value="{{ $opcion->id }}" @selected($opcion->id === $proyecto?->id)>{{ $opcion->titulo }} · {{ $opcion->equipo->grupoAcademico->periodo->nombre }}</option>@endforeach</select></label><p class="mt-2 text-xs text-slate-500">Puedes volver a un proyecto anterior para consultar sus entregas o atender una prórroga del docente líder.</p><button class="mt-2 text-sm font-bold text-[#155AA3]">Ver proyecto</button></form>
+@endif

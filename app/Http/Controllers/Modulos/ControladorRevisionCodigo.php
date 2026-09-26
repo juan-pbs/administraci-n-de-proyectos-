@@ -8,6 +8,8 @@ use App\Models\ComentarioRevision;
 use App\Models\Entrega;
 use App\Models\Periodo;
 use App\Models\Revision;
+use App\Servicios\FirmasDocentes;
+use App\Servicios\PlazosProyecto;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -25,22 +27,27 @@ class ControladorRevisionCodigo extends Controller
         $entregas = Entrega::query()
             ->with([
                 'apartado:id,titulo,ponderacion,fecha_limite,requiere_codigo',
-                'proyecto:id,equipo_id,titulo',
+                'proyecto:id,equipo_id,guia_integradora_id,titulo,estado',
                 'equipo:id,grupo_academico_id,numero,nombre',
                 'equipo.grupoAcademico:id,carrera_id,periodo_id,grado,grupo,lider_proyecto_id',
                 'equipo.grupoAcademico.carrera:id,clave,nombre',
                 'entregadoPor:id,nombre,matricula',
-                'archivos:id,entrega_id,nombre_original,ruta,tipo_archivo,tamano',
-                'productosCodigo:id,entrega_id,proyecto_id,repositorio_url,archivo_fuente,version',
+                'archivos:id,entrega_id,nombre_original,ruta,tipo_archivo,tamano,es_aplicacion',
+                'productosCodigo:id,entrega_id,proyecto_id,repositorio_url,demostracion_url,archivo_fuente,version',
                 'revisiones' => fn ($query) => $query->where('revisor_id', $docente->id)->with('comentarios.autor:id,nombre')->latest('revisado_en'),
             ])
             ->whereHas('apartado', fn ($query) => $query->where('requiere_codigo', true))
-            ->whereHas('equipo.grupoAcademico', function ($query) use ($docente, $periodo) {
-                $query->conMateriaLiderDelDocente($docente->id)
-                    ->when($periodo, fn ($grupo) => $grupo->where('periodo_id', $periodo->id));
+            ->whereHas('equipo.grupoAcademico', fn ($query) => $query->conMateriaLiderDelDocente($docente->id))
+            ->where(function ($q) use ($periodo) {
+                $q->whereHas('equipo.grupoAcademico', fn ($g) => $g->where('periodo_id', $periodo?->id));
+                app(PlazosProyecto::class)->oProrroga($q);
             })
             ->latest('entregado_en')->get()
             ->unique(fn ($entrega) => $entrega->proyecto_id.'-'.$entrega->apartado_guia_id)->values();
+        foreach ($entregas as $entrega) {
+            $entrega->habilitada_para_revision = app(PlazosProyecto::class)->habilitado($entrega->proyecto, $entrega->apartado);
+            $entrega->fecha_limite_revision = app(PlazosProyecto::class)->fecha($entrega->proyecto, $entrega->apartado);
+        }
 
         return view('modulos.docente-lider.revision-codigo', [
             'periodo' => $periodo,
@@ -59,11 +66,7 @@ class ControladorRevisionCodigo extends Controller
             'calificacion' => ['required', 'numeric', 'min:0', 'max:10'],
             'observaciones' => ['nullable', 'string', 'max:2000'],
         ]);
-        Revision::query()->updateOrCreate(
-            ['entrega_id' => $entrega->id, 'revisor_id' => $docente->id],
-            [...$datos, 'revisado_en' => now()]
-        );
-        $entrega->update(['estado' => $datos['resultado']]);
+        app(FirmasDocentes::class)->guardarRevision($docente, $entrega, $datos, $request->boolean('autorizar_firma'));
 
         return back()->with('status', 'La revisión técnica se guardó correctamente.');
     }
@@ -91,13 +94,14 @@ class ControladorRevisionCodigo extends Controller
         }
         abort_unless(is_file($ruta), 404);
 
-        return response()->download($ruta, $archivo->nombre_original);
+        return response()->download($ruta, $archivo->nombre_original, ['Content-Type' => 'application/octet-stream', 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'no-store, private']);
     }
 
     private function lider(Request $request)
     {
         $docente = $request->user()->loadMissing('role');
         abort_unless($docente->hasRole('docente_lider'), 403);
+
         return $docente;
     }
 
