@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Modulos;
 
 use App\Http\Controllers\Controller;
-use App\Models\Entrega;
-use App\Models\ComentarioRevision;
 use App\Models\ArchivoEntrega;
+use App\Models\ComentarioRevision;
+use App\Models\Entrega;
 use App\Models\FirmaApartadoGuia;
 use App\Models\Periodo;
+use App\Models\Proyecto;
 use App\Models\Revision;
+use App\Servicios\FirmasDocentes;
+use App\Servicios\PlazosProyecto;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -45,13 +48,12 @@ class ControladorDocenteMateria extends Controller
         $apartados = FirmaApartadoGuia::query()
             ->where('docente_id', $usuario->id)
             ->whereHas('apartadoGuia', fn ($apartado) => $apartado->where('requiere_codigo', false))
-            ->when($periodo, fn ($query) => $query->whereHas('apartadoGuia.guiaIntegradora', fn ($guia) => $guia->where('periodo_id', $periodo->id)))
             ->pluck('apartado_guia_id');
 
         $entregas = Entrega::query()
             ->with([
                 'apartado:id,titulo,ponderacion,fecha_limite',
-                'proyecto:id,equipo_id,titulo',
+                'proyecto:id,equipo_id,guia_integradora_id,titulo,estado',
                 'equipo:id,grupo_academico_id,numero,nombre',
                 'equipo.grupoAcademico:id,carrera_id,periodo_id,grado,grupo',
                 'equipo.grupoAcademico.carrera:id,clave,nombre',
@@ -61,9 +63,16 @@ class ControladorDocenteMateria extends Controller
             ])
             ->whereIn('apartado_guia_id', $apartados)
             ->whereHas('proyecto', fn ($query) => $this->proyectosAsignados($query, $usuario->id))
-            ->when($periodo, fn ($query) => $query->whereHas('equipo.grupoAcademico', fn ($grupo) => $grupo->where('periodo_id', $periodo->id)))
+            ->where(function ($q) use ($periodo) {
+                $q->whereHas('equipo.grupoAcademico', fn ($g) => $g->where('periodo_id', $periodo?->id));
+                app(PlazosProyecto::class)->oProrroga($q);
+            })
             ->latest('entregado_en')->get()
             ->unique(fn ($entrega) => $entrega->proyecto_id.'-'.$entrega->apartado_guia_id)->values();
+        foreach ($entregas as $entrega) {
+            $entrega->habilitada_para_revision = app(PlazosProyecto::class)->habilitado($entrega->proyecto, $entrega->apartado);
+            $entrega->fecha_limite_revision = app(PlazosProyecto::class)->fecha($entrega->proyecto, $entrega->apartado);
+        }
 
         return view('modulos.docente-materia.revisiones', $this->base($usuario, compact('periodo', 'entregas')));
     }
@@ -79,11 +88,7 @@ class ControladorDocenteMateria extends Controller
             'observaciones' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        Revision::query()->updateOrCreate(
-            ['entrega_id' => $entrega->id, 'revisor_id' => $usuario->id],
-            [...$datos, 'revisado_en' => now()]
-        );
-        $entrega->update(['estado' => $datos['resultado']]);
+        app(FirmasDocentes::class)->guardarRevision($usuario, $entrega, $datos, $request->boolean('autorizar_firma'));
 
         return back()->with('status', 'La revisión se guardó correctamente.');
     }
@@ -128,7 +133,7 @@ class ControladorDocenteMateria extends Controller
         abort_unless($entrega->apartado()->where('requiere_codigo', false)->exists(), 403);
         abort_unless(FirmaApartadoGuia::query()->where('docente_id', $usuarioId)->where('apartado_guia_id', $entrega->apartado_guia_id)->exists(), 403);
         abort_unless(
-            $this->proyectosAsignados(\App\Models\Proyecto::query()->whereKey($entrega->proyecto_id), $usuarioId)->exists(),
+            $this->proyectosAsignados(Proyecto::query()->whereKey($entrega->proyecto_id), $usuarioId)->exists(),
             403
         );
     }
@@ -145,7 +150,8 @@ class ControladorDocenteMateria extends Controller
     private function docente(Request $request)
     {
         $usuario = $request->user()->loadMissing('role');
-        abort_unless($usuario->hasRole('docente_materia'), 403);
+        abort_unless($usuario->hasAnyRole('docente_materia', 'docente_lider'), 403);
+
         return $usuario;
     }
 
@@ -157,6 +163,6 @@ class ControladorDocenteMateria extends Controller
 
     private function base($usuario, array $datos): array
     {
-        return [...$datos, 'navegacion' => SistemaInterfaz::navegacionPara('docente_materia'), 'roleName' => $usuario->role->nombre_visible];
+        return [...$datos, 'navegacion' => SistemaInterfaz::navegacionPara($usuario->role->nombre), 'roleName' => $usuario->role->nombre_visible];
     }
 }

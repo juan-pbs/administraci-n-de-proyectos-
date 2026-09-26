@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Equipo;
 use App\Models\Entrega;
+use App\Models\Equipo;
 use App\Models\FirmaApartadoGuia;
 use App\Models\GrupoAcademico;
 use App\Models\GuiaIntegradora;
@@ -11,9 +11,12 @@ use App\Models\Periodo;
 use App\Models\Proyecto;
 use App\Models\Revision;
 use App\Models\User;
+use App\Servicios\PlazosProyecto;
+use App\Soporte\BusquedaPanel;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class DashboardController extends Controller
 {
@@ -24,6 +27,9 @@ class DashboardController extends Controller
         $periodo = Periodo::query()->where('estado', 'activo')->latest('fecha_inicio')->first()
             ?? Periodo::query()->latest('fecha_inicio')->first();
         $panel = SistemaInterfaz::dashboardPara($role);
+        $navegacion = SistemaInterfaz::navegacionPara($role);
+        $consultaBusqueda = BusquedaPanel::disponible($role)
+            ? ($request->validate(['buscar' => ['nullable', 'string', 'max:160']])['buscar'] ?? '') : '';
 
         $panel['stats'] = $this->metricas($role, $user->id, $periodo?->id);
         $alertas = $this->alertasOperativas($role, $user->id, $periodo?->id);
@@ -62,8 +68,19 @@ class DashboardController extends Controller
             'gruposResumen' => $grupos,
             'asignacionesDocente' => $asignacionesDocente,
             'resumenEntregasEstudiante' => $resumenEntregasEstudiante,
-            'navegacion' => SistemaInterfaz::navegacionPara($role),
+            'navegacion' => $navegacion,
+            'consultaBusqueda' => $consultaBusqueda,
+            'resultadosBusqueda' => BusquedaPanel::buscar($role, $consultaBusqueda, $navegacion),
         ]);
+    }
+
+    public function buscar(Request $request)
+    {
+        $rol = $request->user()->loadMissing('role')->role?->nombre ?? '';
+        abort_unless(BusquedaPanel::disponible($rol), 403);
+        $datos = $request->validate(['buscar' => ['nullable', 'string', 'max:160']]);
+
+        return response()->json(['resultados' => BusquedaPanel::buscar($rol, $datos['buscar'] ?? '')]);
     }
 
     /**
@@ -194,7 +211,13 @@ class DashboardController extends Controller
         $equipos = Equipo::query()
             ->when($periodoId, fn ($query) => $query->whereHas('grupoAcademico', fn ($grupo) => $grupo->where('periodo_id', $periodoId)));
 
+        $actual = $periodoId ? Periodo::find($periodoId) : null;
+        $cierre = $actual && $actual->estado === 'activo' && Carbon::parse($actual->fecha_fin)->endOfDay()->isPast()
+            ? [['label' => 'Periodo pendiente de cierre', 'value' => 1, 'detail' => $actual->nombre.': la fecha de fin pasó. Revisa sus pendientes en Periodos.', 'tone' => 'amber']]
+            : [];
+
         return [
+            ...$cierre,
             [
                 'label' => 'Grupos sin docente líder',
                 'value' => (clone $grupos)->whereNull('lider_proyecto_id')->count(),
@@ -251,7 +274,8 @@ class DashboardController extends Controller
 
         return $proyecto->guiaIntegradora->apartados
             ->sortBy('orden')->values()
-            ->map(function ($apartado) use ($entregas): array {
+            ->map(function ($apartado) use ($entregas, $proyecto): array {
+                $apartado->fecha_limite = app(PlazosProyecto::class)->fecha($proyecto, $apartado);
                 $entrega = $entregas->get($apartado->id);
                 $revision = $entrega?->revisiones?->first();
                 $estado = match (true) {

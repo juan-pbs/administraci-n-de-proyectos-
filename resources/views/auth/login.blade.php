@@ -42,7 +42,8 @@
                             <p class="mt-2 text-sm leading-6 text-slate-600">Ingresa con tu matrícula y contraseña.</p>
                         </div>
 
-                        <form method="POST" action="{{ route('login') }}" class="mt-8 space-y-5">
+                        @if(session('estado'))<p role="status" class="mt-5 rounded-md bg-green-50 p-3 text-sm text-green-800">{{ session('estado') }}</p>@endif
+                        <form method="POST" action="{{ route('login') }}" class="mt-8 space-y-5" data-auth-privado>
                             @csrf
 
                             <div>

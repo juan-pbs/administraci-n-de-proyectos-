@@ -1,11 +1,12 @@
 <?php
 
 use App\Correos\ContrasenaInicial;
+use App\Models\ApartadoGuia;
 use App\Models\Asignatura;
 use App\Models\Carrera;
 use App\Models\Equipo;
-use App\Models\GuiaIntegradora;
 use App\Models\GrupoAcademico;
+use App\Models\GuiaIntegradora;
 use App\Models\Periodo;
 use App\Models\Role;
 use App\Models\User;
@@ -46,11 +47,12 @@ test('modulos base guardan informacion en base de datos', function () {
             'nombre' => 'Septiembre - Noviembre 2026',
             'fecha_inicio' => '2026-09-10',
             'fecha_fin' => '2026-11-20',
-            'estado' => 'activo',
+            'estado' => 'borrador',
         ])
         ->assertRedirect(route('modulos.show', 'periodos'));
 
     $periodo = Periodo::query()->where('nombre', 'Septiembre - Noviembre 2026')->firstOrFail();
+    $this->patch(route('periodos.activar', $periodo))->assertSessionHasNoErrors();
     $carrera = Carrera::query()->create(['nombre' => 'Tecnologías de la Información', 'clave' => 'TI', 'estado' => 'activa']);
     $grupo = GrupoAcademico::query()->create([
         'periodo_id' => $periodo->id,
@@ -73,7 +75,7 @@ test('modulos base guardan informacion en base de datos', function () {
         ->assertRedirect(route('modulos.show', 'usuarios'));
 
     $estudiante = User::query()->where('matricula', '20269999')->firstOrFail();
-    expect($estudiante->debe_cambiar_contrasena)->toBeTrue();
+    expect($estudiante->debe_cambiar_contrasena)->toBeFalse();
 
     Mail::assertSent(ContrasenaInicial::class, fn (ContrasenaInicial $correo) => $correo->hasTo('alumno.prueba@utvm.edu.mx'));
 
@@ -221,7 +223,7 @@ test('coordinacion asigna docentes que califican cada apartado de la guia', func
         'version' => '1.0',
         'estado' => 'publicada',
     ]);
-    $apartado = \App\Models\ApartadoGuia::query()->create([
+    $apartado = ApartadoGuia::query()->create([
         'guia_integradora_id' => $guia->id,
         'orden' => 1,
         'titulo' => 'Planteamiento',

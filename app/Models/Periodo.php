@@ -14,6 +14,8 @@ class Periodo extends Model
 
     protected $table = 'periodos';
 
+    protected $hidden = ['activo_unico'];
+
     public const CREATED_AT = 'creado_en';
 
     public const UPDATED_AT = 'actualizado_en';

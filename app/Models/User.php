@@ -104,6 +104,11 @@ class User extends Authenticatable
         return 'contrasena';
     }
 
+    public function routeNotificationForMail($notification = null): string
+    {
+        return $this->correo;
+    }
+
     public function getRememberTokenName(): string
     {
         return 'token_recordar';

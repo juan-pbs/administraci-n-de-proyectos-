@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\ApartadoGuia;
 use App\Models\ArchivoEntrega;
 use App\Models\Entrega;
-use App\Models\Equipo;
 use App\Models\ProductoCodigo;
 use App\Models\Proyecto;
+use App\Rules\ArchivoAplicacion;
+use App\Rules\UrlDemostracion;
+use App\Servicios\ContextoEstudiante;
+use App\Servicios\PlazosProyecto;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -39,6 +42,10 @@ class ControladorEstudiante extends Controller
             ? Entrega::query()->with(['archivos', 'entregadoPor:id,nombre,matricula', 'revisiones' => fn ($query) => $query->with('comentarios.autor:id,nombre')->latest('revisado_en')])
                 ->where('proyecto_id', $proyecto->id)->orderByDesc('version')->get()->groupBy('apartado_guia_id')
             : collect();
+        foreach ($apartados as $apartado) {
+            $apartado->habilitado_para_entrega = app(PlazosProyecto::class)->habilitado($proyecto, $apartado);
+            $apartado->fecha_limite = app(PlazosProyecto::class)->fecha($proyecto, $apartado);
+        }
 
         return view('modulos.estudiante.entregas', $this->base($estudiante, compact('equipo', 'proyecto', 'apartados', 'entregas')));
     }
@@ -47,13 +54,14 @@ class ControladorEstudiante extends Controller
     {
         [$estudiante, $equipo, $proyecto] = $this->contexto($request);
         abort_unless($equipo && $proyecto && $apartado->guia_integradora_id === $proyecto->guia_integradora_id, 403);
-        $this->validarPlazo($apartado);
+        $this->validarPlazo($apartado, $proyecto);
         $datos = $request->validate([
             'archivos' => ['required', 'array', 'min:1', 'max:10'],
             'archivos.*' => ['required', File::types(['pdf', 'doc', 'docx', 'xlsx', 'png', 'jpg', 'jpeg', 'zip', 'rar', '7z', 'tar', 'gz', 'sql', 'txt', 'md'])->max('150mb')],
         ]);
 
         DB::transaction(function () use ($datos, $estudiante, $equipo, $proyecto, $apartado): void {
+            Proyecto::query()->whereKey($proyecto->id)->lockForUpdate()->firstOrFail();
             $version = (int) Entrega::query()->where('proyecto_id', $proyecto->id)->where('apartado_guia_id', $apartado->id)->max('version') + 1;
             $entrega = Entrega::query()->create([
                 'proyecto_id' => $proyecto->id, 'apartado_guia_id' => $apartado->id,
@@ -62,7 +70,7 @@ class ControladorEstudiante extends Controller
             ]);
             foreach ($datos['archivos'] as $archivo) {
                 $nombre = $archivo->getClientOriginalName();
-                $ruta = $archivo->storeAs("entregas/{$entrega->id}", uniqid().'_'.$nombre);
+                $ruta = $archivo->store("entregas/{$entrega->id}", 'local');
                 ArchivoEntrega::query()->create([
                     'entrega_id' => $entrega->id, 'nombre_original' => $nombre, 'ruta' => $ruta,
                     'tipo_archivo' => $archivo->getMimeType(), 'tamano' => $archivo->getSize(),
@@ -78,6 +86,10 @@ class ControladorEstudiante extends Controller
         [$estudiante, $equipo, $proyecto] = $this->contexto($request);
         $apartadoCodigo = $proyecto?->guiaIntegradora?->apartados()->where('requiere_codigo', true)->orderBy('orden')->first();
         $producto = $proyecto ? ProductoCodigo::query()->with(['entrega.archivos', 'entrega.entregadoPor:id,nombre,matricula'])->where('proyecto_id', $proyecto->id)->latest('id')->first() : null;
+        if ($apartadoCodigo) {
+            $apartadoCodigo->habilitado_para_entrega = app(PlazosProyecto::class)->habilitado($proyecto, $apartadoCodigo);
+            $apartadoCodigo->fecha_limite = app(PlazosProyecto::class)->fecha($proyecto, $apartadoCodigo);
+        }
 
         return view('modulos.estudiante.codigo', $this->base($estudiante, compact('equipo', 'proyecto', 'apartadoCodigo', 'producto')));
     }
@@ -87,15 +99,18 @@ class ControladorEstudiante extends Controller
         [$estudiante, $equipo, $proyecto] = $this->contexto($request);
         abort_unless($equipo && $proyecto, 403);
         $apartado = $proyecto->guiaIntegradora->apartados()->where('requiere_codigo', true)->orderBy('orden')->firstOrFail();
-        $this->validarPlazo($apartado);
+        $this->validarPlazo($apartado, $proyecto);
         $datos = $request->validate([
-            'repositorio_url' => ['nullable', 'url:http,https', 'max:500', 'required_without:archivos'],
+            'repositorio_url' => ['nullable', 'url:http,https', 'max:500', 'required_without_all:archivos,demostracion_url,aplicacion'],
+            'demostracion_url' => ['nullable', 'string', 'max:1000', new UrlDemostracion],
+            'aplicacion' => ['nullable', 'file', new ArchivoAplicacion],
             'version' => ['required', 'string', 'max:40'],
-            'archivos' => ['nullable', 'array', 'max:10', 'required_without:repositorio_url'],
+            'archivos' => ['nullable', 'array', 'max:10', 'required_without_all:repositorio_url,demostracion_url,aplicacion'],
             'archivos.*' => ['required', File::types(['zip', 'rar', '7z', 'tar', 'gz', 'sql', 'md', 'txt'])->max('150mb')],
         ]);
 
         DB::transaction(function () use ($datos, $request, $estudiante, $equipo, $proyecto, $apartado): void {
+            Proyecto::query()->whereKey($proyecto->id)->lockForUpdate()->firstOrFail();
             $versionEntrega = (int) Entrega::query()->where('proyecto_id', $proyecto->id)->where('apartado_guia_id', $apartado->id)->max('version') + 1;
             $entrega = Entrega::query()->create([
                 'proyecto_id' => $proyecto->id, 'apartado_guia_id' => $apartado->id,
@@ -105,13 +120,17 @@ class ControladorEstudiante extends Controller
             $primeraRuta = null;
             foreach ($request->file('archivos', []) as $archivo) {
                 $nombre = $archivo->getClientOriginalName();
-                $ruta = $archivo->storeAs("entregas/{$entrega->id}/codigo", uniqid().'_'.$nombre);
+                $ruta = $archivo->store("entregas/{$entrega->id}/codigo", 'local');
                 $primeraRuta ??= $ruta;
                 ArchivoEntrega::query()->create(['entrega_id' => $entrega->id, 'nombre_original' => $nombre, 'ruta' => $ruta, 'tipo_archivo' => $archivo->getMimeType(), 'tamano' => $archivo->getSize()]);
             }
+            if ($archivo = $request->file('aplicacion')) {
+                $ruta = $archivo->store("entregas/{$entrega->id}/aplicaciones", 'local');
+                ArchivoEntrega::query()->create(['entrega_id' => $entrega->id, 'nombre_original' => $archivo->getClientOriginalName(), 'ruta' => $ruta, 'tipo_archivo' => 'application/octet-stream', 'tamano' => $archivo->getSize(), 'es_aplicacion' => true]);
+            }
             ProductoCodigo::query()->create([
                 'proyecto_id' => $proyecto->id, 'entrega_id' => $entrega->id,
-                'repositorio_url' => $datos['repositorio_url'] ?? null, 'archivo_fuente' => $primeraRuta, 'version' => $datos['version'],
+                'repositorio_url' => $datos['repositorio_url'] ?? null, 'demostracion_url' => $datos['demostracion_url'] ?? null, 'archivo_fuente' => $primeraRuta, 'version' => $datos['version'],
             ]);
         });
 
@@ -128,26 +147,23 @@ class ControladorEstudiante extends Controller
             $ruta = storage_path('app/'.$archivo->ruta);
         }
         abort_unless(is_file($ruta), 404);
-        return response()->download($ruta, $archivo->nombre_original);
+
+        return response()->download($ruta, $archivo->nombre_original, ['Content-Type' => 'application/octet-stream', 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'no-store, private']);
     }
 
     private function contexto(Request $request): array
     {
-        $estudiante = $request->user()->loadMissing('role');
-        abort_unless($estudiante->hasRole('estudiante'), 403);
-        $equipo = Equipo::query()->whereHas('integrantes', fn ($query) => $query->where('usuarios.id', $estudiante->id))->where('estado', 'activo')->latest('id')->first();
-        $proyecto = $equipo?->proyectos()->with('guiaIntegradora')->latest('id')->first();
-        return [$estudiante, $equipo, $proyecto];
+        return app(ContextoEstudiante::class)->resolver($request);
     }
 
     private function base($estudiante, array $datos): array
     {
-        return [...$datos, 'navegacion' => SistemaInterfaz::navegacionPara('estudiante'), 'roleName' => $estudiante->role->nombre_visible];
+        return [...$datos, 'contextoProyectos' => app(ContextoEstudiante::class)->proyectos($estudiante->id)->with('equipo.grupoAcademico.periodo')->latest('id')->get(), 'navegacion' => SistemaInterfaz::navegacionPara('estudiante'), 'roleName' => $estudiante->role->nombre_visible];
     }
 
-    private function validarPlazo(ApartadoGuia $apartado): void
+    private function validarPlazo(ApartadoGuia $apartado, Proyecto $proyecto): void
     {
-        if ($apartado->fecha_limite?->isPast()) {
+        if (app(PlazosProyecto::class)->fecha($proyecto, $apartado)?->isPast()) {
             abort(422, 'El plazo de esta actividad terminó y ya no admite cambios.');
         }
     }

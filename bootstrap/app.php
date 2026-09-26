@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\ProtegerVistasAutenticacion;
+use App\Http\Middleware\VerificarCambioContrasena;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,11 +15,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'cambio.contrasena' => \App\Http\Middleware\VerificarCambioContrasena::class,
+            'cambio.contrasena' => VerificarCambioContrasena::class,
+            'auth.privado' => ProtegerVistasAutenticacion::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->dontFlash(['contrasena', 'contrasena_actual', 'contrasena_confirmation', 'firma_dibujada', 'codigo', 'correo_recuperacion']);
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*') || $request->routeIs('dashboard.buscar'),
         );
     })->create();

@@ -38,7 +38,7 @@ class ControladorAyuda extends Controller
     }
 
     /**
-     * @param array<int, array<string, string>> $navegacion
+     * @param  array<int, array<string, string>>  $navegacion
      * @return array<string, mixed>
      */
     private function ayudaPorRol(string $rol, array $navegacion): array
@@ -78,7 +78,7 @@ class ControladorAyuda extends Controller
         return [
             'eyebrow' => 'Acceso al sistema',
             'titulo' => 'Ayuda de acceso',
-            'descripcion' => 'Guia visual para entrar al sistema, recuperar el acceso y actualizar una contrasena temporal.',
+            'descripcion' => 'Guia visual para entrar al sistema, recuperar el acceso y cambiar la contrasena de tu cuenta.',
             'secciones' => [
                 $this->seccionAcceso(),
                 $this->seccionRecuperarContrasena(),
@@ -92,7 +92,7 @@ class ControladorAyuda extends Controller
     }
 
     /**
-     * @param array<string, string> $rutas
+     * @param  array<string, string>  $rutas
      * @return array<string, mixed>
      */
     private function ayudaCoordinacion(array $rutas): array
@@ -205,7 +205,7 @@ class ControladorAyuda extends Controller
     }
 
     /**
-     * @param array<string, string> $rutas
+     * @param  array<string, string>  $rutas
      * @return array<string, mixed>
      */
     private function ayudaDocenteLider(array $rutas): array
@@ -290,7 +290,7 @@ class ControladorAyuda extends Controller
     }
 
     /**
-     * @param array<string, string> $rutas
+     * @param  array<string, string>  $rutas
      * @return array<string, mixed>
      */
     private function ayudaDocenteMateria(array $rutas): array
@@ -347,7 +347,7 @@ class ControladorAyuda extends Controller
     }
 
     /**
-     * @param array<string, string> $rutas
+     * @param  array<string, string>  $rutas
      * @return array<string, mixed>
      */
     private function ayudaEstudiante(array $rutas): array
@@ -430,7 +430,7 @@ class ControladorAyuda extends Controller
             pasos: [
                 'Captura la matricula institucional.',
                 'Escribe tu contrasena y presiona Ingresar.',
-                'Si tienes una contrasena temporal, el sistema pedira actualizarla antes de continuar.',
+                'La contrasena asignada al registrar tu cuenta permite ingresar directamente.',
             ],
             imagen: 'assets/ayuda/acceso/01-iniciar-sesion.png',
             ruta: route('login'),
@@ -451,11 +451,13 @@ class ControladorAyuda extends Controller
             pasos: [
                 'Presiona Olvidaste tu contrasena desde el inicio de sesion.',
                 'Escribe el correo registrado en tu cuenta.',
-                'Usa Enviar instrucciones y revisa el correo para continuar el proceso.',
+                'Presiona Enviar codigo, revisa tu correo y escribe el codigo de 8 digitos en el sistema.',
+                'Si el codigo es correcto, elige y confirma una nueva contrasena; despues vuelve a iniciar sesion.',
+                'El codigo vence a los 10 minutos. Para reenviar espera la cuenta regresiva de 3 minutos.',
             ],
             imagen: 'assets/ayuda/acceso/02-recuperar-contrasena.png',
             ruta: route('password.request'),
-            notas: ['Correo registrado', 'Enviar instrucciones', 'Volver al inicio'],
+            notas: ['Correo registrado', 'Enviar codigo', 'Volver al inicio'],
         );
     }
 
@@ -468,15 +470,15 @@ class ControladorAyuda extends Controller
             id: 'actualizar-contrasena',
             menu: 'Actualizar contrasena',
             titulo: 'Actualizar contrasena',
-            descripcion: 'Aparece cuando entras con una contrasena temporal y necesitas crear una nueva antes de continuar.',
+            descripcion: 'Permite cambiar tu contrasena actual cuando lo necesites.',
             pasos: [
-                'Escribe la contrasena temporal que recibiste o que te indicaron.',
+                'Escribe tu contrasena actual.',
                 'Captura una nueva contrasena de al menos 8 caracteres.',
                 'Confirma la nueva contrasena y presiona Actualizar contrasena.',
             ],
             imagen: 'assets/ayuda/acceso/03-actualizar-contrasena.png',
             ruta: null,
-            notas: ['Contrasena temporal', 'Nueva contrasena', 'Confirmacion'],
+            notas: ['Contrasena actual', 'Nueva contrasena', 'Confirmacion'],
         );
     }
 
@@ -710,7 +712,7 @@ class ControladorAyuda extends Controller
     }
 
     /**
-     * @param array<int, array<string, mixed>> $capturas
+     * @param  array<int, array<string, mixed>>  $capturas
      * @return array<int, array{titulo: string, texto: string}>
      */
     private function detallesPorCapturas(array $capturas): array
@@ -729,20 +731,20 @@ class ControladorAyuda extends Controller
         $detalles = [
             'assets/ayuda/acceso/01-iniciar-sesion.png' => [
                 $this->detalle('Matricula', 'Captura la matricula tal como fue registrada, sin espacios adicionales.'),
-                $this->detalle('Contrasena', 'Escribe tu clave de acceso. Si es temporal, el sistema pedira actualizarla.'),
+                $this->detalle('Contrasena', 'Escribe la contrasena asignada a tu cuenta o la que hayas elegido.'),
                 $this->detalle('Iniciar sesion', 'Valida los datos y abre el panel asignado a tu cuenta.'),
                 $this->detalle('Olvidaste tu contrasena', 'Usa ese enlace cuando no recuerdes tu clave o no puedas entrar.'),
                 $this->detalle('Ayuda', 'Abre esta guia de acceso en otra ventana sin cerrar la pantalla actual.'),
             ],
             'assets/ayuda/acceso/02-recuperar-contrasena.png' => [
                 $this->detalle('Correo registrado', 'Escribe el correo asociado a tu cuenta para solicitar instrucciones de recuperacion.'),
-                $this->detalle('Enviar instrucciones', 'Busca la cuenta y envia el procedimiento de recuperacion si los datos coinciden.'),
+                $this->detalle('Enviar codigo', 'Busca la cuenta y envia el procedimiento de recuperacion si los datos coinciden.'),
                 $this->detalle('Volver al inicio', 'Regresa a la pantalla de acceso cuando ya tengas una clave valida.'),
                 $this->detalle('Ayuda', 'Abre la explicacion de recuperacion de acceso en otra ventana.'),
             ],
             'assets/ayuda/acceso/03-actualizar-contrasena.png' => [
-                $this->detalle('Contrasena temporal', 'Escribe la contrasena actual que recibiste para tu primer acceso o recuperacion.'),
-                $this->detalle('Nueva contrasena', 'Debe tener al menos 8 caracteres y ser diferente a la temporal.'),
+                $this->detalle('Contrasena actual', 'Escribe la contrasena que utilizas para entrar al sistema.'),
+                $this->detalle('Nueva contrasena', 'Debe tener al menos 8 caracteres y ser diferente a la actual.'),
                 $this->detalle('Confirmar nueva contrasena', 'Repite la nueva contrasena exactamente igual para evitar errores de escritura.'),
                 $this->detalle('Actualizar contrasena', 'Guarda el cambio y permite continuar al sistema cuando los datos son validos.'),
                 $this->detalle('Ayuda', 'Abre esta guia en otra ventana si tienes duda sobre los campos.'),

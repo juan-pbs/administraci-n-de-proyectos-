@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['guia_integradora_id', 'equipo_id', 'titulo', 'descripcion', 'estado'])]
 class Proyecto extends Model
@@ -18,6 +20,21 @@ class Proyecto extends Model
     public const CREATED_AT = 'creado_en';
 
     public const UPDATED_AT = 'actualizado_en';
+
+    public function cierre(): HasOne
+    {
+        return $this->hasOne(CierreProyecto::class, 'proyecto_id');
+    }
+
+    public function entregas(): HasMany
+    {
+        return $this->hasMany(Entrega::class, 'proyecto_id');
+    }
+
+    public function documentosFinales(): HasMany
+    {
+        return $this->hasMany(DocumentoFinal::class, 'proyecto_id');
+    }
 
     /**
      * @return BelongsTo<GuiaIntegradora, $this>

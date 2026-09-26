@@ -1,11 +1,36 @@
-<x-contenedor-aplicacion title="Código y repositorio | Administración de proyectos" active="codigo-estudiante" :navegacion="$navegacion" :role-name="$roleName">
-    <section class="border-b border-slate-200 pb-5"><p class="text-sm font-semibold uppercase tracking-[.18em] text-[#21A366]">Producto técnico</p><h2 class="mt-3 text-2xl font-bold text-[#0D376D]">Código y repositorio</h2><p class="mt-2 text-sm text-slate-600">Registra el repositorio y carga archivos comprimidos para que el docente líder pueda revisarlos.</p></section>
-    @if(session('status'))<div class="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">{{ session('status') }}</div>@endif
-    @if($errors->any())<div class="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ $errors->first() }}</div>@endif
+<x-contenedor-aplicacion title="Código y demostración | Administración de proyectos" active="codigo-estudiante" :navegacion="$navegacion" :role-name="$roleName">
+    <h2 class="text-2xl font-bold text-[#0D376D]">Código, demostración y aplicación</h2>
+    <p class="mt-2 text-sm text-slate-600">Entrega el repositorio, una URL del trabajo alojado o un instalador. Estos productos se comparten únicamente con el docente que puede revisar tu repositorio.</p>
+    <x-mensajes-formulario />
+    @include('modulos.estudiante.selector-proyecto')
+    @if(session('status'))<p class="mt-5 rounded border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{{ session('status') }}</p>@endif
     @if($proyecto && $apartadoCodigo)
-        @if($producto)<section class="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-bold uppercase text-slate-500">Última entrega del equipo</p><div class="mt-3 grid gap-4 md:grid-cols-[1fr_140px]"><div><p class="font-bold text-slate-900">{{ $producto->repositorio_url ?: 'Sin repositorio' }}</p><p class="mt-1 text-sm text-slate-500">{{ $producto->entrega?->archivos?->count() }} archivos adjuntos · Subida por {{ $producto->entrega?->entregadoPor?->nombre ?? 'Integrante del equipo' }}</p></div><span class="h-fit rounded-full bg-blue-50 px-3 py-1 text-center text-sm font-bold text-blue-700">{{ $producto->version }}</span></div></section>@endif
-        <section class="mt-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><h3 class="font-bold text-slate-900">{{ $apartadoCodigo->titulo }}</h3>@if(!$apartadoCodigo->fecha_limite || $apartadoCodigo->fecha_limite->isFuture())<form method="POST" enctype="multipart/form-data" action="{{ route('estudiante.codigo.guardar') }}" class="mt-4 grid gap-4">@csrf<div class="grid gap-4 md:grid-cols-[1fr_180px]"><label><span class="text-xs font-bold uppercase text-slate-500">URL del repositorio</span><input name="repositorio_url" type="url" value="{{ old('repositorio_url', $producto?->repositorio_url) }}" placeholder="https://github.com/organizacion/proyecto" class="mt-2 w-full rounded-md border-slate-300 text-sm"></label><label><span class="text-xs font-bold uppercase text-slate-500">Versión</span><input required name="version" value="{{ old('version', $producto?->version ?? 'v1.0.0') }}" class="mt-2 w-full rounded-md border-slate-300 text-sm"></label></div><label><span class="text-xs font-bold uppercase text-slate-500">Archivos comprimidos o técnicos</span><input multiple name="archivos[]" type="file" accept=".zip,.rar,.7z,.tar,.gz,.sql,.md,.txt" class="mt-2 block w-full rounded-md border border-slate-300 p-3 text-sm"><p class="mt-1 text-xs text-slate-500">Cualquier integrante puede enviar una nueva versión antes del cierre. Hasta 10 archivos de 150 MB cada uno.</p></label><button class="w-fit rounded-md bg-[#155AA3] px-5 py-2.5 text-sm font-bold text-white">{{ $producto ? 'Enviar nueva versión' : 'Registrar entrega de código' }}</button></form>@else<p class="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">El plazo terminó. El repositorio y los archivos permanecen visibles, pero ya no pueden reemplazarse.</p>@endif</section>
-    @else
-        <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-5 py-10 text-center text-sm text-amber-800">Tu proyecto todavía no tiene un apartado de código configurado.</div>
-    @endif
+        @if($producto)
+        <section class="mt-5 rounded-lg border bg-white p-5">
+            <h3 class="font-bold">Última entrega: {{ $producto->version }}</h3>
+            <p class="mt-2 break-all text-sm">Repositorio: {{ $producto->repositorio_url ?: 'Sin repositorio' }}</p>
+            <p class="mt-2 break-all text-sm">Demostración: {{ $producto->demostracion_url ?: 'Sin URL de demostración' }}</p>
+            <p class="mt-2 text-xs text-slate-500">Subida por {{ $producto->entrega?->entregadoPor?->nombre ?? 'Integrante del equipo' }}</p>
+            @foreach($producto->entrega?->archivos ?? [] as $archivo)<a href="{{ route('estudiante.archivos.descargar', ['archivo' => $archivo, 'proyecto_contexto' => $proyecto->id]) }}" class="mt-2 block text-sm font-bold text-[#155AA3] underline">{{ $archivo->nombre_original }}</a>@endforeach
+        </section>
+        @endif
+        <section class="mt-5 rounded-lg border bg-white p-5"><h3 class="font-bold">{{ $apartadoCodigo->titulo }}</h3>
+        <p class="mt-2 text-sm text-slate-500">Fecha límite: {{ $apartadoCodigo->fecha_limite?->format('d/m/Y H:i') ?? 'Sin fecha definida' }}</p>
+        @if($apartadoCodigo->habilitado_para_entrega && (!$apartadoCodigo->fecha_limite || $apartadoCodigo->fecha_limite->isFuture()))
+        <form method="POST" enctype="multipart/form-data" action="{{ route('estudiante.codigo.guardar') }}" class="mt-4 grid gap-4">
+            @csrf
+            <input type="hidden" name="proyecto_contexto" value="{{ $proyecto->id }}">
+            <div class="grid gap-4 md:grid-cols-[1fr_180px]">
+                <label class="text-sm font-semibold">URL del repositorio<input name="repositorio_url" type="url" value="{{ old('repositorio_url', $producto?->repositorio_url) }}" placeholder="https://github.com/equipo/proyecto" class="mt-2 w-full rounded-md border-slate-300 text-sm"></label>
+                <label class="text-sm font-semibold">Versión<input required maxlength="40" name="version" value="{{ old('version', $producto?->version ?? 'v1.0.0') }}" class="mt-2 w-full rounded-md border-slate-300 text-sm"></label>
+            </div>
+            <label class="text-sm font-semibold">URL de demostración alojada (opcional)<input name="demostracion_url" type="url" maxlength="1000" value="{{ old('demostracion_url', $producto?->demostracion_url) }}" placeholder="https://mi-proyecto.example.com" class="mt-2 w-full rounded-md border-slate-300 text-sm"><span class="mt-1 block text-xs text-slate-500">Debe ser una dirección HTTPS pública. No uses enlaces con contraseñas ni direcciones locales.</span></label>
+            <label class="text-sm font-semibold">Aplicación móvil o de escritorio<input name="aplicacion" type="file" accept=".apk,.exe,.msi,.dmg,.appimage,.deb" class="mt-2 block w-full rounded border p-3"><span class="mt-1 block text-xs text-slate-500">APK, EXE, MSI, DMG, AppImage o DEB; hasta 150 MB. Se entrega para descargar, el sistema no ejecuta instaladores.</span></label>
+            <label class="text-sm font-semibold">Archivos comprimidos o técnicos<input multiple name="archivos[]" type="file" accept=".zip,.rar,.7z,.tar,.gz,.sql,.md,.txt" class="mt-2 block w-full rounded border p-3"><span class="mt-1 block text-xs text-slate-500">Hasta 10 archivos de 150 MB. Incluye nuevamente los archivos que correspondan a esta versión.</span></label>
+            <p class="text-sm text-slate-500">Puedes entregar cualquiera de estas opciones o combinarlas. Cada envío registra una versión nueva que deberá ser aprobada.</p>
+            <button class="w-fit rounded-md bg-[#155AA3] px-5 py-3 font-bold text-white">{{ $producto ? 'Enviar nueva versión' : 'Registrar entrega' }}</button>
+        </form>
+        @else<p class="mt-4 rounded bg-red-50 p-4 text-sm text-red-800">El plazo terminó. Las entregas permanecen visibles y ya no pueden reemplazarse.</p>@endif
+        </section>
+    @else<p class="mt-5 rounded bg-amber-50 p-5 text-sm text-amber-800">Tu proyecto todavía no tiene un apartado de código configurado.</p>@endif
 </x-contenedor-aplicacion>
