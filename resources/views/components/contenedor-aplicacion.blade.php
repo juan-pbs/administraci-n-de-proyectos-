@@ -55,7 +55,7 @@
                                     <span>Ayuda</span>
                                 </summary>
 
-                                <div class="absolute right-0 z-50 mt-2 w-64 space-y-1 rounded-md border border-slate-200 bg-white p-2 shadow-xl">
+                                <div class="absolute right-0 z-50 mt-2 max-h-[min(70vh,36rem)] w-64 space-y-1 overflow-y-auto rounded-md border border-slate-200 bg-white p-2 shadow-xl">
                                     @foreach($opcionesAyuda as $opcion)
                                         <a
                                             href="{{ $opcion['ruta'] }}"

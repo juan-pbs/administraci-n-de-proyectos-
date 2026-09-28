@@ -110,6 +110,9 @@ test('la ayuda publica de acceso solo muestra temas de ingreso', function () {
         ->assertSee('Recuperar contrasena')
         ->assertSee('Correo registrado')
         ->assertSee('Enviar codigo')
+        ->assertSee('acceso-recuperacion.png')
+        ->assertSee('acceso-codigo.png')
+        ->assertSee('acceso-nueva-contrasena.png')
         ->assertDontSee('Mi proyecto')
         ->assertDontSee('Periodos academicos')
         ->assertDontSee('Guias integradoras');
@@ -173,4 +176,39 @@ test('ayuda de estudiante no muestra apartados administrativos', function () {
         ->assertSee('Mi proyecto')
         ->assertDontSee('Periodos academicos')
         ->assertDontSee('Guias integradoras');
+});
+
+test('la ayuda nueva muestra el contenido correcto y sus opciones solo al rol correspondiente', function () {
+    $roles = [];
+    foreach (['coordinacion', 'docente_lider', 'docente_materia', 'estudiante'] as $nombre) {
+        $rol = Role::query()->firstOrCreate(['nombre' => $nombre], ['nombre_visible' => $nombre, 'descripcion' => 'Rol de prueba']);
+        $roles[$nombre] = User::factory()->create(['rol_id' => $rol->id]);
+    }
+
+    $this->actingAs($roles['coordinacion'])
+        ->get('/ayuda?seccion=guias')
+        ->assertOk()
+        ->assertSee('Actualizar vista previa')
+        ->assertSee('Se cierra al terminar el periodo');
+
+    $this->actingAs($roles['docente_lider'])
+        ->get('/ayuda?seccion=estado-guias')
+        ->assertOk()
+        ->assertSee('10, 20 o 40 proyectos')
+        ->assertSee('Volver conserva filtros y pagina')
+        ->assertSee('lider-estado-guias.png');
+
+    $this->actingAs($roles['docente_materia'])
+        ->get('/ayuda?seccion=mi-firma')
+        ->assertOk()
+        ->assertSee('sube una imagen PNG o JPG')
+        ->assertSee('version recibida')
+        ->assertSee('docente-firma.png');
+
+    $this->actingAs($roles['estudiante'])
+        ->get('/ayuda?seccion=codigo-repositorio')
+        ->assertOk()
+        ->assertSee('URL de demostracion no es obligatoria')
+        ->assertSee('estudiante-codigo-formulario.png')
+        ->assertDontSee('Cierres y prorrogas');
 });
