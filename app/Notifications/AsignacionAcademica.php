@@ -26,12 +26,16 @@ class AsignacionAcademica extends Notification
             default => 'Nueva asignación',
         };
 
-        return (new MailMessage)->subject($titulo.': '.$this->apartado->titulo)->greeting('Hola, '.$notifiable->nombre)
-            ->line($titulo.' para el proyecto '.$this->proyecto->titulo.'.')
-            ->line('Actividad: '.$this->apartado->titulo)
-            ->line($this->apartado->descripcion ?: 'Consulta los requisitos en el sistema.')
-            ->line('Fecha límite: '.($fecha ? $fecha->format('d/m/Y H:i').' ('.config('app.timezone').')' : 'Sin fecha definida'))
-            ->action('Consultar asignación', route($this->apartado->requiere_codigo ? 'estudiante.codigo' : 'estudiante.entregas', ['proyecto_contexto' => $this->proyecto->id]))
-            ->line('Este aviso corresponde a tu equipo.');
+        return (new MailMessage)
+            ->subject($titulo.': '.$this->apartado->titulo)
+            ->view(['html' => 'correos.asignacion-academica', 'text' => 'correos.texto.asignacion-academica'], [
+                'titulo' => $titulo,
+                'nombre' => $notifiable->nombre,
+                'proyecto' => $this->proyecto->titulo,
+                'actividad' => $this->apartado->titulo,
+                'descripcion' => $this->apartado->descripcion ?: 'Consulta los requisitos en el sistema.',
+                'fechaLimite' => $fecha ? $fecha->format('d/m/Y H:i').' ('.config('app.timezone').')' : 'Sin fecha definida',
+                'url' => route($this->apartado->requiere_codigo ? 'estudiante.codigo' : 'estudiante.entregas', ['proyecto_contexto' => $this->proyecto->id]),
+            ]);
     }
 }

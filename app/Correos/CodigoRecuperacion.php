@@ -17,6 +17,6 @@ class CodigoRecuperacion extends Mailable
 
     public function content(): Content
     {
-        return new Content(view: 'correos.codigo-recuperacion');
+        return new Content(view: 'correos.codigo-recuperacion', text: 'correos.texto.codigo-recuperacion');
     }
 }

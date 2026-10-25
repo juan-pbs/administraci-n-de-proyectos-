@@ -29,6 +29,7 @@ class ContrasenaInicial extends Mailable
     {
         return new Content(
             view: 'correos.contrasena-inicial',
+            text: 'correos.texto.contrasena-inicial',
         );
     }
 }

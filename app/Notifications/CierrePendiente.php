@@ -17,15 +17,15 @@ class CierrePendiente extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $correo = (new MailMessage)->subject('Cierre pendiente del proyecto #'.$this->proyecto->id)
-            ->greeting('Hola, '.e($notifiable->nombre))
-            ->line('El plazo del proyecto '.e($this->proyecto->titulo).' terminó y su documento final tiene pendientes.')
-            ->line('Equipo: '.e($this->proyecto->equipo->nombre).'. Guía: '.e($this->proyecto->guiaIntegradora->nombre).'.');
-        foreach ($this->pendientes as $pendiente) {
-            $correo->line(e($pendiente['apartado'].': '.$pendiente['detalle']));
-        }
-
-        return $correo->line('Como docente líder, decide si cierras con estos pendientes o concedes una prórroga indicando la fecha y los apartados que se abrirán.')
-            ->action('Revisar cierre y prórrogas', route('docente-lider.cierres.mostrar', $this->proyecto));
+        return (new MailMessage)
+            ->subject('Cierre pendiente del proyecto #'.$this->proyecto->id)
+            ->view(['html' => 'correos.cierre-pendiente', 'text' => 'correos.texto.cierre-pendiente'], [
+                'nombre' => $notifiable->nombre,
+                'proyecto' => $this->proyecto->titulo,
+                'equipo' => $this->proyecto->equipo->nombre,
+                'guia' => $this->proyecto->guiaIntegradora->nombre,
+                'pendientes' => $this->pendientes,
+                'url' => route('docente-lider.cierres.mostrar', $this->proyecto),
+            ]);
     }
 }

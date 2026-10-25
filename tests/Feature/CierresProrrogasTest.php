@@ -104,7 +104,7 @@ test('cierre distingue entregas y firmas, avisa solo al líder y deduplica los a
     (new EnviarAvisoCierre(AvisoCierre::first()->id))->handle($servicio);
     Notification::assertSentTo($d['lider'], CierrePendiente::class, function ($correo) use ($d) {
         expect($correo->pendientes)->toHaveCount(2);
-        expect($correo->toMail($d['lider'])->actionUrl)->toBe(route('docente-lider.cierres.mostrar', $d['proyecto']));
+        expect($correo->toMail($d['lider'])->data()['url'])->toBe(route('docente-lider.cierres.mostrar', $d['proyecto']));
 
         return true;
     });
@@ -249,7 +249,7 @@ test('avisos de alumnos en prórroga usan solo apartados abiertos y su fecha efe
     Notification::fake();
     (new EnviarAvisoAsignacion($aviso->id))->handle(app(AvisosAsignaciones::class));
     Notification::assertSentTo($d['alumno'], AsignacionAcademica::class, function ($correo) use ($d, $datos) {
-        expect(implode(' ', $correo->toMail($d['alumno'])->introLines))->toContain(Carbon::parse($datos['fecha_limite'])->format('d/m/Y H:i'));
+        expect($correo->toMail($d['alumno'])->data()['fechaLimite'])->toContain(Carbon::parse($datos['fecha_limite'])->format('d/m/Y H:i'));
 
         return true;
     });
