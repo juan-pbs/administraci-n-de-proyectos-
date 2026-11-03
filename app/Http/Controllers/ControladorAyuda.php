@@ -289,15 +289,15 @@ class ControladorAyuda extends Controller
                     id: 'recordatorios',
                     menu: 'Recordatorios',
                     titulo: 'Recordatorios de entrega',
-                    descripcion: 'Como docente lider puedes enviar recordatorios manuales a tus equipos y editar el texto de cada tipo de correo.',
+                    descripcion: 'Como docente lider puedes recordar entregas pendientes a alumnos y revisiones pendientes a docentes de tus equipos, y editar el texto de cada tipo de correo.',
                     pasos: [
-                        'Abre Recordatorios. Pulsa Enviar recordatorios a todos mis proyectos para incluir todos tus proyectos en proceso, aun si no aparecen en la pagina actual. En una fila, Enviar recordatorios ahora actua solo sobre ese proyecto.',
-                        'En Formatos de correo, edita por separado el texto de 72 horas, 24 horas y envio manual. Puedes usar {nombre}, {proyecto}, {actividad} y {fecha_limite}; pulsa Guardar formato en cada bloque.',
-                        'La cola envia los correos. No se manda un aviso manual duplicado del mismo apartado y version durante el dia; antes de enviarlo se verifica que el alumno siga asignado y que el plazo no haya vencido.',
+                        'Abre Recordatorios. Enviar recordatorios a todos mis proyectos incluye todos tus proyectos en proceso, aun si no aparecen en la pagina actual. Enviar recordatorios ahora actua solo sobre el proyecto de esa fila.',
+                        'En Formatos de correo, edita el texto de 72 horas, 24 horas, envio manual y revision pendiente de docentes. Usa las variables indicadas en la vista y pulsa Guardar formato en cada bloque.',
+                        'La cola envia los correos. Antes de mandar un aviso comprueba que el alumno aun tenga la entrega pendiente o que el docente siga asignado y no haya revisado la version actual.',
                     ],
                     imagen: 'assets/ayuda/actualizadas/lider-recordatorios.png',
                     ruta: $rutas['recordatorios'] ?? null,
-                    notas: ['Solo tus proyectos', 'Formato por tipo de recordatorio', 'Sin entregas completas ni plazos vencidos'],
+                    notas: ['Solo tus proyectos', 'Alumnos: entregas pendientes', 'Docentes: revisiones pendientes'],
                 ),
                 $this->seccionModulo(
                     id: 'revision-codigo',
@@ -305,7 +305,7 @@ class ControladorAyuda extends Controller
                     titulo: 'Revision de codigo',
                     descripcion: 'Permite revisar repositorios, URL de demostracion opcional, archivos tecnicos y comentarios del producto final.',
                     pasos: [
-                        'Filtra por grupo para ubicar entregas de codigo.',
+                        'Si recibes un aviso de revision pendiente de codigo, abre el enlace o entra a Revision de codigo. Filtra por grupo para ubicar la version actual.',
                         'Abre el repositorio o la URL de demostracion; descarga los archivos o el instalador para revisar el trabajo. Solo los docentes autorizados ven estos recursos.',
                         'Guarda resultado, calificacion y comentarios tecnicos cuando corresponda.',
                     ],
@@ -406,7 +406,7 @@ class ControladorAyuda extends Controller
                     titulo: 'Revision de entregas',
                     descripcion: 'Bandeja donde revisas evidencias, registras resultado y agregas comentarios.',
                     pasos: [
-                        'Filtra por equipo, proyecto, apartado, grupo o estado.',
+                        'Si recibes un aviso de revision pendiente, abre su enlace a Revisiones. Filtra por equipo, proyecto, apartado, grupo o estado para ubicar la version actual.',
                         'Abre los archivos de evidencia antes de calificar.',
                         'Registra resultado, calificacion y observaciones. Para aprobar y autorizar tu firma debes tenerla registrada; una nueva version requiere revision nueva.',
                     ],
@@ -756,6 +756,7 @@ class ControladorAyuda extends Controller
                 $this->capturaContexto('assets/ayuda/actualizadas/lider-recordatorios-formato-72.png', 'Formato de 72 horas', 'Texto editable del recordatorio automatico de 72 horas.'),
                 $this->capturaContexto('assets/ayuda/actualizadas/lider-recordatorios-formato-24.png', 'Formato de 24 horas', 'Texto editable del recordatorio automatico de 24 horas.'),
                 $this->capturaContexto('assets/ayuda/actualizadas/lider-recordatorios-formato-manual.png', 'Formato manual', 'Texto editable de los recordatorios enviados desde los botones del docente lider.'),
+                $this->capturaContexto('assets/ayuda/actualizadas/lider-recordatorios-formato-revision.png', 'Formato para docentes', 'Texto editable de los avisos de revisión pendiente que reciben docentes de los equipos.'),
             ],
             'assets/ayuda/actualizadas/materia-revisiones.png' => [
                 $this->capturaContexto('assets/ayuda/actualizadas/materia-revision-detalle.png', 'Revisar una version', 'Detalle de evidencia, resultado y autorizacion de firma para la version recibida.'),
@@ -1476,7 +1477,7 @@ class ControladorAyuda extends Controller
             'docente_lider' => [
                 ['pregunta' => 'Por que no puedo crear proyectos', 'respuesta' => 'El equipo debe existir y contar con una guia disponible para el periodo. Revisa tambien que el grupo pertenezca a tu asignacion.'],
                 ['pregunta' => 'Puedo mover alumnos entre equipos', 'respuesta' => 'Si tienes permiso sobre el grupo, puedes ajustar integrantes. El sistema evita que un alumno quede activo en dos equipos al mismo tiempo.'],
-                ['pregunta' => 'Por que no se envio un recordatorio manual', 'respuesta' => 'Solo se programan avisos para estudiantes activos con entregas pendientes o por corregir y plazo vigente. El mismo aviso manual del apartado y version se solicita una vez por dia. Revisa tambien la cola y la configuracion del correo.'],
+                ['pregunta' => 'Por que no se envio un recordatorio manual', 'respuesta' => 'Los alumnos deben tener entregas pendientes o por corregir y plazo vigente; los docentes deben tener una version asignada sin revisar. Se evitan avisos repetidos del mismo dia. Revisa tambien la cola y la configuracion del correo.'],
             ],
             'docente_materia' => [
                 ['pregunta' => 'Por que no hay entregas pendientes', 'respuesta' => 'Puede ocurrir cuando ningun equipo ha enviado evidencias o cuando no tienes apartados asignados en la guia del periodo.'],

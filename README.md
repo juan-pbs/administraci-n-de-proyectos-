@@ -17,7 +17,7 @@ Aplicación Laravel para administrar periodos, carreras, grupos, alumnos, docent
 - Vista previa de guías y apartados antes de guardar. PDF institucional con contenido, materias contribuyentes y firmas por apartado.
 - PDF finales completos guardados como bytes cifrados e inmutables, con hash de integridad. Las descargas recuperan el archivo emitido; cambiar los datos actuales no reconstruye el historial.
 - Repositorio y URL HTTPS de trabajo alojado opcional, con instaladores APK/EXE/MSI/DMG/AppImage/DEB y comprimidos. Repositorio, URL y aplicación mantienen los mismos permisos de la materia líder del grupo.
-- Avisos de asignaciones y cambios, recordatorios de 72 y 24 horas previos al vencimiento, envío manual de recordatorios por el docente líder y avisos al líder por entregas o firmas pendientes. Cola y programador independientes.
+- Avisos de asignaciones y cambios, recordatorios de entrega a alumnos (72 horas, 24 horas y manuales), avisos de revisión pendiente a docentes y avisos de cierre al líder. Cola y programador independientes.
 - Cierre con constancia de pendientes o prórroga del líder para un equipo, fecha y apartados concretos. El resto de la guía permanece bloqueado.
 - Estado de las guías para el líder: finalizadas, listas para PDF, pendientes, prórrogas activas/vencidas y cierres incompletos. Filtros y paginación de 10, 20 o 40 equipos; resumen global. El formato tiene botones para regresar a la página y filtros de origen.
 
@@ -29,7 +29,7 @@ El formato PDF es una guía institucional de seguimiento. No concatena automáti
 | --- | --- |
 | Coordinación | Periodos, carreras, grupos, usuarios, asignaturas, jerarquía y estructura de las guías. |
 | Docente líder | Sus grupos y equipos, proyectos, revisión de código de su materia líder, estado de las guías, cierres y prórrogas; envío manual y formatos de recordatorios de sus equipos. |
-| Docente de materia | Apartados y equipos asignados, archivos documentales, revisiones, comentarios y firma. |
+| Docente de materia | Apartados y equipos asignados, avisos de revisiones pendientes, archivos documentales, revisiones, comentarios y firma. |
 | Alumno | Su equipo y proyectos, entregas y versiones, observaciones, repositorio y aplicación cuando se soliciten. |
 
 Los docentes permanecen registrados al cambiar de periodo; grupos, alumnos y asignaciones se configuran por ciclo. Los proyectos históricos y sus documentos conservan los permisos correspondientes. Un alumno puede seleccionar un proyecto anterior de su equipo para atender una prórroga.
@@ -90,7 +90,7 @@ Las cinco migraciones de septiembre agregan firmas/PDF/avisos, vínculo de firma
 
 ## Datos de práctica y accesos
 
-La carga utiliza nombres, matrículas y títulos normales. Todos los datos personales, evidencias y firmas son ficticios. Los enlaces de repositorio pertenecen a `juan-pbs` y sirven como referencias; los paquetes adjuntos no son versiones compiladas de esos repositorios.
+La carga utiliza nombres, matrículas y títulos de práctica. Los nombres, evidencias y firmas son ficticios; las tres direcciones Gmail señaladas abajo fueron proporcionadas para verificar avisos en el entorno local. Los enlaces de repositorio pertenecen a `juan-pbs` y sirven como referencias; los paquetes adjuntos no son versiones compiladas de esos repositorios.
 
 Contenido inicial:
 
@@ -103,23 +103,25 @@ Contenido inicial:
 
 Contraseña de todas las cuentas iniciales: **password**. Solo las cuentas de práctica usan esta contraseña conocida; el alta normal genera una aleatoria.
 
-| Matrícula | Cuenta |
-| --- | --- |
-| `20260001` | Patricia Hernández, coordinación |
-| `DOC-TI-01` | Elena Rivera, líder de 8A de TI |
-| `DOC-TI-02` | Carlos Mendoza, líder de 8B de TI |
-| `DOC-TI-03` | Tomás Vega, docente con firma |
-| `DOC-TI-04` | Lucía Montes, docente con firma |
-| `DOC-TI-05` | Ana Torres, docente sin firma |
-| `DOC-MEC-01` | Sofía Ortega, líder de 8A de Mecatrónica |
-| `DOC-MEC-02` | Daniel Castillo, líder de 8B de Mecatrónica |
-| `TI41011` | Alumno del periodo activo, sin entregas |
-| `TI41031` | Alumno con correcciones pendientes |
-| `TI41051` | Alumno con aprobación de docente sin firma pendiente |
-| `TI41071` | Alumno con PDF final |
-| `TI31041` | Alumno de periodo cerrado, con prórroga activa |
-| `TI31051` | Alumno con prórroga vencida |
-| `TI41991` | Alumno libre del grupo 8A de TI |
+| Matrícula | Cuenta | Correo de prueba |
+| --- | --- | --- |
+| `20260001` | Patricia Hernández, coordinación | `20260001@example.invalid` |
+| `DOC-TI-01` | Elena Rivera, líder de 8A de TI | `juanbarrerasanti@gmail.com` |
+| `DOC-TI-02` | Carlos Mendoza, líder de 8B de TI | `doc-ti-02@example.invalid` |
+| `DOC-TI-03` | Tomás Vega, docente con firma | `jb8915736@gmail.com` |
+| `DOC-TI-04` | Lucía Montes, docente con firma | `doc-ti-04@example.invalid` |
+| `DOC-TI-05` | Ana Torres, docente sin firma | `doc-ti-05@example.invalid` |
+| `DOC-MEC-01` | Sofía Ortega, líder de 8A de Mecatrónica | `doc-mec-01@example.invalid` |
+| `DOC-MEC-02` | Daniel Castillo, líder de 8B de Mecatrónica | `doc-mec-02@example.invalid` |
+| `TI41011` | Alumno del periodo activo, sin entregas | `juanpbs2005@gmail.com` |
+| `TI41031` | Alumno con correcciones pendientes | `ti41031@example.invalid` |
+| `TI41051` | Alumno con aprobación de docente sin firma pendiente | `ti41051@example.invalid` |
+| `TI41071` | Alumno con PDF final | `ti41071@example.invalid` |
+| `TI31041` | Alumno de periodo cerrado, con prórroga activa | `ti31041@example.invalid` |
+| `TI31051` | Alumno con prórroga vencida | `ti31051@example.invalid` |
+| `TI41991` | Alumno libre del grupo 8A de TI | `ti41991@example.invalid` |
+
+Las demás cuentas conservan su dirección de práctica `matricula@example.invalid` en minúsculas. Los docentes reciben avisos de revisión pendiente; los alumnos reciben recordatorios de entrega. Coordinación no recibe ninguno de esos dos tipos de recordatorio.
 
 Como líder, abre **Estado de las guías** con todos los periodos para ver el historial y sus páginas. Selecciona **Mayo - Agosto 2026** para los cierres y prórrogas y **Septiembre - Diciembre 2026** para las entregas actuales. La lista completa de alumnos y docentes está en **Usuarios**.
 
@@ -141,19 +143,22 @@ Los seeders históricos anteriores permanecen como fixtures de pruebas; la carga
 
 ## Correo y tareas programadas
 
-`MAIL_MAILER=log` guarda mensajes localmente y no entrega correo real. Las cuentas de práctica usan `example.invalid`. Para enviar correos configura SMTP y direcciones reales. El alta, la recuperación y los avisos usan esa misma configuración.
+`MAIL_MAILER=log` guarda mensajes localmente y no entrega correo real. Salvo las tres cuentas de verificación de la tabla, las cuentas de práctica usan `example.invalid`. Para enviar correos configura SMTP y direcciones reales. El alta, la recuperación y los avisos usan esa misma configuración.
 
 ```bash
 php artisan asignaciones:notificar
+php artisan revisiones:notificar
 php artisan cierres:revisar
 php artisan schedule:list
 ```
 
 Estos comandos se programan cada minuto. La cola envía los avisos y conserva el estado para evitar duplicaciones; revisa `failed_jobs` si el proveedor falla. Los recordatorios se configuran en `config/asignaciones.php`.
 
-En **Docente líder > Recordatorios**, **Enviar recordatorios a todos mis proyectos** abarca todos los proyectos en proceso del líder, incluso los de otras páginas del listado; **Enviar recordatorios ahora** actúa solo sobre el proyecto de su fila. Se programan correos para integrantes con entregas pendientes o por corregir y apartados con plazo vigente. El mismo aviso manual no se repite para un estudiante, apartado y versión de la asignación durante el día. El envío se realiza por la cola y vuelve a comprobar el estado antes de mandar el correo.
+Los docentes con la última versión de una entrega asignada aún sin revisar reciben un aviso propio desde el día siguiente al envío de esa versión, como máximo uno por día. El enlace abre **Revisiones** o **Revisión de código** según el apartado. Si ya revisaron, cambió la versión o dejaron de tener acceso, el trabajo en cola se cancela. El docente líder también puede programar ese aviso manualmente desde **Recordatorios**.
 
-En esa vista, el docente líder puede guardar por separado el texto de los recordatorios automáticos de **72 horas**, de **24 horas** y del **envío manual** para sus equipos. Puede insertar `{nombre}`, `{proyecto}`, `{actividad}` y `{fecha_limite}`. El asunto, los datos de la actividad, el enlace y la imagen institucional permanecen en el correo. Si no guarda un formato, se usa el texto predeterminado. Los formatos se almacenan en la tabla `plantillas_recordatorios`; ejecuta `php artisan migrate` al actualizar una instalación existente.
+En **Docente líder > Recordatorios**, **Enviar recordatorios a todos mis proyectos** abarca todos los proyectos en proceso del líder, incluso los de otras páginas del listado; **Enviar recordatorios ahora** actúa solo sobre el proyecto de su fila. Se programan correos para alumnos con entregas pendientes o por corregir y avisos para docentes con versiones sin revisar. El mismo aviso manual no se repite para una persona y actividad durante el día. El envío se realiza por la cola y vuelve a comprobar el estado antes de mandar el correo.
+
+En esa vista, el docente líder puede guardar por separado el texto de los recordatorios de alumnos de **72 horas**, de **24 horas** y del **envío manual**, además del aviso de **revisión pendiente** para docentes. Puede insertar `{nombre}`, `{proyecto}` y `{actividad}` en todos; `{fecha_limite}` en los de alumnos; `{equipo}` y `{version}` en el de docentes. El asunto, los datos de la actividad, el enlace y la imagen institucional permanecen en el correo. Si no guarda un formato, se usa el texto predeterminado. Los formatos se almacenan en la tabla `plantillas_recordatorios`; ejecuta `php artisan migrate` al actualizar una instalación existente.
 
 ## Carga de alumnos y archivos
 

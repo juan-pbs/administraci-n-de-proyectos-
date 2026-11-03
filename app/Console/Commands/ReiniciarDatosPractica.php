@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Database\Seeders\EscenariosAcademicosSeeder;
+use Database\Seeders\CorreosPruebaSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\{DB, Schema, Storage};
 use RuntimeException;
@@ -44,6 +45,7 @@ class ReiniciarDatosPractica extends Command
             DB::transaction(function () use ($tablas) {
                 foreach ($tablas as $tabla) { DB::table($tabla)->delete(); }
                 app(EscenariosAcademicosSeeder::class)->run();
+                app(CorreosPruebaSeeder::class)->run();
             });
         });
         $this->info('Registros reemplazados. Respaldo privado: '.$disk->path($respaldo));

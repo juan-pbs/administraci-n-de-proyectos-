@@ -11,6 +11,7 @@ class TextoRecordatorios
         'recordatorio_72' => 'Recordatorio de 72 horas',
         'recordatorio_24' => 'Recordatorio de 24 horas',
         'recordatorio_manual' => 'Recordatorio manual',
+        'revision_pendiente' => 'Revisión pendiente de docentes',
     ];
 
     public function predeterminado(string $tipo): string
@@ -18,6 +19,7 @@ class TextoRecordatorios
         return match ($tipo) {
             'recordatorio_72' => "Hola, {nombre}.\nTu entrega de {actividad} para el proyecto {proyecto} vence el {fecha_limite}. Revisa lo pendiente con tu equipo.",
             'recordatorio_24' => "Hola, {nombre}.\nTu entrega de {actividad} para el proyecto {proyecto} vence el {fecha_limite}. Atiende lo pendiente cuanto antes.",
+            'revision_pendiente' => "Hola, {nombre}.\nLa versión {version} de {actividad} del equipo {equipo}, proyecto {proyecto}, está pendiente de tu revisión.",
             default => "Hola, {nombre}.\nTienes pendiente la entrega de {actividad} para el proyecto {proyecto}. Consulta los requisitos y la fecha límite: {fecha_limite}.",
         };
     }

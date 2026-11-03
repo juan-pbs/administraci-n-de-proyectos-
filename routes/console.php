@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Servicios\AvisosAsignaciones;
+use App\Servicios\AvisosRevisiones;
 use App\Servicios\CierresProyectos;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -16,6 +17,12 @@ Artisan::command('asignaciones:notificar', function (AvisosAsignaciones $avisos)
 })->purpose('Programa avisos de asignaciones y recordatorios de entregas');
 
 Schedule::command('asignaciones:notificar')->everyMinute()->withoutOverlapping();
+
+Artisan::command('revisiones:notificar', function (AvisosRevisiones $avisos) {
+    $this->info('Avisos de revisión despachados: '.$avisos->sincronizar());
+})->purpose('Recuerda a docentes las entregas asignadas que siguen sin revisión');
+
+Schedule::command('revisiones:notificar')->everyMinute()->withoutOverlapping();
 
 Artisan::command('cierres:revisar {--docente= : Matrícula del líder para limitar la revisión}', function (CierresProyectos $servicio) {
     $docente = $this->option('docente') ? User::where('matricula', $this->option('docente'))->firstOrFail() : null;

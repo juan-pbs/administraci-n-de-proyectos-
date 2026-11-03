@@ -3,6 +3,7 @@
 use App\Models\{ArchivoEntrega, DocumentoFinal, FirmaDocente, GuiaIntegradora, Periodo, ProductoCodigo, Proyecto, User};
 use App\Servicios\{DocumentosGuias, EstadoGuias};
 use Database\Seeders\EscenariosAcademicosSeeder;
+use Database\Seeders\CorreosPruebaSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\{DB, Notification, Queue, Storage};
 
@@ -12,6 +13,10 @@ test('escenarios académicos cubren estados y relaciones con nombres normales si
     Storage::fake('local'); Queue::fake(); Notification::fake();
     $this->partialMock(DocumentosGuias::class, fn ($m) => $m->shouldReceive('pdf')->times(24)->andReturn('%PDF-1.7 ESCUELA'));
     $this->seed(EscenariosAcademicosSeeder::class);
+    $this->seed(CorreosPruebaSeeder::class);
+    foreach (CorreosPruebaSeeder::CUENTAS as $matricula => $correo) {
+        expect(User::where('matricula', $matricula)->value('correo'))->toBe($correo);
+    }
     expect(Periodo::count())->toBe(5)->and(Periodo::where('estado', 'activo')->count())->toBe(1)
         ->and(Proyecto::count())->toBe(84)->and(DocumentoFinal::count())->toBe(24)->and(FirmaDocente::count())->toBe(8)
         ->and(User::count())->toBe(325)->and(GuiaIntegradora::count())->toBe(24);

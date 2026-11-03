@@ -174,12 +174,12 @@ test('la ayuda del docente lider explica el envio manual y los formatos de recor
         ->assertOk()
         ->assertSee('Enviar recordatorios ahora')
         ->assertSee('Enviar recordatorios a todos mis proyectos')
-        ->assertSee('72 horas, 24 horas y envio manual')
-        ->assertSee('{fecha_limite}')
+        ->assertSee('72 horas, 24 horas, envio manual y revision pendiente de docentes')
         ->assertSee('lider-recordatorios.png')
         ->assertSee('lider-recordatorios-formato-72.png')
         ->assertSee('lider-recordatorios-formato-24.png')
-        ->assertSee('lider-recordatorios-formato-manual.png');
+        ->assertSee('lider-recordatorios-formato-manual.png')
+        ->assertSee('lider-recordatorios-formato-revision.png');
     $this->actingAs(User::factory()->create(['rol_id' => $estudiante->id]))
         ->get('/ayuda?seccion=recordatorios')
         ->assertOk()

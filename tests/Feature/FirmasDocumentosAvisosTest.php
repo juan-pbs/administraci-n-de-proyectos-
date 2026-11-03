@@ -1,10 +1,12 @@
 <?php
 
 use App\Jobs\EnviarAvisoAsignacion;
+use App\Jobs\EnviarAvisoRevision;
 use App\Models\ApartadoGuia;
 use App\Models\ArchivoEntrega;
 use App\Models\Asignatura;
 use App\Models\AvisoAsignacion;
+use App\Models\AvisoRevision;
 use App\Models\Carrera;
 use App\Models\DocumentoFinal;
 use App\Models\Entrega;
@@ -21,7 +23,9 @@ use App\Models\Revision;
 use App\Models\Role;
 use App\Models\User;
 use App\Notifications\AsignacionAcademica;
+use App\Notifications\RevisionPendiente;
 use App\Servicios\AvisosAsignaciones;
+use App\Servicios\AvisosRevisiones;
 use App\Servicios\DocumentosGuias;
 use App\Servicios\FirmasDocentes;
 use App\Servicios\TextoRecordatorios;
@@ -277,11 +281,111 @@ test('el envio manual respeta permisos, entregas completas y plazos vencidos', f
     entregaFirmaPrueba($d);
     $this->post($ruta)->assertSessionHas('status');
     expect(AvisoAsignacion::where('tipo', 'recordatorio_manual')->count())->toBe(0);
+    expect(AvisoRevision::count())->toBe(1);
     Entrega::first()->delete();
     $d['apartado']->update(['fecha_limite' => now()->subMinute()]);
     $this->post($ruta)->assertSessionHas('status');
     expect(AvisoAsignacion::where('tipo', 'recordatorio_manual')->count())->toBe(0);
-    Queue::assertNothingPushed();
+    Queue::assertPushed(EnviarAvisoRevision::class, 1);
+});
+
+test('el aviso docente se envía solo por una revisión pendiente y usa el enlace de su rol', function () {
+    Queue::fake(); Notification::fake();
+    $d = escenarioFirmas();
+    $entrega = entregaFirmaPrueba($d);
+    $servicio = app(AvisosRevisiones::class);
+    expect($servicio->paraProyecto($d['proyecto'], true))->toBe(1);
+    expect($servicio->paraProyecto($d['proyecto'], true))->toBe(0);
+    $aviso = AvisoRevision::firstOrFail();
+    expect($aviso->docente_id)->toBe($d['docente']->id);
+    (new EnviarAvisoRevision($aviso->id))->handle($servicio);
+    (new EnviarAvisoRevision($aviso->id))->handle($servicio);
+    Notification::assertSentToTimes($d['docente'], RevisionPendiente::class, 1);
+    $correo = app(MailChannel::class)->send($d['docente'], new RevisionPendiente($entrega));
+    expect($correo->getOriginalMessage()->getHtmlBody())->toContain('Revisar entrega')
+        ->toContain(route('docente-materia.revisiones'))
+        ->and($correo->getOriginalMessage()->getTextBody())->toContain('Revisión pendiente');
+});
+
+test('el aviso docente automático espera 24 horas y se cancela si la revisión ya existe', function () {
+    Queue::fake(); Notification::fake();
+    $d = escenarioFirmas();
+    $entrega = entregaFirmaPrueba($d);
+    $servicio = app(AvisosRevisiones::class);
+    expect($servicio->sincronizar())->toBe(0);
+    $entrega->update(['entregado_en' => now()->subDays(2)]);
+    expect($servicio->sincronizar())->toBe(1);
+    $aviso = AvisoRevision::firstOrFail();
+    Revision::create(['entrega_id' => $entrega->id, 'revisor_id' => $d['docente']->id, 'resultado' => 'correccion', 'calificacion' => 7, 'revisado_en' => now()]);
+    (new EnviarAvisoRevision($aviso->id))->handle($servicio);
+    expect($aviso->fresh()->estado)->toBe('cancelado');
+    Notification::assertNothingSent();
+});
+
+test('las entregas de código pendientes avisan al líder y no a otro docente', function () {
+    Queue::fake(); Notification::fake();
+    $d = escenarioFirmas();
+    $d['apartado']->update(['requiere_codigo' => true]);
+    $entrega = entregaFirmaPrueba($d);
+    $servicio = app(AvisosRevisiones::class);
+    expect($servicio->paraProyecto($d['proyecto'], true))->toBe(1);
+    $aviso = AvisoRevision::firstOrFail();
+    expect($aviso->docente_id)->toBe($d['lider']->id);
+    (new EnviarAvisoRevision($aviso->id))->handle($servicio);
+    Notification::assertSentTo($d['lider'], RevisionPendiente::class);
+    Notification::assertNotSentTo($d['docente'], RevisionPendiente::class);
+    $correo = app(MailChannel::class)->send($d['lider'], new RevisionPendiente($entrega));
+    expect($correo->getOriginalMessage()->getHtmlBody())->toContain(route('docente-lider.codigo'));
+});
+
+test('los tres correos de práctica reciben solamente el aviso de su rol', function () {
+    Queue::fake(); Notification::fake();
+    $d = escenarioFirmas();
+    $d['lider']->update(['correo' => 'juanbarrerasanti@gmail.com']);
+    $d['docente']->update(['correo' => 'jb8915736@gmail.com']);
+    $d['alumno']->update(['correo' => 'juanpbs2005@gmail.com']);
+    entregaFirmaPrueba($d);
+    $codigo = ApartadoGuia::create([
+        'guia_integradora_id' => $d['guia']->id, 'orden' => 2, 'titulo' => 'Código',
+        'fecha_limite' => now()->addDays(10), 'ponderacion' => 0,
+        'requiere_documento' => false, 'requiere_codigo' => true,
+    ]);
+    Entrega::create([
+        'proyecto_id' => $d['proyecto']->id, 'equipo_id' => $d['equipo']->id,
+        'apartado_guia_id' => $codigo->id, 'entregado_por_id' => $d['alumno']->id,
+        'version' => 1, 'estado' => 'enviada', 'entregado_en' => now(),
+    ]);
+    ApartadoGuia::create([
+        'guia_integradora_id' => $d['guia']->id, 'orden' => 3, 'titulo' => 'Pendiente de entrega',
+        'fecha_limite' => now()->addDays(10), 'ponderacion' => 0,
+        'requiere_documento' => true, 'requiere_codigo' => false,
+    ]);
+
+    $this->actingAs($d['lider'])->post(route('docente-lider.recordatorios.enviar', $d['proyecto']))->assertSessionHas('status');
+    expect(AvisoAsignacion::where('tipo', 'recordatorio_manual')->count())->toBe(1)
+        ->and(AvisoRevision::count())->toBe(2);
+    foreach (AvisoAsignacion::all() as $aviso) {
+        (new EnviarAvisoAsignacion($aviso->id))->handle(app(AvisosAsignaciones::class));
+    }
+    foreach (AvisoRevision::all() as $aviso) {
+        (new EnviarAvisoRevision($aviso->id))->handle(app(AvisosRevisiones::class));
+    }
+    Notification::assertSentTo($d['alumno'], AsignacionAcademica::class);
+    Notification::assertSentTo($d['docente'], RevisionPendiente::class);
+    Notification::assertSentTo($d['lider'], RevisionPendiente::class);
+    expect($d['alumno']->routeNotificationForMail())->toBe('juanpbs2005@gmail.com')
+        ->and($d['docente']->routeNotificationForMail())->toBe('jb8915736@gmail.com')
+        ->and($d['lider']->routeNotificationForMail())->toBe('juanbarrerasanti@gmail.com');
+    $pendienteAlumno = ApartadoGuia::where('titulo', 'Pendiente de entrega')->firstOrFail();
+    $correoAlumno = app(MailChannel::class)->send($d['alumno'], new AsignacionAcademica($d['proyecto'], $pendienteAlumno, 'recordatorio_manual'));
+    expect($correoAlumno->getOriginalMessage()->getTo()[0]->getAddress())->toBe('juanpbs2005@gmail.com')
+        ->and($correoAlumno->getOriginalMessage()->getHtmlBody())->toContain('Recordatorio de entrega');
+    foreach (AvisoRevision::all() as $aviso) {
+        $destinatario = User::findOrFail($aviso->docente_id);
+        $mensaje = app(MailChannel::class)->send($destinatario, new RevisionPendiente(Entrega::findOrFail($aviso->entrega_id)));
+        expect($mensaje->getOriginalMessage()->getTo()[0]->getAddress())->toBe($destinatario->correo)
+            ->and($mensaje->getOriginalMessage()->getSubject())->toContain('Revisión pendiente');
+    }
 });
 
 test('el envio a todos incluye todos los proyectos del lider y no los de otro docente', function () {

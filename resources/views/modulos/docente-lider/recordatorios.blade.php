@@ -2,18 +2,18 @@
     <section class="border-b border-slate-200 pb-5">
         <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">Docente líder</p>
         <h2 class="mt-2 text-2xl font-bold text-[#0D376D]">Recordatorios de entrega</h2>
-        <p class="mt-2 max-w-3xl text-sm text-slate-600">Envía un recordatorio a los integrantes de tus equipos que aún tienen entregas pendientes o por corregir.</p>
+        <p class="mt-2 max-w-3xl text-sm text-slate-600">Envía recordatorios de entrega a estudiantes y avisos de revisión a docentes con versiones pendientes de tus equipos.</p>
     </section>
 
     <x-mensajes-formulario />
 
     <section class="mt-6 rounded-lg border border-slate-200 bg-white p-5">
         <h3 class="font-bold text-[#0D376D]">Enviar recordatorios manualmente</h3>
-        <p class="mt-2 text-sm text-slate-600">Cada botón considera los apartados abiertos del proyecto. El mismo recordatorio manual no se repite para un estudiante, apartado y versión de la asignación durante el día.</p>
+        <p class="mt-2 text-sm text-slate-600">Cada botón considera entregas pendientes de estudiantes y versiones sin revisar por docentes. El mismo aviso no se repite para la misma persona y actividad durante el día.</p>
         <form method="POST" action="{{ route('docente-lider.recordatorios.enviar-todos') }}" class="mt-4">
             @csrf
             <button class="rounded-md bg-[#0D376D] px-4 py-2 text-sm font-bold text-white">Enviar recordatorios a todos mis proyectos</button>
-            <p class="mt-2 text-xs text-slate-500">Incluye todos tus proyectos en proceso, aunque no aparezcan en esta página.</p>
+            <p class="mt-2 text-xs text-slate-500">Incluye todos tus proyectos en proceso, aunque no aparezcan en esta página. El envío se programa por la cola.</p>
         </form>
         <div class="mt-4 divide-y divide-slate-200">
             @forelse($proyectos as $proyecto)
@@ -29,7 +29,7 @@
     </section>
 
     <section class="mt-6 space-y-5">
-        <div><h3 class="font-bold text-[#0D376D]">Formatos de correo</h3><p class="mt-1 text-sm text-slate-600">Puedes usar {nombre}, {proyecto}, {actividad} y {fecha_limite}. El asunto, los datos de la actividad, el enlace y la imagen institucional permanecen en el correo.</p></div>
+        <div><h3 class="font-bold text-[#0D376D]">Formatos de correo</h3><p class="mt-1 text-sm text-slate-600">Para alumnos puedes usar {nombre}, {proyecto}, {actividad} y {fecha_limite}. Para docentes también están {equipo} y {version}. El asunto, los datos de la actividad, el enlace y la imagen institucional permanecen en el correo.</p></div>
         @foreach($tipos as $tipo => $nombre)
             <form method="POST" action="{{ route('docente-lider.recordatorios.guardar') }}" class="rounded-lg border border-slate-200 bg-white p-5">
                 @csrf

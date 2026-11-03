@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PlantillaRecordatorio;
 use App\Models\Proyecto;
 use App\Servicios\AvisosAsignaciones;
+use App\Servicios\AvisosRevisiones;
 use App\Servicios\TextoRecordatorios;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Http\Request;
@@ -47,32 +48,35 @@ class ControladorRecordatorios extends Controller
         return redirect()->route('docente-lider.recordatorios')->with('status', 'Formato de recordatorio guardado.');
     }
 
-    public function enviar(Request $request, Proyecto $proyecto, AvisosAsignaciones $avisos)
+    public function enviar(Request $request, Proyecto $proyecto, AvisosAsignaciones $avisos, AvisosRevisiones $revisiones)
     {
         $docente = $this->docente($request);
         abort_unless($proyecto->estado === 'en_proceso' && $proyecto->equipo?->grupoAcademico
             && $proyecto->equipo->grupoAcademico()->conMateriaLiderDelDocente($docente->id)->exists(), 403);
-        $cantidad = $avisos->enviarManualmente($proyecto);
+        $estudiantes = $avisos->enviarManualmente($proyecto);
+        $docentes = $revisiones->paraProyecto($proyecto, true);
 
-        return redirect()->route('docente-lider.recordatorios')->with('status', $cantidad
-            ? "Se programaron {$cantidad} recordatorios para los estudiantes con entregas pendientes."
-            : 'No hay recordatorios nuevos para enviar. Se omiten entregas completas, plazos vencidos y avisos manuales ya solicitados hoy.');
+        return redirect()->route('docente-lider.recordatorios')->with('status', $estudiantes + $docentes
+            ? "Se programaron {$estudiantes} recordatorios de entrega para estudiantes y {$docentes} avisos de revisión para docentes."
+            : 'No hay recordatorios nuevos para enviar. Se omiten entregas completas, revisiones realizadas y avisos ya solicitados hoy.');
     }
 
-    public function enviarTodos(Request $request, AvisosAsignaciones $avisos)
+    public function enviarTodos(Request $request, AvisosAsignaciones $avisos, AvisosRevisiones $revisiones)
     {
         $docente = $this->docente($request);
-        $cantidad = 0;
+        $estudiantes = 0;
+        $docentes = 0;
         Proyecto::query()->where('estado', 'en_proceso')
             ->whereHas('equipo.grupoAcademico', fn ($q) => $q->conMateriaLiderDelDocente($docente->id))
-            ->chunkById(50, function ($proyectos) use ($avisos, &$cantidad): void {
+            ->chunkById(50, function ($proyectos) use ($avisos, $revisiones, &$estudiantes, &$docentes): void {
                 foreach ($proyectos as $proyecto) {
-                    $cantidad += $avisos->enviarManualmente($proyecto);
+                    $estudiantes += $avisos->enviarManualmente($proyecto);
+                    $docentes += $revisiones->paraProyecto($proyecto, true);
                 }
             });
 
-        return redirect()->route('docente-lider.recordatorios')->with('status', $cantidad
-            ? "Se programaron {$cantidad} recordatorios de todos tus proyectos con entregas pendientes."
+        return redirect()->route('docente-lider.recordatorios')->with('status', $estudiantes + $docentes
+            ? "Se programaron {$estudiantes} recordatorios de entrega para estudiantes y {$docentes} avisos de revisión para docentes de tus proyectos."
             : 'No hay recordatorios nuevos para enviar en tus proyectos.');
     }
 
