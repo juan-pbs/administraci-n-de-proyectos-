@@ -14,6 +14,7 @@ use App\Models\FirmaDocente;
 use App\Models\GrupoAcademico;
 use App\Models\GuiaIntegradora;
 use App\Models\Periodo;
+use App\Models\PlantillaRecordatorio;
 use App\Models\ProductoCodigo;
 use App\Models\Proyecto;
 use App\Models\Revision;
@@ -23,12 +24,14 @@ use App\Notifications\AsignacionAcademica;
 use App\Servicios\AvisosAsignaciones;
 use App\Servicios\DocumentosGuias;
 use App\Servicios\FirmasDocentes;
+use App\Servicios\TextoRecordatorios;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Notifications\Channels\MailChannel;
 
 uses(RefreshDatabase::class);
 
@@ -235,4 +238,72 @@ test('recordatorios 72 y 24 horas no se envían si el equipo ya entregó ni tras
     (new EnviarAvisoAsignacion($aviso->id))->handle($servicio);
     expect($aviso->fresh()->estado)->toBe('cancelado');
     Notification::assertNothingSent();
+});
+
+test('el docente lider edita cada formato y envia recordatorios manuales sin duplicarlos', function () {
+    Queue::fake();
+    Notification::fake();
+    $d = escenarioFirmas();
+    $ruta = route('docente-lider.recordatorios');
+    $this->actingAs($d['coordinacion'])->get($ruta)->assertForbidden();
+    $this->actingAs($d['docente'])->get($ruta)->assertForbidden();
+    $this->actingAs($d['lider'])->get($ruta)->assertOk()->assertSee('Este es el formato del texto')->assertSee('Enviar recordatorios ahora');
+
+    $texto = "Hola, {nombre}.\nEntrega {actividad} de {proyecto} antes del {fecha_limite}.";
+    $this->post(route('docente-lider.recordatorios.guardar'), ['tipo' => 'recordatorio_manual', 'texto' => $texto])->assertSessionHasNoErrors();
+    expect(PlantillaRecordatorio::where('docente_id', $d['lider']->id)->value('texto'))->toBe($texto);
+    $this->post(route('docente-lider.recordatorios.enviar', $d['proyecto']))->assertSessionHas('status');
+    $this->post(route('docente-lider.recordatorios.enviar', $d['proyecto']))->assertSessionHas('status');
+    expect(AvisoAsignacion::where('tipo', 'recordatorio_manual')->count())->toBe(1);
+    Queue::assertPushed(EnviarAvisoAsignacion::class, 1);
+    $aviso = AvisoAsignacion::where('tipo', 'recordatorio_manual')->firstOrFail();
+    (new EnviarAvisoAsignacion($aviso->id))->handle(app(AvisosAsignaciones::class));
+    Notification::assertSentToTimes($d['alumno'], AsignacionAcademica::class, 1);
+
+    $correo = app(MailChannel::class)->send($d['alumno'], new AsignacionAcademica($d['proyecto'], $d['apartado'], 'recordatorio_manual'));
+    expect($correo->getOriginalMessage()->getHtmlBody())->toContain('Entrega Protocolo de Aplicación')
+        ->and($correo->getOriginalMessage()->getTextBody())->toContain('Entrega Protocolo de Aplicación');
+    expect(app(TextoRecordatorios::class)->plantilla($d['lider']->id, 'recordatorio_24'))->toContain('{fecha_limite}');
+});
+
+test('el envio manual respeta permisos, entregas completas y plazos vencidos', function () {
+    Queue::fake();
+    $d = escenarioFirmas();
+    $ruta = route('docente-lider.recordatorios.enviar', $d['proyecto']);
+    $this->actingAs($d['coordinacion'])->post($ruta)->assertForbidden();
+    $otroLider = User::factory()->create(['rol_id' => $d['lider']->rol_id]);
+    $this->actingAs($otroLider)->post($ruta)->assertForbidden();
+    $this->actingAs($d['lider'])->post(route('docente-lider.recordatorios.guardar'), ['tipo' => 'otro', 'texto' => 'texto'])->assertSessionHasErrors('tipo');
+    entregaFirmaPrueba($d);
+    $this->post($ruta)->assertSessionHas('status');
+    expect(AvisoAsignacion::where('tipo', 'recordatorio_manual')->count())->toBe(0);
+    Entrega::first()->delete();
+    $d['apartado']->update(['fecha_limite' => now()->subMinute()]);
+    $this->post($ruta)->assertSessionHas('status');
+    expect(AvisoAsignacion::where('tipo', 'recordatorio_manual')->count())->toBe(0);
+    Queue::assertNothingPushed();
+});
+
+test('el envio a todos incluye todos los proyectos del lider y no los de otro docente', function () {
+    Queue::fake();
+    $d = escenarioFirmas();
+    $otro = User::factory()->create(['rol_id' => $d['lider']->rol_id]);
+    $otro->asignaturasComoDocente()->attach($d['guia']->asignatura_id, ['periodo_id' => $d['guia']->periodo_id, 'activo' => true]);
+    $grupoAjeno = GrupoAcademico::create([
+        'periodo_id' => $d['guia']->periodo_id, 'carrera_id' => $d['guia']->asignatura->carrera_id,
+        'lider_proyecto_id' => $otro->id, 'asignatura_lider_id' => $d['guia']->asignatura_id,
+        'grado' => 5, 'grupo' => 'B', 'nombre' => '5B',
+    ]);
+    $equipoAjeno = Equipo::create(['grupo_academico_id' => $grupoAjeno->id, 'nombre' => 'Equipo ajeno', 'estado' => 'activo']);
+    $alumnoAjeno = User::factory()->create(['rol_id' => $d['alumno']->rol_id]);
+    $equipoAjeno->integrantes()->attach($alumnoAjeno->id, ['activo' => true]);
+    $proyectoAjeno = Proyecto::create(['guia_integradora_id' => $d['guia']->id, 'equipo_id' => $equipoAjeno->id, 'titulo' => 'Proyecto ajeno', 'estado' => 'en_proceso']);
+
+    $ruta = route('docente-lider.recordatorios.enviar-todos');
+    $this->actingAs($d['coordinacion'])->post($ruta)->assertForbidden();
+    $this->actingAs($d['lider'])->post($ruta)->assertSessionHas('status');
+    $this->post($ruta)->assertSessionHas('status');
+    expect(AvisoAsignacion::where('tipo', 'recordatorio_manual')->count())->toBe(1)
+        ->and(AvisoAsignacion::where('proyecto_id', $proyectoAjeno->id)->count())->toBe(0);
+    Queue::assertPushed(EnviarAvisoAsignacion::class, 1);
 });

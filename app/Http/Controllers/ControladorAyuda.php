@@ -227,7 +227,7 @@ class ControladorAyuda extends Controller
         return [
             'eyebrow' => 'Gestion de grupos',
             'titulo' => 'Ayuda de tu panel',
-            'descripcion' => 'Guia para consultar alumnos, formar equipos, revisar codigo y decidir cierres o prorrogas.',
+            'descripcion' => 'Guia para consultar alumnos, formar equipos, revisar codigo, enviar recordatorios y decidir cierres o prorrogas.',
             'secciones' => [
                 $this->seccionModulo(
                     id: 'panel-principal',
@@ -284,6 +284,20 @@ class ControladorAyuda extends Controller
                     imagen: 'assets/ayuda/docente-lider/04-proyectos.png',
                     ruta: $rutas['proyectos'] ?? null,
                     notas: ['Filtro por grupo', 'Proyecto por equipo', 'Docentes y asignaturas'],
+                ),
+                $this->seccionModulo(
+                    id: 'recordatorios',
+                    menu: 'Recordatorios',
+                    titulo: 'Recordatorios de entrega',
+                    descripcion: 'Como docente lider puedes enviar recordatorios manuales a tus equipos y editar el texto de cada tipo de correo.',
+                    pasos: [
+                        'Abre Recordatorios. Pulsa Enviar recordatorios a todos mis proyectos para incluir todos tus proyectos en proceso, aun si no aparecen en la pagina actual. En una fila, Enviar recordatorios ahora actua solo sobre ese proyecto.',
+                        'En Formatos de correo, edita por separado el texto de 72 horas, 24 horas y envio manual. Puedes usar {nombre}, {proyecto}, {actividad} y {fecha_limite}; pulsa Guardar formato en cada bloque.',
+                        'La cola envia los correos. No se manda un aviso manual duplicado del mismo apartado y version durante el dia; antes de enviarlo se verifica que el alumno siga asignado y que el plazo no haya vencido.',
+                    ],
+                    imagen: 'assets/ayuda/actualizadas/lider-recordatorios.png',
+                    ruta: $rutas['recordatorios'] ?? null,
+                    notas: ['Solo tus proyectos', 'Formato por tipo de recordatorio', 'Sin entregas completas ni plazos vencidos'],
                 ),
                 $this->seccionModulo(
                     id: 'revision-codigo',
@@ -617,6 +631,8 @@ class ControladorAyuda extends Controller
      */
     private function seccionContacto(): array
     {
+        $capturas = $this->capturasDeSeccion('assets/ayuda/actualizadas/ayuda-contactanos.png', 'Contactanos');
+
         return [
             'id' => 'contactanos',
             'menu' => 'Contactanos',
@@ -627,14 +643,14 @@ class ControladorAyuda extends Controller
                 'Modulo, pantalla y accion que intentabas realizar.',
                 'Captura de pantalla, mensaje de error y hora aproximada del incidente.',
             ],
-            'imagen' => null,
-            'caption' => null,
+            'imagen' => $capturas[0]['imagen'] ?? null,
+            'caption' => $capturas[0]['caption'] ?? null,
             'ruta' => null,
             'rutaEtiqueta' => null,
             'notas' => [],
-            'capturas' => [],
-            'marcas' => [],
-            'resaltados' => [],
+            'capturas' => $capturas,
+            'marcas' => $capturas[0]['marcas'] ?? [],
+            'resaltados' => $capturas[0]['resaltados'] ?? [],
             'detalles' => [
                 $this->detalle('Datos necesarios', 'Incluye matricula, pantalla, accion realizada y una captura del mensaje o comportamiento observado.'),
                 $this->detalle('Cuando reportar', 'Reporta cuando no puedas guardar, falten datos, no aparezca una opcion esperada o veas informacion incorrecta.'),
@@ -735,6 +751,11 @@ class ControladorAyuda extends Controller
             ],
             'assets/ayuda/actualizadas/lider-cierres.png' => [
                 $this->capturaContexto('assets/ayuda/actualizadas/lider-prorroga.png', 'Decidir una prorroga', 'Detalle de un proyecto con pendientes y apartados abiertos por una prorroga.'),
+            ],
+            'assets/ayuda/actualizadas/lider-recordatorios.png' => [
+                $this->capturaContexto('assets/ayuda/actualizadas/lider-recordatorios-formato-72.png', 'Formato de 72 horas', 'Texto editable del recordatorio automatico de 72 horas.'),
+                $this->capturaContexto('assets/ayuda/actualizadas/lider-recordatorios-formato-24.png', 'Formato de 24 horas', 'Texto editable del recordatorio automatico de 24 horas.'),
+                $this->capturaContexto('assets/ayuda/actualizadas/lider-recordatorios-formato-manual.png', 'Formato manual', 'Texto editable de los recordatorios enviados desde los botones del docente lider.'),
             ],
             'assets/ayuda/actualizadas/materia-revisiones.png' => [
                 $this->capturaContexto('assets/ayuda/actualizadas/materia-revision-detalle.png', 'Revisar una version', 'Detalle de evidencia, resultado y autorizacion de firma para la version recibida.'),
@@ -1455,6 +1476,7 @@ class ControladorAyuda extends Controller
             'docente_lider' => [
                 ['pregunta' => 'Por que no puedo crear proyectos', 'respuesta' => 'El equipo debe existir y contar con una guia disponible para el periodo. Revisa tambien que el grupo pertenezca a tu asignacion.'],
                 ['pregunta' => 'Puedo mover alumnos entre equipos', 'respuesta' => 'Si tienes permiso sobre el grupo, puedes ajustar integrantes. El sistema evita que un alumno quede activo en dos equipos al mismo tiempo.'],
+                ['pregunta' => 'Por que no se envio un recordatorio manual', 'respuesta' => 'Solo se programan avisos para estudiantes activos con entregas pendientes o por corregir y plazo vigente. El mismo aviso manual del apartado y version se solicita una vez por dia. Revisa tambien la cola y la configuracion del correo.'],
             ],
             'docente_materia' => [
                 ['pregunta' => 'Por que no hay entregas pendientes', 'respuesta' => 'Puede ocurrir cuando ningun equipo ha enviado evidencias o cuando no tienes apartados asignados en la guia del periodo.'],

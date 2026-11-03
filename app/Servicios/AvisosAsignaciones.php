@@ -11,6 +11,34 @@ use App\Models\User;
 
 class AvisosAsignaciones
 {
+    public function enviarManualmente(Proyecto $proyecto): int
+    {
+        $proyecto->loadMissing(['guiaIntegradora.apartados', 'guiaIntegradora.periodo', 'equipo.integrantes.role', 'equipo.grupoAcademico']);
+        $cantidad = 0;
+        foreach ($proyecto->guiaIntegradora->apartados as $apartado) {
+            if (! app(PlazosProyecto::class)->fecha($proyecto, $apartado)?->isFuture() || ! $this->necesitaRecordatorio($proyecto, $apartado)) {
+                continue;
+            }
+            $huella = $this->huella($proyecto, $apartado);
+            foreach ($proyecto->equipo->integrantes as $alumno) {
+                if (! $this->vigente($proyecto, $alumno, $apartado)) {
+                    continue;
+                }
+                $clave = hash('sha256', implode('|', [$proyecto->id, $apartado->id, $alumno->id, $huella, 'recordatorio_manual', now()->toDateString()]));
+                $aviso = AvisoAsignacion::query()->firstOrCreate(['clave' => $clave], [
+                    'proyecto_id' => $proyecto->id, 'apartado_guia_id' => $apartado->id, 'estudiante_id' => $alumno->id,
+                    'huella' => $huella, 'tipo' => 'recordatorio_manual', 'programado_en' => now(), 'despachado_en' => now(),
+                ]);
+                if ($aviso->wasRecentlyCreated) {
+                    EnviarAvisoAsignacion::dispatch($aviso->id)->afterCommit();
+                    $cantidad++;
+                }
+            }
+        }
+
+        return $cantidad;
+    }
+
     public function huella(Proyecto $proyecto, ApartadoGuia $apartado): string
     {
         return hash('sha256', json_encode([$proyecto->titulo, $proyecto->descripcion, $apartado->titulo, $apartado->descripcion,

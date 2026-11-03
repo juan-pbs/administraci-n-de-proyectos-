@@ -1,6 +1,10 @@
 <x-correo-layout :titulo="$titulo" :mensaje="$message">
-    <p style="margin:0 0 16px;">Hola, {{ $nombre }}.</p>
-    <p style="margin:0 0 20px;">{{ $titulo }} para el proyecto <strong>{{ $proyecto }}</strong>.</p>
+    @if($textoRecordatorio)
+        <p style="margin:0 0 20px;white-space:pre-line;">{{ $textoRecordatorio }}</p>
+    @else
+        <p style="margin:0 0 16px;">Hola, {{ $nombre }}.</p>
+        <p style="margin:0 0 20px;">{{ $titulo }} para el proyecto <strong>{{ $proyecto }}</strong>.</p>
+    @endif
     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 20px;border:1px solid #dbe5ed;border-collapse:collapse;">
         <tr><td style="padding:12px;background:#f1f5f9;color:#0D376D;font-weight:bold;">Actividad</td><td style="padding:12px;">{{ $actividad }}</td></tr>
         <tr><td style="padding:12px;background:#f1f5f9;color:#0D376D;font-weight:bold;">Fecha límite</td><td style="padding:12px;">{{ $fechaLimite }}</td></tr>

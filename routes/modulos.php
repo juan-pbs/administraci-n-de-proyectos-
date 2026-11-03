@@ -15,11 +15,16 @@ use App\Http\Controllers\Modulos\ControladorJerarquiaProyectos;
 use App\Http\Controllers\Modulos\ControladorModuloGeneral;
 use App\Http\Controllers\Modulos\ControladorPeriodos;
 use App\Http\Controllers\Modulos\ControladorProyectos;
+use App\Http\Controllers\Modulos\ControladorRecordatorios;
 use App\Http\Controllers\Modulos\ControladorRevisionCodigo;
 use App\Http\Controllers\Modulos\ControladorUsuarios;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/docente-lider/cierres', [ControladorCierresProyectos::class, 'indice'])->name('docente-lider.cierres');
+Route::get('/docente-lider/recordatorios', [ControladorRecordatorios::class, 'mostrar'])->name('docente-lider.recordatorios');
+Route::post('/docente-lider/recordatorios/formato', [ControladorRecordatorios::class, 'guardar'])->name('docente-lider.recordatorios.guardar');
+Route::post('/docente-lider/recordatorios/enviar-todos', [ControladorRecordatorios::class, 'enviarTodos'])->middleware('throttle:3,1')->name('docente-lider.recordatorios.enviar-todos');
+Route::post('/docente-lider/recordatorios/{proyecto}/enviar', [ControladorRecordatorios::class, 'enviar'])->middleware('throttle:10,1')->name('docente-lider.recordatorios.enviar');
 Route::get('/docente-lider/estado-guias', [ControladorEstadoGuias::class, 'mostrar'])->name('docente-lider.estado-guias');
 Route::post('/docente-lider/estado-guias/{proyecto}/cierre', [ControladorEstadoGuias::class, 'prepararCierre'])->name('docente-lider.estado-guias.preparar-cierre');
 Route::get('/docente-lider/cierres/{proyecto}', [ControladorCierresProyectos::class, 'mostrar'])->name('docente-lider.cierres.mostrar');

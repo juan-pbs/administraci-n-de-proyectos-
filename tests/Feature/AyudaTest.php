@@ -2,6 +2,7 @@
 
 use App\Models\Role;
 use App\Models\User;
+use App\Soporte\SistemaInterfaz;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -160,6 +161,42 @@ test('ayuda de docente lider sin grupo conserva contenido pero no enlaza al modu
         ->assertSee('Equipos')
         ->assertDontSee('href="http://localhost/modulos/equipos"', false)
         ->assertDontSee('Abrir vista');
+});
+
+test('la ayuda del docente lider explica el envio manual y los formatos de recordatorios', function () {
+    $lider = Role::query()->firstOrCreate(['nombre' => 'docente_lider'], ['nombre_visible' => 'Docente lider', 'descripcion' => 'Rol de prueba']);
+    $estudiante = Role::query()->firstOrCreate(['nombre' => 'estudiante'], ['nombre_visible' => 'Estudiante', 'descripcion' => 'Rol de prueba']);
+    $this->actingAs(User::factory()->create(['rol_id' => $lider->id]))
+        ->get('/dashboard')
+        ->assertOk()
+        ->assertSee(route('ayuda', ['seccion' => 'recordatorios']), false);
+    $this->get('/ayuda?seccion=recordatorios')
+        ->assertOk()
+        ->assertSee('Enviar recordatorios ahora')
+        ->assertSee('Enviar recordatorios a todos mis proyectos')
+        ->assertSee('72 horas, 24 horas y envio manual')
+        ->assertSee('{fecha_limite}')
+        ->assertSee('lider-recordatorios.png')
+        ->assertSee('lider-recordatorios-formato-72.png')
+        ->assertSee('lider-recordatorios-formato-24.png')
+        ->assertSee('lider-recordatorios-formato-manual.png');
+    $this->actingAs(User::factory()->create(['rol_id' => $estudiante->id]))
+        ->get('/ayuda?seccion=recordatorios')
+        ->assertOk()
+        ->assertDontSee('Enviar recordatorios ahora');
+});
+
+test('todos los apartados de ayuda por rol y acceso publico muestran una captura existente', function () {
+    foreach (['coordinacion', 'docente_lider', 'docente_materia', 'estudiante'] as $nombre) {
+        $rol = Role::query()->firstOrCreate(['nombre' => $nombre], ['nombre_visible' => $nombre, 'descripcion' => 'Rol de prueba']);
+        $this->actingAs(User::factory()->create(['rol_id' => $rol->id]));
+        foreach (SistemaInterfaz::opcionesAyudaPara($nombre) as $opcion) {
+            $this->get($opcion['ruta'])->assertOk()->assertSee('data-help-annotated-figure', false);
+        }
+    }
+    foreach (['iniciar-sesion', 'recuperar-contrasena', 'actualizar-contrasena'] as $seccion) {
+        $this->get(route('ayuda.acceso', ['seccion' => $seccion]))->assertOk()->assertSee('data-help-annotated-figure', false);
+    }
 });
 
 test('ayuda de estudiante no muestra apartados administrativos', function () {

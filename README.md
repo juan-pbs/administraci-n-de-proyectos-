@@ -17,7 +17,7 @@ Aplicación Laravel para administrar periodos, carreras, grupos, alumnos, docent
 - Vista previa de guías y apartados antes de guardar. PDF institucional con contenido, materias contribuyentes y firmas por apartado.
 - PDF finales completos guardados como bytes cifrados e inmutables, con hash de integridad. Las descargas recuperan el archivo emitido; cambiar los datos actuales no reconstruye el historial.
 - Repositorio y URL HTTPS de trabajo alojado opcional, con instaladores APK/EXE/MSI/DMG/AppImage/DEB y comprimidos. Repositorio, URL y aplicación mantienen los mismos permisos de la materia líder del grupo.
-- Avisos de asignaciones y cambios, recordatorios previos al vencimiento y avisos al líder por entregas o firmas pendientes. Cola y programador independientes.
+- Avisos de asignaciones y cambios, recordatorios de 72 y 24 horas previos al vencimiento, envío manual de recordatorios por el docente líder y avisos al líder por entregas o firmas pendientes. Cola y programador independientes.
 - Cierre con constancia de pendientes o prórroga del líder para un equipo, fecha y apartados concretos. El resto de la guía permanece bloqueado.
 - Estado de las guías para el líder: finalizadas, listas para PDF, pendientes, prórrogas activas/vencidas y cierres incompletos. Filtros y paginación de 10, 20 o 40 equipos; resumen global. El formato tiene botones para regresar a la página y filtros de origen.
 
@@ -28,7 +28,7 @@ El formato PDF es una guía institucional de seguimiento. No concatena automáti
 | Rol | Alcance |
 | --- | --- |
 | Coordinación | Periodos, carreras, grupos, usuarios, asignaturas, jerarquía y estructura de las guías. |
-| Docente líder | Sus grupos y equipos, proyectos, revisión de código de su materia líder, estado de las guías, cierres y prórrogas. |
+| Docente líder | Sus grupos y equipos, proyectos, revisión de código de su materia líder, estado de las guías, cierres y prórrogas; envío manual y formatos de recordatorios de sus equipos. |
 | Docente de materia | Apartados y equipos asignados, archivos documentales, revisiones, comentarios y firma. |
 | Alumno | Su equipo y proyectos, entregas y versiones, observaciones, repositorio y aplicación cuando se soliciten. |
 
@@ -150,6 +150,10 @@ php artisan schedule:list
 ```
 
 Estos comandos se programan cada minuto. La cola envía los avisos y conserva el estado para evitar duplicaciones; revisa `failed_jobs` si el proveedor falla. Los recordatorios se configuran en `config/asignaciones.php`.
+
+En **Docente líder > Recordatorios**, **Enviar recordatorios a todos mis proyectos** abarca todos los proyectos en proceso del líder, incluso los de otras páginas del listado; **Enviar recordatorios ahora** actúa solo sobre el proyecto de su fila. Se programan correos para integrantes con entregas pendientes o por corregir y apartados con plazo vigente. El mismo aviso manual no se repite para un estudiante, apartado y versión de la asignación durante el día. El envío se realiza por la cola y vuelve a comprobar el estado antes de mandar el correo.
+
+En esa vista, el docente líder puede guardar por separado el texto de los recordatorios automáticos de **72 horas**, de **24 horas** y del **envío manual** para sus equipos. Puede insertar `{nombre}`, `{proyecto}`, `{actividad}` y `{fecha_limite}`. El asunto, los datos de la actividad, el enlace y la imagen institucional permanecen en el correo. Si no guarda un formato, se usa el texto predeterminado. Los formatos se almacenan en la tabla `plantillas_recordatorios`; ejecuta `php artisan migrate` al actualizar una instalación existente.
 
 ## Carga de alumnos y archivos
 

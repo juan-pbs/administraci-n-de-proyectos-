@@ -30,6 +30,7 @@ class SistemaInterfaz
                 ['clave' => 'proyectos', 'titulo' => 'Proyectos', 'ruta' => route('modulos.show', 'proyectos'), 'icono' => '□'],
                 ['clave' => 'estado-guias', 'titulo' => 'Estado de las guías', 'ruta' => route('docente-lider.estado-guias'), 'icono' => '▣'],
                 ['clave' => 'cierres', 'titulo' => 'Cierres y prórrogas', 'ruta' => route('docente-lider.cierres'), 'icono' => '◷'],
+                ['clave' => 'recordatorios', 'titulo' => 'Recordatorios', 'ruta' => route('docente-lider.recordatorios'), 'icono' => '✉'],
                 ['clave' => 'revision-codigo', 'titulo' => 'Revisión de código', 'ruta' => route('docente-lider.codigo'), 'icono' => '</>'],
             ] : [],
             'docente_materia' => [
@@ -95,6 +96,7 @@ class SistemaInterfaz
                 ['titulo' => 'Revision de codigo', 'seccion' => 'revision-codigo'],
                 ['titulo' => 'Estado de las guias', 'seccion' => 'estado-guias'],
                 ['titulo' => 'Cierres y prorrogas', 'seccion' => 'cierres'],
+                ['titulo' => 'Recordatorios', 'seccion' => 'recordatorios'],
                 ['titulo' => 'Mi firma', 'seccion' => 'mi-firma'],
                 ['titulo' => 'Formato y PDF', 'seccion' => 'formato-pdf'],
                 ['titulo' => 'Busqueda del panel', 'seccion' => 'busqueda-panel'],
