@@ -20,8 +20,8 @@
                 @csrf
                 <div><label class="text-sm font-semibold text-slate-700">Carrera</label><select name="carrera_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}" @selected((string)old('carrera_id',$filtrosAsignaturas['carrera_id']) === (string)$carrera->id)>{{ $carrera->clave }} - {{ $carrera->nombre }}</option>@endforeach</select></div>
                 <div><label class="text-sm font-semibold text-slate-700">Cuatrimestre</label><input name="grado" type="number" min="1" max="12" value="{{ old('grado',$filtrosAsignaturas['grado']) }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
-                <div class="md:col-span-2"><label class="text-sm font-semibold text-slate-700">Nombre</label><input name="nombre" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
-                <div><label class="text-sm font-semibold text-slate-700">Clave</label><input name="clave" value="{{ old('clave') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm uppercase"></div>
+                <div class="md:col-span-2"><label class="text-sm font-semibold text-slate-700">Nombre</label><input name="nombre" maxlength="255" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
+                <div><label class="text-sm font-semibold text-slate-700">Clave</label><input name="clave" maxlength="50" value="{{ old('clave') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm uppercase"></div>
                 <div class="flex items-end"><button class="rounded-md bg-[#15529A] px-5 py-2.5 text-sm font-bold text-white">Guardar asignatura</button></div>
             </form>
         </details>
@@ -87,6 +87,6 @@
                 <div class="px-5 py-12 text-center text-sm text-slate-500">No hay asignaturas para esta carrera y cuatrimestre.</div>
             @endforelse
         </div>
-        <div class="border-t border-slate-200 px-5 py-3 text-sm text-slate-500">Lista completa: <strong class="text-slate-800">{{ $asignaturas->count() }} asignaturas</strong></div>
+        <div class="border-t border-slate-200 px-5 py-3 text-sm text-slate-500">Lista completa: <strong class="text-slate-800">{{ $asignaturas->count() }} {{ $asignaturas->count() === 1 ? 'asignatura' : 'asignaturas' }}</strong></div>
     </article>
 </x-contenedor-aplicacion>

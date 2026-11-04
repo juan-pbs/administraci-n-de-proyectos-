@@ -166,7 +166,7 @@ En **Usuarios > Alumnos**, selecciona varias listas y revisa la vista previa. La
 
 Cada entrega admite varios archivos y conserva qué integrante la envió. Las rutas de descarga comprueban permisos. Los instaladores se validan por extensión y estructura básica; no se ejecutan en el servidor. Las URL HTTPS públicas no se consultan desde el servidor; la vista integrada utiliza un iframe aislado y ofrece apertura externa cuando el sitio impide incrustarse. No se ejecutan contenedores de repositorios enviados por alumnos.
 
-Docker permite archivos de hasta 150 MB y solicitudes de 512 MB. Herd utiliza `public/.user.ini`; puede necesitar reiniciar PHP. En `php artisan serve` prevalecen los límites del PHP CLI.
+Docker permite archivos de hasta 150 MB y solicitudes de 512 MB. En Herd, verifica los límites efectivos de PHP que atiende el sitio: configura `upload_max_filesize` (al menos 150M) y `post_max_size` (mayor que el total de archivos de una solicitud) en el `php.ini` de la versión activa. Verifica también `client_max_body_size` en la configuración Nginx del sitio y reinicia PHP y Nginx. Según el enrutamiento de Herd, `public/.user.ini` puede no aplicarse al controlador frontal. En `php artisan serve` prevalecen los límites del PHP CLI.
 
 ## Pruebas y documentación
 

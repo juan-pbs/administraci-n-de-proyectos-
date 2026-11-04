@@ -107,3 +107,29 @@ test('docente de materia revisa solo el apartado y proyecto asignados', function
     $this->assertDatabaseHas('revisiones', ['entrega_id' => $delivery->id, 'revisor_id' => $data['matter']->id, 'resultado' => 'correccion']);
     $this->assertDatabaseHas('comentarios_revision', ['comentario' => 'Revisar el comentario técnico.']);
 });
+
+test('las calificaciones fuera de 0 a 10 o con mas de dos decimales se rechazan en ambos roles', function () {
+    Storage::fake('local');
+    $data = escenarioFlujosRoles();
+    $this->actingAs($data['studentA'])->post(route('estudiante.entregas.guardar', $data['section']), [
+        'archivos' => [UploadedFile::fake()->create('avance.pdf', 40)],
+    ])->assertRedirect();
+    $this->post(route('estudiante.codigo.guardar'), [
+        'repositorio_url' => 'https://github.com/ejemplo/proyecto', 'version' => 'v1',
+    ])->assertRedirect();
+
+    $documento = \App\Models\Entrega::query()->where('apartado_guia_id', $data['section']->id)->firstOrFail();
+    $codigo = \App\Models\Entrega::query()->where('apartado_guia_id', $data['codeSection']->id)->firstOrFail();
+    foreach ([[$data['matter'], 'docente-materia.revisiones.guardar', $documento], [$data['leader'], 'docente-lider.codigo.revisar', $codigo]] as [$docente, $ruta, $entrega]) {
+        foreach ([-0.01, 10.01, 7.555, 'texto'] as $invalida) {
+            $this->actingAs($docente)->put(route($ruta, $entrega), [
+                'resultado' => 'correccion', 'calificacion' => $invalida,
+            ])->assertSessionHasErrors('calificacion');
+        }
+    }
+    $this->assertDatabaseCount('revisiones', 0);
+    $this->actingAs($data['matter'])->put(route('docente-materia.revisiones.guardar', $documento), [
+        'resultado' => 'correccion', 'calificacion' => 7.25,
+    ])->assertSessionHasNoErrors();
+    $this->assertDatabaseHas('revisiones', ['entrega_id' => $documento->id, 'calificacion' => 7.25]);
+});

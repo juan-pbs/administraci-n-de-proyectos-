@@ -6,6 +6,27 @@
     $tituloCaptura = $seccion['titulo_captura'] ?? null;
     $markerPrefix = 'ayuda-' . md5(($imagen ?? '') . ($seccion['id'] ?? ''));
 
+    // Las capturas históricas conservan el logotipo anterior. Lo cubrimos al mostrarlas
+    // para que la ayuda use la misma imagen que las pantallas actuales.
+    $rutaCaptura = $imagen ? ltrim(parse_url($imagen, PHP_URL_PATH) ?? '', '/') : '';
+    $archivoCaptura = public_path($rutaCaptura);
+    $tamanoCaptura = is_file($archivoCaptura) ? getimagesize($archivoCaptura) : false;
+    $posicionesAcceso = [
+        'acceso/01-iniciar-sesion.png' => [965, 98, 155, 87],
+        'acceso/02-recuperar-contrasena.png' => [608, 168, 150, 84],
+        'acceso/03-actualizar-contrasena.png' => [620, 90, 130, 72],
+        'actualizadas/acceso-codigo.png' => [550, 70, 150, 90],
+        'actualizadas/acceso-nueva-contrasena.png' => [566, 80, 155, 88],
+        'actualizadas/acceso-recuperacion.png' => [566, 128, 150, 86],
+    ];
+    $claveCaptura = str_replace('assets/ayuda/', '', $rutaCaptura);
+    $posicionLogo = $posicionesAcceso[$claveCaptura] ?? null;
+    if (! $posicionLogo && $tamanoCaptura && $tamanoCaptura[0] >= 1200
+        && str_starts_with($rutaCaptura, 'assets/ayuda/')
+        && $claveCaptura !== 'actualizadas/ayuda-contactanos.png') {
+        $posicionLogo = [20, 5, 200, 85];
+    }
+
     $palette = [
         'blue' => [
             'fill' => 'rgba(21, 82, 154, 0.12)',
@@ -42,6 +63,16 @@
 
         <div class="relative overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
             <img src="{{ $imagen }}" alt="{{ $seccion['titulo'] }}" class="block w-full">
+
+            @if($posicionLogo && $tamanoCaptura)
+                <div
+                    aria-hidden="true"
+                    class="pointer-events-none absolute z-10 bg-white"
+                    style="left: {{ $posicionLogo[0] / $tamanoCaptura[0] * 100 }}%; top: {{ $posicionLogo[1] / $tamanoCaptura[1] * 100 }}%; width: {{ $posicionLogo[2] / $tamanoCaptura[0] * 100 }}%; height: {{ $posicionLogo[3] / $tamanoCaptura[1] * 100 }}%;"
+                >
+                    <img src="{{ asset('assets/utvm/utvm-correo.png') }}" alt="" class="h-full w-full object-contain">
+                </div>
+            @endif
 
             @if($marcas->isNotEmpty() || $resaltados->isNotEmpty())
                 <svg class="pointer-events-none absolute inset-0 hidden h-full w-full md:block" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">

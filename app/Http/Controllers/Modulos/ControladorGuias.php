@@ -91,11 +91,11 @@ class ControladorGuias extends Controller
 
         $datos = $request->validate([
             'guia_integradora_id' => ['required', 'exists:guias_integradoras,id'],
-            'orden' => ['required', 'integer', 'min:1'],
+            'orden' => ['required', 'integer', 'between:1,999'],
             'titulo' => ['required', 'string', 'max:255'],
-            'descripcion' => ['nullable', 'string'],
+            'descripcion' => ['nullable', 'string', 'max:20000'],
             'fecha_limite' => ['nullable', 'date'],
-            'ponderacion' => ['required', 'numeric', 'min:0', 'max:100'],
+            'ponderacion' => ['required', 'numeric', 'decimal:0,2', 'min:0', 'max:100'],
             'requiere_documento' => ['nullable', 'boolean'],
             'requiere_codigo' => ['nullable', 'boolean'],
         ]);

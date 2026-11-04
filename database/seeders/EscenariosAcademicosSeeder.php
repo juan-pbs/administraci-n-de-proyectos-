@@ -221,7 +221,9 @@ class EscenariosAcademicosSeeder extends Seeder
     /** Paquete Debian de práctica válido, sin ejecutables externos ni una aplicación atribuida al repositorio. */
     private function aplicacion(Entrega $entrega): void
     {
-        $base = Storage::disk('local')->path('escenarios/proyecto-'.$entrega->proyecto_id.'/paquete-'.$entrega->id);
+        // PharData conserva las rutas abiertas durante todo el proceso PHP.
+        // Un reinicio reutiliza los IDs de entrega; los archivos temporales necesitan rutas nuevas.
+        $base = Storage::disk('local')->path('escenarios/proyecto-'.$entrega->proyecto_id.'/paquete-'.$entrega->id.'-'.bin2hex(random_bytes(8)));
         $control = new \PharData($base.'-control.tar');
         $control->addFromString('control', "Package: practica-escolar\nVersion: 1.0\nArchitecture: all\nMaintainer: Escuela <escuela@example.invalid>\nDescription: Paquete de practica para revisar adjuntos escolares\n");
         $control->compress(\Phar::GZ);

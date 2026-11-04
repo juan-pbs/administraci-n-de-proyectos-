@@ -10,6 +10,7 @@ use App\Models\Periodo;
 use App\Models\Proyecto;
 use App\Servicios\CicloAcademico;
 use App\Soporte\SistemaInterfaz;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -50,6 +51,25 @@ class ControladorPeriodos extends Controller
         return redirect()->route('modulos.show', 'periodos')->with('estado', 'Periodo guardado correctamente.');
     }
 
+    public function pendientes(Request $request, Periodo $periodo): View
+    {
+        $this->autorizarDireccion($request);
+        $usuario = $request->user()->loadMissing('role');
+
+        return view('modulos.control-academico.pendientes-periodo', [
+            'active' => 'periodos',
+            'navegacion' => SistemaInterfaz::navegacionPara('coordinacion'),
+            'roleName' => $usuario->role->nombre_visible,
+            'periodo' => $periodo,
+            'proyectosSinPdf' => $this->proyectosSinPdf($periodo)
+                ->with(['equipo.grupoAcademico.carrera:id,clave', 'guiaIntegradora:id,nombre,version'])
+                ->orderBy('titulo')->get(),
+            'guiasBorrador' => $this->guiasBorrador($periodo)
+                ->with(['asignatura.carrera:id,clave'])
+                ->orderBy('nombre')->get(),
+        ]);
+    }
+
     public function activar(Request $request, Periodo $periodo, CicloAcademico $ciclo): RedirectResponse
     {
         $this->autorizarDireccion($request);
@@ -78,9 +98,8 @@ class ControladorPeriodos extends Controller
             ->get();
 
         foreach ($periodos->where('estado', 'activo') as $periodo) {
-            $periodo->proyectos_sin_pdf = Proyecto::query()->whereHas('equipo.grupoAcademico', fn ($q) => $q->where('periodo_id', $periodo->id))
-                ->whereNotIn('id', DocumentoFinal::query()->select('proyecto_id'))->count();
-            $periodo->guias_borrador = GuiaIntegradora::query()->where('periodo_id', $periodo->id)->where('estado', 'borrador')->count();
+            $periodo->proyectos_sin_pdf = $this->proyectosSinPdf($periodo)->count();
+            $periodo->guias_borrador = $this->guiasBorrador($periodo)->count();
         }
 
         return [
@@ -91,5 +110,16 @@ class ControladorPeriodos extends Controller
                 ['label' => 'Grupos asociados', 'value' => (string) $periodos->sum('grupos_count')],
             ],
         ];
+    }
+
+    private function proyectosSinPdf(Periodo $periodo): Builder
+    {
+        return Proyecto::query()->whereHas('equipo.grupoAcademico', fn ($q) => $q->where('periodo_id', $periodo->id))
+            ->whereNotIn('id', DocumentoFinal::query()->select('proyecto_id'));
+    }
+
+    private function guiasBorrador(Periodo $periodo): Builder
+    {
+        return GuiaIntegradora::query()->where('periodo_id', $periodo->id)->where('estado', 'borrador');
     }
 }

@@ -84,7 +84,7 @@ class ControladorDocenteMateria extends Controller
 
         $datos = $request->validate([
             'resultado' => ['required', 'in:aprobada,correccion,rechazada'],
-            'calificacion' => ['required', 'numeric', 'min:0', 'max:10'],
+            'calificacion' => ['required', 'numeric', 'decimal:0,2', 'min:0', 'max:10'],
             'observaciones' => ['nullable', 'string', 'max:2000'],
         ]);
 

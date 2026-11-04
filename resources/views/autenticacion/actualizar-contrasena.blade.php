@@ -7,9 +7,9 @@
 
             <div class="flex justify-center">
                 <img
-                    src="{{ asset('assets/utvm/utvm-logo-transparente.png') }}"
+                    src="{{ asset('assets/utvm/utvm-correo.png') }}"
                     alt="Logo UTVM"
-                    class="h-20 w-auto"
+                    class="h-20 w-[210px] object-contain"
                 >
             </div>
 

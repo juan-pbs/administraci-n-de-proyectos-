@@ -42,6 +42,7 @@ Route::get('/docente-lider/demostracion/{producto}', [ControladorDemostracion::c
 
 Route::get('/modulos/periodos', [ControladorPeriodos::class, 'mostrar'])->name('modulos.periodos');
 Route::post('/periodos', [ControladorPeriodos::class, 'guardar'])->name('periodos.guardar');
+Route::get('/periodos/{periodo}/pendientes', [ControladorPeriodos::class, 'pendientes'])->name('periodos.pendientes');
 Route::patch('/periodos/{periodo}/activar', [ControladorPeriodos::class, 'activar'])->name('periodos.activar');
 Route::patch('/periodos/{periodo}/cerrar', [ControladorPeriodos::class, 'cerrar'])->name('periodos.cerrar');
 

@@ -23,8 +23,8 @@
             <div class="border-b border-slate-200 p-5"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Catálogo permanente</p><h3 class="mt-1 font-bold text-slate-900">Nueva carrera</h3></div>
             <form method="POST" action="{{ route('carreras.guardar') }}" class="space-y-4 p-5">
                 @csrf
-                <div><label class="text-sm font-semibold text-slate-700">Nombre de la carrera</label><input name="nombre" value="{{ old('nombre') }}" required placeholder="Tecnologías de la Información" class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
-                <div><label class="text-sm font-semibold text-slate-700">Clave</label><input name="clave" value="{{ old('clave') }}" required placeholder="TI" class="mt-2 block w-full rounded-md border-slate-300 text-sm uppercase"></div>
+                <div><label class="text-sm font-semibold text-slate-700">Nombre de la carrera</label><input name="nombre" maxlength="255" value="{{ old('nombre') }}" required placeholder="Tecnologías de la Información" class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
+                <div><label class="text-sm font-semibold text-slate-700">Clave</label><input name="clave" maxlength="30" value="{{ old('clave') }}" required placeholder="TI" class="mt-2 block w-full rounded-md border-slate-300 text-sm uppercase"></div>
                 <button class="rounded-md bg-[#15529A] px-4 py-2.5 text-sm font-bold text-white">Guardar carrera</button>
             </form>
         </article>
@@ -119,6 +119,6 @@
                 <div class="px-5 py-10 text-center text-sm text-slate-500">No hay grupos para esta carrera y periodo.</div>
             @endforelse
         </div>
-        <div class="border-t border-slate-200 px-5 py-3 text-sm text-slate-500">Vista completa: <strong class="text-slate-800">{{ $gruposTabla->count() }} grupos</strong></div>
+        <div class="border-t border-slate-200 px-5 py-3 text-sm text-slate-500">Vista completa: <strong class="text-slate-800">{{ $gruposTabla->count() }} {{ $gruposTabla->count() === 1 ? 'grupo' : 'grupos' }}</strong></div>
     </article>
 </x-contenedor-aplicacion>

@@ -24,9 +24,9 @@
 
         <section class="relative w-full max-w-2xl rounded-lg border border-slate-200 bg-white p-7 text-center shadow-sm sm:p-10" aria-labelledby="titulo-error">
             <img
-                src="{{ asset('assets/utvm/utvm-logo-transparente.png') }}"
+                src="{{ asset('assets/utvm/utvm-correo.png') }}"
                 alt="Universidad Tecnológica del Valle del Mezquital"
-                class="mx-auto h-20 w-auto sm:h-24"
+                class="mx-auto h-20 w-[210px] object-contain sm:h-24 sm:w-64"
             >
 
             <div class="mx-auto mt-7 inline-flex rounded-full border px-4 py-1.5 text-sm font-bold {{ $colores['borde'] }} {{ $colores['fondo'] }} {{ $colores['texto'] }}">

@@ -56,7 +56,7 @@
                 <div class="flex flex-col gap-3 border-b border-slate-200 p-5 md:flex-row md:items-center md:justify-between">
                     <div>
                         <p class="text-xs font-bold uppercase tracking-[0.16em] text-[#21A366]">Revisión antes de guardar</p>
-                        <h3 class="mt-1 text-lg font-bold text-[#0D376D]">Vista previa de {{ count($vistaPrevia['listas']) }} listas</h3>
+                        <h3 class="mt-1 text-lg font-bold text-[#0D376D]">Vista previa de {{ count($vistaPrevia['listas']) }} {{ count($vistaPrevia['listas']) === 1 ? 'lista' : 'listas' }}</h3>
                     </div>
                     <form method="POST" action="{{ route('usuarios.alumnos.confirmar') }}">
                         @csrf
@@ -141,7 +141,7 @@
                 </table>
             </div>
             <div class="border-t border-slate-200 px-5 py-3 text-sm text-slate-500">
-                Lista completa: <strong class="text-slate-800">{{ $alumnos->count() }} alumnos</strong>
+                Lista completa: <strong class="text-slate-800">{{ $alumnos->count() }} {{ $alumnos->count() === 1 ? 'alumno' : 'alumnos' }}</strong>
             </div>
         </article>
     </section>
@@ -201,7 +201,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="border-t border-slate-200 px-5 py-3 text-sm text-slate-500">Lista completa: <strong class="text-slate-800">{{ $docentes->count() }} docentes</strong></div>
+            <div class="border-t border-slate-200 px-5 py-3 text-sm text-slate-500">Lista completa: <strong class="text-slate-800">{{ $docentes->count() }} {{ $docentes->count() === 1 ? 'docente' : 'docentes' }}</strong></div>
         </article>
     </section>
     @endif
@@ -209,7 +209,7 @@
     @if($esCoordinacion)
     <template id="student-list-template">
         <div class="student-list-row grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[1.5fr_1fr_110px_110px_auto]">
-            <div><label class="text-xs font-bold uppercase text-slate-500">Archivo Excel</label><input type="file" accept=".xlsx,.xls,.csv,.txt" required class="mt-2 block w-full text-sm"></div>
+            <div><label class="text-xs font-bold uppercase text-slate-500">Archivo Excel</label><input type="file" accept=".xlsx,.xls,.csv,.txt" data-max-mb="10" required class="mt-2 block w-full text-sm"></div>
             <div><label class="text-xs font-bold uppercase text-slate-500">Carrera</label><select required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}">{{ $carrera->clave }}</option>@endforeach</select></div>
             <div><label class="text-xs font-bold uppercase text-slate-500">Grado</label><input type="number" min="1" max="12" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
             <div><label class="text-xs font-bold uppercase text-slate-500">Grupo</label><input maxlength="10" required placeholder="A" class="mt-2 block w-full rounded-md border-slate-300 text-sm uppercase"></div>
@@ -221,9 +221,9 @@
     @if($esCoordinacion)
     <template id="teacher-template">
         <div class="teacher-row grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 lg:grid-cols-6">
-            <input required placeholder="Nombre completo" class="rounded-md border-slate-300 text-sm lg:col-span-2">
-            <input required placeholder="Matrícula / clave" class="rounded-md border-slate-300 text-sm">
-            <input type="email" required placeholder="Correo" class="rounded-md border-slate-300 text-sm">
+            <input required maxlength="255" placeholder="Nombre completo" class="rounded-md border-slate-300 text-sm lg:col-span-2">
+            <input required maxlength="50" placeholder="Matrícula / clave" class="rounded-md border-slate-300 text-sm">
+            <input type="email" maxlength="255" required placeholder="Correo" class="rounded-md border-slate-300 text-sm">
             <select required class="rounded-md border-slate-300 text-sm">@foreach($rolesDocentes as $rol)<option value="{{ $rol->nombre }}">{{ $rol->nombre_visible }}</option>@endforeach</select>
             <div class="flex gap-2"><select required class="min-w-0 flex-1 rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}">{{ $carrera->clave }}</option>@endforeach</select><button type="button" class="remove-row font-bold text-red-600">×</button></div>
         </div>

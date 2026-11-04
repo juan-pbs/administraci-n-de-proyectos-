@@ -16,7 +16,7 @@
             <aside class="hidden h-screen w-72 shrink-0 border-r border-slate-200 bg-white lg:block">
                 <div class="flex h-full min-h-0 flex-col">
                     <div class="shrink-0 border-b border-slate-200 px-5 py-5">
-                        <img src="{{ asset('assets/utvm/utvm-logo-transparente.png') }}" alt="Logo UTVM" class="h-16 w-auto">
+                        <img src="{{ asset('assets/utvm/utvm-correo.png') }}" alt="Logo UTVM" class="h-16 w-[170px] object-contain">
                         <p class="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#21A366]">Sistema académico</p>
                         <p class="mt-1 text-sm font-bold text-[#0D376D]">Proyectos integradores</p>
                     </div>

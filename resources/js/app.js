@@ -204,7 +204,48 @@ function iniciarPreviewApartado() {
     });
 }
 
+function iniciarRestriccionesCampos() {
+    document.querySelectorAll('input[type="number"][min], input[type="number"][max]').forEach((input) => {
+        let ultimoValorValido = input.value;
+        input.addEventListener('input', () => {
+            if (input.value === '') { ultimoValorValido = ''; return; }
+            if (input.validity.badInput || !Number.isFinite(input.valueAsNumber)) return;
+            const minimo = input.min === '' ? -Infinity : Number(input.min);
+            const maximo = input.max === '' ? Infinity : Number(input.max);
+            if (input.valueAsNumber < minimo || input.valueAsNumber > maximo) input.value = ultimoValorValido;
+            else ultimoValorValido = input.value;
+        });
+    });
+
+    const fechaInicio = document.querySelector('input[name="fecha_inicio"][type="date"]');
+    const fechaFin = document.querySelector('input[name="fecha_fin"][type="date"]');
+    if (fechaInicio && fechaFin) {
+        const actualizarFechaMinima = () => {
+            fechaFin.min = fechaInicio.value;
+            if (fechaFin.value && fechaInicio.value && fechaFin.value < fechaInicio.value) fechaFin.value = '';
+        };
+        fechaInicio.addEventListener('change', actualizarFechaMinima);
+        actualizarFechaMinima();
+    }
+
+    document.addEventListener('change', (event) => {
+        const input = event.target;
+        if (!(input instanceof HTMLInputElement) || input.type !== 'file' || !input.dataset.maxMb) return;
+        const archivos = [...input.files];
+        const maximoArchivos = Number(input.dataset.maxFiles || 1);
+        const maximoBytes = Number(input.dataset.maxMb) * 1024 * 1024;
+        const extensiones = input.accept.split(',').map((valor) => valor.trim().toLowerCase()).filter((valor) => valor.startsWith('.'));
+        let error = '';
+        if (archivos.length > maximoArchivos) error = `Selecciona como máximo ${maximoArchivos} archivos.`;
+        else if (archivos.some((archivo) => archivo.size > maximoBytes)) error = `Cada archivo debe medir como máximo ${input.dataset.maxMb} MB.`;
+        else if (extensiones.length && archivos.some((archivo) => !extensiones.some((extension) => archivo.name.toLowerCase().endsWith(extension)))) error = 'Selecciona un archivo de los formatos permitidos.';
+        input.setCustomValidity(error);
+        if (error) input.reportValidity();
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    iniciarRestriccionesCampos();
     iniciarBusquedaPanel();
     iniciarRecuperacion();
     iniciarFirmas();

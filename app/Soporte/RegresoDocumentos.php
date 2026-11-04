@@ -19,6 +19,7 @@ class RegresoDocumentos
             'docente-lider.codigo' => ['docente_lider', 'Volver a revisión de código'],
             'docente-materia.revisiones' => [['docente_materia', 'docente_lider'], 'Volver a revisiones'],
             'modulos.proyectos' => [['coordinacion', 'docente_lider'], 'Volver a proyectos'],
+            'periodos.pendientes' => ['coordinacion', 'Volver a pendientes del periodo'],
             'estudiante.proyecto' => ['estudiante', 'Volver a mi proyecto'],
         ];
         $origen = $request->query('origen');
@@ -37,6 +38,7 @@ class RegresoDocumentos
                 'estado' => ['nullable', Rule::in(array_keys(\App\Servicios\EstadoGuias::ESTADOS))], 'buscar' => 'nullable|string|max:160',
                 'page' => 'nullable|integer|between:1,1000000', 'por_pagina' => ['nullable', Rule::in([10, 20, 40])]],
             'modulos.proyectos' => ['periodo_proyectos' => 'nullable|integer|min:1', 'grupo_proyectos' => 'nullable|integer|min:1'],
+            'periodos.pendientes' => ['periodo' => 'required|integer|min:1'],
             default => ['page' => 'nullable|integer|between:1,1000000'],
         };
         $validador = Validator::make($contexto, $reglas);
@@ -46,6 +48,9 @@ class RegresoDocumentos
         }
         if ($origen === 'estudiante.proyecto') {
             $parametros = ['proyecto_contexto' => $proyecto->id];
+        }
+        if ($origen === 'periodos.pendientes') {
+            $parametros = ['periodo' => $proyecto->equipo->grupoAcademico->periodo_id];
         }
 
         return ['url' => route($origen, $parametros), 'etiqueta' => $rutas[$origen][1]];

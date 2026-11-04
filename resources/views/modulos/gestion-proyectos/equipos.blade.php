@@ -43,10 +43,10 @@
                 </select>
             </label>
             <label class="text-sm font-semibold text-slate-700">Nombre
-                <input name="nombre" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm" placeholder="Equipo 1">
+                <input name="nombre" maxlength="255" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm" placeholder="Equipo 1">
             </label>
             <label class="text-sm font-semibold text-slate-700">Contexto inicial
-                <textarea name="contexto_proyecto" rows="3" class="mt-2 block w-full rounded-md border-slate-300 text-sm" placeholder="Problema o necesidad que atenderá">{{ old('contexto_proyecto') }}</textarea>
+                <textarea name="contexto_proyecto" rows="3" maxlength="3000" class="mt-2 block w-full rounded-md border-slate-300 text-sm" placeholder="Problema o necesidad que atenderá">{{ old('contexto_proyecto') }}</textarea>
             </label>
             <div class="lg:col-span-2">
                 @if($hayGruposConAlumnosLibres)
@@ -163,7 +163,7 @@
                                                 <option value="{{ $guia->id }}">{{ $guia->nombre }} · v{{ $guia->version }}</option>
                                             @endforeach
                                         </select>
-                                        <input name="titulo" required class="rounded-md border-slate-300 text-sm" placeholder="Nombre del proyecto">
+                                        <input name="titulo" maxlength="255" required class="rounded-md border-slate-300 text-sm" placeholder="Nombre del proyecto">
                                         <textarea name="descripcion" rows="2" class="rounded-md border-slate-300 text-sm md:col-span-2" placeholder="Descripción breve del proyecto"></textarea>
                                         <button class="w-fit rounded-md bg-[#15529A] px-4 py-2 text-sm font-bold text-white md:col-span-2">Asignar proyecto</button>
                                     </form>
@@ -177,7 +177,7 @@
                             <div class="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Alumnos del equipo</p>
-                                    <p class="mt-1 text-sm text-slate-500">{{ $equipo->integrantes_count }} integrantes asignados</p>
+                                    <p class="mt-1 text-sm text-slate-500">{{ $equipo->integrantes_count }} {{ (int) $equipo->integrantes_count === 1 ? 'integrante asignado' : 'integrantes asignados' }}</p>
                                 </div>
                                 @if($alumnosDisponibles->isNotEmpty())
                                     <form method="POST" action="{{ route('equipos.alumnos.guardar') }}" class="flex flex-col gap-2 sm:flex-row" data-async-form data-async-targets="mensajes metricas-equipos listado-equipos">

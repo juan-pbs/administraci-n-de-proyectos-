@@ -32,7 +32,7 @@ class ControladorDocumentos extends Controller
             'guia_integradora_id' => ['required', 'exists:guias_integradoras,id'],
             'orden' => ['required', 'integer', 'between:1,999'],
             'titulo' => ['required', 'string', 'max:255'], 'descripcion' => ['nullable', 'string', 'max:20000'],
-            'ponderacion' => ['required', 'numeric', 'between:0,100'], 'fecha_limite' => ['nullable', 'date'],
+            'ponderacion' => ['required', 'numeric', 'decimal:0,2', 'between:0,100'], 'fecha_limite' => ['nullable', 'date'],
             'requiere_codigo' => ['nullable', 'boolean'], 'requiere_documento' => ['nullable', 'boolean'],
         ]);
         $guia = $documentos->cargarGuia(GuiaIntegradora::findOrFail($datos['guia_integradora_id']));
