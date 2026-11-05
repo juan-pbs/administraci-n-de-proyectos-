@@ -147,7 +147,10 @@ class ControladorUsuarios extends Controller
             'listas.*.archivo' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:10240'],
             'listas.*.carrera_id' => ['required', 'exists:carreras,id'],
             'listas.*.grado' => ['required', 'integer', 'between:1,12'],
-            'listas.*.grupo' => ['required', 'string', 'max:10'],
+            'listas.*.grupo' => ['required', 'string', 'size:1', 'regex:/\A[A-La-l]\z/'],
+        ], [
+            'listas.*.grupo.regex' => 'El grupo debe ser una sola letra de A a L.',
+            'listas.*.grupo.size' => 'El grupo debe contener exactamente una letra.',
         ]);
 
         $vistaPrevia = [];
@@ -370,6 +373,18 @@ class ControladorUsuarios extends Controller
                 $correo = (string) $datosFila['correo_electronico'];
                 $grado = (int) $datosFila['grado'];
                 $grupoLetra = mb_strtoupper((string) $datosFila['grupo']);
+
+                if ($grado < 1 || $grado > 12) {
+                    $errores[] = "Fila {$numeroFila}: el grado debe estar entre 1 y 12.";
+
+                    continue;
+                }
+
+                if (! preg_match('/\A[A-L]\z/', $grupoLetra)) {
+                    $errores[] = "Fila {$numeroFila}: el grupo debe ser una sola letra de A a L.";
+
+                    continue;
+                }
 
                 $correoOcupado = User::query()
                     ->where('correo', $correo)

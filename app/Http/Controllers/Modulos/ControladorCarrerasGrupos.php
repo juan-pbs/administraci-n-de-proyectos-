@@ -59,7 +59,10 @@ class ControladorCarrerasGrupos extends Controller
             'periodo_id' => ['required', 'exists:periodos,id'],
             'carrera_id' => ['required', 'exists:carreras,id'],
             'grado' => ['required', 'integer', 'min:1', 'max:12'],
-            'grupo' => ['required', 'string', 'max:10'],
+            'grupo' => ['required', 'string', 'size:1', 'regex:/\A[A-La-l]\z/'],
+        ], [
+            'grupo.regex' => 'El grupo debe ser una sola letra de A a L.',
+            'grupo.size' => 'El grupo debe contener exactamente una letra.',
         ]);
 
         $grupo = mb_strtoupper($datos['grupo']);

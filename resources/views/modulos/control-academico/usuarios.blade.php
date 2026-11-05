@@ -217,7 +217,7 @@
             <div><label class="text-xs font-bold uppercase text-slate-500">Archivo Excel</label><input type="file" accept=".xlsx,.xls,.csv,.txt" data-max-mb="10" required class="mt-2 block w-full text-sm"></div>
             <div><label class="text-xs font-bold uppercase text-slate-500">Carrera</label><select required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}">{{ $carrera->clave }}</option>@endforeach</select></div>
             <div><label class="text-xs font-bold uppercase text-slate-500">Grado</label><input type="number" min="1" max="12" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
-            <div><label class="text-xs font-bold uppercase text-slate-500">Grupo</label><input maxlength="10" required placeholder="A" class="mt-2 block w-full rounded-md border-slate-300 text-sm uppercase"></div>
+            <div><label class="text-xs font-bold uppercase text-slate-500">Grupo (A–L)</label><select required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach(range('A', 'L') as $letra)<option value="{{ $letra }}">{{ $letra }}</option>@endforeach</select></div>
             <button type="button" class="remove-row self-end rounded-md px-3 py-2 text-sm font-bold text-red-600">Quitar</button>
         </div>
     </template>

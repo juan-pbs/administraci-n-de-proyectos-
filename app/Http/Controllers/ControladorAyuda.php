@@ -912,7 +912,7 @@ class ControladorAyuda extends Controller
             ],
             'assets/ayuda/coordinacion/04-carreras-grupos.png' => [
                 $this->detalle('Nueva carrera', 'Captura nombre y clave de la carrera antes de crear grupos.'),
-                $this->detalle('Nuevo grupo', 'Selecciona carrera, periodo, grado y escribe el grupo, por ejemplo 5A o 9B.'),
+                $this->detalle('Nuevo grupo', 'Selecciona carrera, periodo y grado. El grupo debe ser una sola letra de A a L.'),
                 $this->detalle('Agregar docente', 'Relaciona participantes académicos con una carrera para que aparezcan en asignaciones posteriores.'),
                 $this->detalle('Filtros', 'Permiten revisar solo una carrera, un periodo o un grupo específico.'),
             ],
