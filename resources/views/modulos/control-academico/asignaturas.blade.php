@@ -45,7 +45,7 @@
                 <div><label class="block text-xs font-bold uppercase text-slate-500">Periodo</label><select name="periodo_asignaturas" class="mt-1 rounded-md border-slate-300 text-sm">@foreach($periodos as $periodo)<option value="{{ $periodo->id }}" @selected((string)$filtrosAsignaturas['periodo_id'] === (string)$periodo->id)>{{ $periodo->nombre }}</option>@endforeach</select></div>
                 <div><label class="block text-xs font-bold uppercase text-slate-500">Carrera</label><select name="carrera_asignaturas" class="mt-1 rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}" @selected((string)$filtrosAsignaturas['carrera_id'] === (string)$carrera->id)>{{ $carrera->clave }}</option>@endforeach</select></div>
                 <div><label class="block text-xs font-bold uppercase text-slate-500">Cuatrimestre</label><select name="grado_asignaturas" class="mt-1 rounded-md border-slate-300 text-sm">@foreach($grados as $grado)<option value="{{ $grado }}" @selected((string)$filtrosAsignaturas['grado'] === (string)$grado)>{{ $grado }}</option>@endforeach</select></div>
-                <input name="busqueda_asignaturas" value="{{ $filtrosAsignaturas['busqueda'] }}" placeholder="Clave o asignatura" class="rounded-md border-slate-300 text-sm">
+                <label class="block text-xs font-bold uppercase text-slate-500">Buscar asignatura<input name="busqueda_asignaturas" type="search" value="{{ $filtrosAsignaturas['busqueda'] }}" placeholder="Clave o asignatura" class="mt-1 block rounded-md border-slate-300 text-sm"></label>
                 <button class="rounded-md bg-[#15529A] px-4 py-2 text-sm font-bold text-white">Cambiar vista</button>
             </form>
         </div>

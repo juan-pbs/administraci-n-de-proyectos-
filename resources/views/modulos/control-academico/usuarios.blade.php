@@ -90,9 +90,9 @@
                                 </table>
                             </div>
                             <div class="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm">
-                                <button type="button" data-preview-prev class="font-bold text-[#15529A]">Anterior</button>
+                                <button type="button" data-preview-prev class="rounded-md border border-[#15529A] px-3 py-1.5 font-bold text-[#15529A] hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50">Anterior</button>
                                 <span data-preview-page class="text-slate-500"></span>
-                                <button type="button" data-preview-next class="font-bold text-[#15529A]">Siguiente</button>
+                                <button type="button" data-preview-next class="rounded-md border border-[#15529A] px-3 py-1.5 font-bold text-[#15529A] hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50">Siguiente</button>
                             </div>
                         </section>
                     @endforeach

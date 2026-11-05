@@ -71,7 +71,7 @@
                 <div><label class="block text-xs font-bold uppercase text-slate-500">Periodo</label><select name="periodo_guias" class="mt-1 rounded-md border-slate-300 text-sm">@foreach($periodos as $periodo)<option value="{{ $periodo->id }}" @selected((string)$filtrosGuias['periodo_id'] === (string)$periodo->id)>{{ $periodo->nombre }}</option>@endforeach</select></div>
                 <div><label class="block text-xs font-bold uppercase text-slate-500">Carrera</label><select name="carrera_guias" class="mt-1 rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}" @selected((string)$filtrosGuias['carrera_id'] === (string)$carrera->id)>{{ $carrera->clave }} - {{ $carrera->nombre }}</option>@endforeach</select></div>
                 <div><label class="block text-xs font-bold uppercase text-slate-500">Estado</label><select name="estado_guias" class="mt-1 rounded-md border-slate-300 text-sm"><option value="">Todos</option>@foreach(['borrador','publicada','cerrada'] as $estado)<option value="{{ $estado }}" @selected($filtrosGuias['estado'] === $estado)>{{ ucfirst($estado) }}</option>@endforeach</select></div>
-                <input name="busqueda_guias" value="{{ $filtrosGuias['busqueda'] }}" placeholder="Nombre, versión o materia" class="rounded-md border-slate-300 text-sm">
+                <label class="block text-xs font-bold uppercase text-slate-500">Buscar guía<input name="busqueda_guias" type="search" value="{{ $filtrosGuias['busqueda'] }}" placeholder="Nombre, versión o materia" class="mt-1 block rounded-md border-slate-300 text-sm"></label>
                 <button class="rounded-md bg-[#15529A] px-4 py-2 text-sm font-bold text-white">Cambiar vista</button>
             </form>
         </div>
@@ -123,7 +123,7 @@
                                                         @if($guiasEditables->contains('id', $guia->id))<form method="POST" action="{{ route('guias.apartados.calificadores.quitar') }}" data-async-form data-async-targets="mensajes guides-list guide-metrics">
                                                             @csrf @method('DELETE')
                                                             <input type="hidden" name="apartado_guia_id" value="{{ $apartado->id }}"><input type="hidden" name="docente_id" value="{{ $asignacion->docente_id }}">
-                                                            <button class="text-xs font-bold text-red-700">Quitar</button>
+                                                            <button class="rounded-md border border-red-300 px-2 py-1 text-xs font-bold text-red-700 hover:bg-red-50">Quitar</button>
                                                         </form>@endif
                                                     </div>
                                                 @empty
