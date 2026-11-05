@@ -41,6 +41,7 @@ Requiere Docker Engine/Desktop con Compose. No requiere instalar PHP, Composer, 
 ```bash
 git clone https://github.com/juan-pbs/administraci-n-de-proyectos-.git
 cd administraci-n-de-proyectos-
+cp .env.example .env
 docker compose up -d --build
 ```
 
@@ -50,7 +51,7 @@ El stack incluye `app`, `db` (MariaDB), `worker` para la cola y `scheduler` para
 
 El arranque migra la base y carga `EscenariosAcademicosSeeder` únicamente cuando no existen usuarios. Repetir el arranque conserva los datos. `AUTO_SEED=false` desactiva la carga. Si el entorno es producción, el seeder de práctica no está permitido; configura `AUTO_SEED=false`.
 
-No es obligatorio crear `.env`. Para personalizar la instalación, copia `.env.example`: `APP_PORT`, `DB_FORWARD_PORT`, `APP_URL`, `APP_TIMEZONE`, `MAIL_*` y `DOCKER_DB_*`. Estas últimas configuran las credenciales internas de Docker sin cambiar la conexión local de Herd.
+El paso de copia habilita la configuración SMTP de práctica incluida en `.env.example`. Docker genera y conserva una `APP_KEY` propia en el volumen de almacenamiento cuando el valor está vacío. Para personalizar la instalación, ajusta `APP_PORT`, `DB_FORWARD_PORT`, `APP_URL`, `APP_TIMEZONE`, `MAIL_*` y `DOCKER_DB_*`. Estas últimas configuran las credenciales internas de Docker; `DB_*` permite conectar PHP local a la base publicada en el puerto 3307.
 
 ```bash
 docker compose ps
@@ -74,7 +75,7 @@ npm ci
 npm run build
 ```
 
-Crea `.env` desde `.env.example`, configura tu base local y una `APP_KEY` solo si es una instalación nueva. En una base nueva:
+Crea `.env` desde `.env.example`, configura la base local y ejecuta `php artisan key:generate` si es una instalación nueva. El puerto 3307 de la plantilla corresponde a la base de Docker; si usas MySQL o MariaDB local sin Docker, cambia `DB_HOST`, `DB_PORT`, `DB_USERNAME` y `DB_PASSWORD`. En una base nueva:
 
 ```bash
 php artisan migrate
@@ -143,7 +144,7 @@ Los seeders históricos anteriores permanecen como fixtures de pruebas; la carga
 
 ## Correo y tareas programadas
 
-`MAIL_MAILER=log` guarda mensajes localmente y no entrega correo real. Salvo las tres cuentas de verificación de la tabla, las cuentas de práctica usan `example.invalid`. Para enviar correos configura SMTP y direcciones reales. El alta, la recuperación y los avisos usan esa misma configuración.
+`.env.example` incluye SMTP y una cuenta de práctica para probar el alta, la recuperación y los avisos. Copia el archivo a `.env` antes de iniciar Docker; el worker del stack procesa los correos en cola. Salvo las tres cuentas de verificación de la tabla, las cuentas de práctica usan `example.invalid` y no recibirán mensajes. Para probar sin entrega real, cambia `MAIL_MAILER=log`; los mensajes quedarán en el registro de la aplicación. La cuenta de prueba y su contraseña están publicadas en este repositorio y deben sustituirse antes de usarlo fuera de las pruebas.
 
 ```bash
 php artisan asignaciones:notificar
