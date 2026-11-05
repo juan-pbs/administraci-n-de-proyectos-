@@ -94,7 +94,7 @@ class ControladorGuias extends Controller
             'orden' => ['required', 'integer', 'between:1,999'],
             'titulo' => ['required', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string', 'max:20000'],
-            'fecha_limite' => ['nullable', 'date'],
+            'fecha_limite' => ['nullable', 'date', 'after_or_equal:2000-01-01', 'before_or_equal:2100-12-31'],
             'ponderacion' => ['required', 'numeric', 'decimal:0,2', 'min:0', 'max:100'],
             'requiere_documento' => ['nullable', 'boolean'],
             'requiere_codigo' => ['nullable', 'boolean'],

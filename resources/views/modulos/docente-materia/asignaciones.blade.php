@@ -18,7 +18,7 @@
     <section class="mt-5 grid gap-3 sm:grid-cols-3">
         <article class="rounded-lg border border-slate-200 bg-white p-4"><p class="text-xs font-bold uppercase tracking-wider text-slate-500">Apartados</p><p class="mt-2 text-2xl font-bold text-[#0D376D]">{{ $firmas->count() }}</p></article>
         <article class="rounded-lg border border-slate-200 bg-white p-4"><p class="text-xs font-bold uppercase tracking-wider text-slate-500">Materias</p><p class="mt-2 text-2xl font-bold text-[#0D376D]">{{ $firmas->pluck('asignatura_id')->filter()->unique()->count() }}</p></article>
-        <article class="rounded-lg border border-slate-200 bg-white p-4"><p class="text-xs font-bold uppercase tracking-wider text-slate-500">Ponderación asignada</p><p class="mt-2 text-2xl font-bold text-[#0D376D]">{{ number_format($firmas->sum(fn($firma) => $firma->apartadoGuia?->ponderacion ?? 0), 0) }}%</p></article>
+        <article class="rounded-lg border border-slate-200 bg-white p-4"><p class="text-xs font-bold uppercase tracking-wider text-slate-500">Guías asignadas</p><p class="mt-2 text-2xl font-bold text-[#0D376D]">{{ $firmas->pluck('apartadoGuia.guia_integradora_id')->filter()->unique()->count() }}</p></article>
     </section>
 
     <section class="mt-5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">

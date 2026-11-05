@@ -25,7 +25,7 @@ test('la ayuda abre una seccion limpia diferente por rol', function (string $rol
         ->assertSee($expectedText)
         ->assertSee('Cerrar')
         ->assertDontSee('Proyectos integradores')
-        ->assertDontSee('Cerrar Sesion');
+        ->assertDontSee('Cerrar sesión');
 })->with([
     ['coordinacion', 'periodo activo y avisos'],
     ['docente_lider', 'tus grupos de trabajo'],
@@ -94,11 +94,11 @@ test('ayuda directa inicia en la seccion de inicio de sesion', function () {
     $this->actingAs($user)
         ->get('/ayuda')
         ->assertOk()
-        ->assertSee('Iniciar sesion')
-        ->assertSee('matricula institucional')
+        ->assertSee('Iniciar sesión')
+        ->assertSee('matrícula institucional')
         ->assertSee('data-help-annotated-figure', false)
         ->assertSee('marker-end=', false)
-        ->assertSee('Recuperacion de acceso')
+        ->assertSee('Recuperación de acceso')
         ->assertSee('Sigue las flechas')
         ->assertSee('Campos y botones clave')
         ->assertDontSee('Mi proyecto')
@@ -108,15 +108,15 @@ test('ayuda directa inicia en la seccion de inicio de sesion', function () {
 test('la ayuda publica de acceso solo muestra temas de ingreso', function () {
     $this->get('/ayuda/acceso?seccion=recuperar-contrasena')
         ->assertOk()
-        ->assertSee('Recuperar contrasena')
+        ->assertSee('Recuperar contraseña')
         ->assertSee('Correo registrado')
-        ->assertSee('Enviar codigo')
+        ->assertSee('Enviar código')
         ->assertSee('acceso-recuperacion.png')
         ->assertSee('acceso-codigo.png')
         ->assertSee('acceso-nueva-contrasena.png')
         ->assertDontSee('Mi proyecto')
-        ->assertDontSee('Periodos academicos')
-        ->assertDontSee('Guias integradoras');
+        ->assertDontSee('Periodos académicos')
+        ->assertDontSee('Guías integradoras');
 });
 
 test('las pantallas de acceso muestran boton de ayuda contextual', function () {
@@ -174,7 +174,7 @@ test('la ayuda del docente lider explica el envio manual y los formatos de recor
         ->assertOk()
         ->assertSee('Enviar recordatorios ahora')
         ->assertSee('Enviar recordatorios a todos mis proyectos')
-        ->assertSee('72 horas, 24 horas, envio manual y revision pendiente de docentes')
+        ->assertSee('72 horas, 24 horas, envío manual y revisión pendiente de docentes')
         ->assertSee('lider-recordatorios.png')
         ->assertSee('lider-recordatorios-formato-72.png')
         ->assertSee('lider-recordatorios-formato-24.png')
@@ -211,8 +211,8 @@ test('ayuda de estudiante no muestra apartados administrativos', function () {
         ->get('/ayuda?seccion=mi-proyecto')
         ->assertOk()
         ->assertSee('Mi proyecto')
-        ->assertDontSee('Periodos academicos')
-        ->assertDontSee('Guias integradoras');
+        ->assertDontSee('Periodos académicos')
+        ->assertDontSee('Guías integradoras');
 });
 
 test('la ayuda nueva muestra el contenido correcto y sus opciones solo al rol correspondiente', function () {
@@ -232,20 +232,20 @@ test('la ayuda nueva muestra el contenido correcto y sus opciones solo al rol co
         ->get('/ayuda?seccion=estado-guias')
         ->assertOk()
         ->assertSee('10, 20 o 40 proyectos')
-        ->assertSee('Volver conserva filtros y pagina')
+        ->assertSee('Volver conserva filtros y página')
         ->assertSee('lider-estado-guias.png');
 
     $this->actingAs($roles['docente_materia'])
         ->get('/ayuda?seccion=mi-firma')
         ->assertOk()
         ->assertSee('sube una imagen PNG o JPG')
-        ->assertSee('version recibida')
+        ->assertSee('versión recibida')
         ->assertSee('docente-firma.png');
 
     $this->actingAs($roles['estudiante'])
         ->get('/ayuda?seccion=codigo-repositorio')
         ->assertOk()
-        ->assertSee('URL de demostracion no es obligatoria')
+        ->assertSee('URL de demostración no es obligatoria')
         ->assertSee('estudiante-codigo-formulario.png')
         ->assertDontSee('Cierres y prorrogas');
 });

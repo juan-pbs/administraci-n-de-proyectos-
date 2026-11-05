@@ -49,7 +49,7 @@
                                 <p class="text-xs text-slate-500">{{ $roleName }}</p>
                             </div>
 
-                            <details class="group relative">
+                            <details id="menu-ayuda" class="group relative">
                                 <summary class="flex cursor-pointer list-none items-center gap-2 rounded-md border border-[#2F6330] bg-[#2F6330] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#244F27] focus:outline-none focus:ring-2 focus:ring-[#2F6330]/30 [&::-webkit-details-marker]:hidden">
                                     <span class="grid h-5 w-5 place-items-center rounded bg-white/95 text-xs font-black text-[#2F6330]">?</span>
                                     <span>Ayuda</span>
@@ -61,7 +61,7 @@
                                             href="{{ $opcion['ruta'] }}"
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            onclick="window.open(this.href, '_blank', 'width=980,height=760,scrollbars=yes,resizable=yes'); return false;"
+                                            onclick="this.closest('details').open = false; window.open(this.href, '_blank', 'width=980,height=760,scrollbars=yes,resizable=yes'); return false;"
                                             class="block rounded bg-[#2F6330] px-3 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#244F27] focus:outline-none focus:ring-2 focus:ring-[#2F6330]/30 [text-shadow:_0_1px_0_rgb(0_0_0_/_35%)]"
                                         >
                                             {{ $opcion['titulo'] }}
@@ -99,4 +99,13 @@
             </div>
         </div>
     </div>
+    <script>
+        document.addEventListener('click', (event) => {
+            const menu = document.getElementById('menu-ayuda');
+            if (menu?.open && !menu.contains(event.target)) menu.open = false;
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') document.getElementById('menu-ayuda')?.removeAttribute('open');
+        });
+    </script>
 </x-layouts.app>

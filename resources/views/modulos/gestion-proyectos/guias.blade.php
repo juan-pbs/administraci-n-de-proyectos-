@@ -42,7 +42,7 @@
                     <div class="grid grid-cols-2 gap-2"><input name="orden" type="number" min="1" max="999" step="1" value="1" required placeholder="Orden" class="rounded-md border-slate-300 text-sm"><input name="ponderacion" type="number" min="0" max="100" step="0.01" value="10" required placeholder="%" class="rounded-md border-slate-300 text-sm"></div>
                     <input name="titulo" maxlength="255" required placeholder="Título del apartado" class="rounded-md border-slate-300 text-sm md:col-span-2">
                     <textarea name="descripcion" rows="3" maxlength="20000" placeholder="Descripción y puntos requeridos" class="rounded-md border-slate-300 text-sm md:col-span-2"></textarea>
-                    <input name="fecha_limite" type="datetime-local" class="rounded-md border-slate-300 text-sm">
+                    <label class="text-sm font-semibold text-slate-700">Fecha y hora límite<input name="fecha_limite" type="datetime-local" min="2000-01-01T00:00" max="2100-12-31T23:59" class="mt-2 block w-full rounded-md border-slate-300 text-sm"></label>
                     <div class="flex gap-4 text-sm"><label><input name="requiere_documento" value="1" type="checkbox" checked> Documento</label><label><input name="requiere_codigo" value="1" type="checkbox"> Código</label></div>
                     <button class="w-fit rounded-md bg-[#15529A] px-4 py-2 text-sm font-bold text-white">Guardar apartado</button>
                     <button type="button" data-actualizar-preview class="w-fit rounded-md border border-[#15529A] px-4 py-2 text-sm font-bold text-[#15529A]">Actualizar vista previa</button>

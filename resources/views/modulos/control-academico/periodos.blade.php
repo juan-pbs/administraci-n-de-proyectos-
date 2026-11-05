@@ -30,10 +30,10 @@
                 <input name="nombre" maxlength="255" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm" placeholder="Septiembre - Diciembre 2026">
             </label>
             <label class="text-sm font-semibold text-slate-700">Inicio
-                <input name="fecha_inicio" type="date" value="{{ old('fecha_inicio') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">
+                <input name="fecha_inicio" type="date" min="2000-01-01" max="2100-12-31" value="{{ old('fecha_inicio') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">
             </label>
             <label class="text-sm font-semibold text-slate-700">Cierre
-                <input name="fecha_fin" type="date" value="{{ old('fecha_fin') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">
+                <input name="fecha_fin" type="date" min="2000-01-01" max="2100-12-31" value="{{ old('fecha_fin') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">
             </label>
             <p class="text-sm text-slate-500">Estado inicial: <strong>Borrador</strong>. Actívalo desde el historial cuando hayas preparado su estructura.</p>
             <div class="flex items-end md:col-span-3">

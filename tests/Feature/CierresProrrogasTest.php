@@ -134,7 +134,7 @@ test('prórroga valida fecha, selección y ronda, bloquea formularios antiguos',
     app(CierresProyectos::class)->registrar($d['proyecto']);
     $this->actingAs($d['lider']);
     $datos = datosProrroga($d, [$d['codigo']->id]);
-    foreach ([['fecha_limite' => now()->subMinute()->toDateTimeString()], ['apartados' => []], ['apartados' => [99999]], ['apartados' => [$d['codigo']->id, $d['codigo']->id]], ['decision' => 'inyectar'], ['motivo' => str_repeat('x', 2001)]] as $invalidos) {
+    foreach ([['fecha_limite' => now()->subMinute()->toDateTimeString()], ['fecha_limite' => '8888-02-22 14:21:00'], ['apartados' => []], ['apartados' => [99999]], ['apartados' => [$d['codigo']->id, $d['codigo']->id]], ['decision' => 'inyectar'], ['motivo' => str_repeat('x', 2001)]] as $invalidos) {
         $this->post(route('docente-lider.cierres.decidir', $d['proyecto']), [...$datos, ...$invalidos])->assertSessionHasErrors();
     }
     $this->post(route('docente-lider.cierres.decidir', $d['proyecto']), $datos)->assertSessionHasNoErrors();

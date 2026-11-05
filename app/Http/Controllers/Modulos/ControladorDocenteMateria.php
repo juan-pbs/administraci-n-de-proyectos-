@@ -52,7 +52,8 @@ class ControladorDocenteMateria extends Controller
 
         $entregas = Entrega::query()
             ->with([
-                'apartado:id,titulo,ponderacion,fecha_limite',
+                'apartado:id,guia_integradora_id,titulo,ponderacion,fecha_limite',
+                'apartado.guiaIntegradora:id,nombre',
                 'proyecto:id,equipo_id,guia_integradora_id,titulo,estado',
                 'equipo:id,grupo_academico_id,numero,nombre',
                 'equipo.grupoAcademico:id,carrera_id,periodo_id,grado,grupo',

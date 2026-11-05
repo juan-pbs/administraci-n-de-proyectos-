@@ -46,7 +46,7 @@
 
             @if($tipo === 'logout')
                 <div class="mt-7 rounded-md border border-[#B7D7BD] bg-[#F3FAF5] px-4 py-3 text-sm font-semibold leading-6 text-[#2F6330]">
-                    Al cerrar sesion se protege tu cuenta y se evita que alguien mas use tu acceso.
+                    Al cerrar sesión se protege tu cuenta y se evita que alguien más use tu acceso.
                 </div>
             @endif
 

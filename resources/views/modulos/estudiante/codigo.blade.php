@@ -20,7 +20,7 @@
         <form method="POST" enctype="multipart/form-data" action="{{ route('estudiante.codigo.guardar') }}" class="mt-4 grid gap-4">
             @csrf
             <input type="hidden" name="proyecto_contexto" value="{{ $proyecto->id }}">
-            <div class="grid gap-4 md:grid-cols-[1fr_180px]">
+            <div class="grid gap-4 md:grid-cols-[minmax(0,28rem)_10rem]">
                 <label class="text-sm font-semibold">URL del repositorio<input name="repositorio_url" type="url" maxlength="500" pattern="https?://.+" title="Escribe una URL http o https" value="{{ old('repositorio_url', $producto?->repositorio_url) }}" placeholder="https://github.com/equipo/proyecto" class="mt-2 w-full rounded-md border-slate-300 text-sm"></label>
                 <label class="text-sm font-semibold">Versión<input required maxlength="40" name="version" value="{{ old('version', $producto?->version ?? 'v1.0.0') }}" class="mt-2 w-full rounded-md border-slate-300 text-sm"></label>
             </div>

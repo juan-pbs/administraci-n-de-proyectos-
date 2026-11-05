@@ -29,6 +29,10 @@
                 <p class="text-xs font-bold uppercase tracking-[0.16em] text-[#21A366]">Carga principal</p>
                 <h3 class="mt-1 text-lg font-bold text-[#0D376D]">Listas de alumnos por periodo</h3>
                 <p class="mt-2 text-sm text-slate-600">Agrega una o varias listas. Para cada archivo indica carrera, grado y grupo; el Excel solo necesita cédula/matrícula, nómina/nombre y correo.</p>
+                <a href="{{ asset('plantillas/plantilla_carga_alumnos.xlsx') }}" download="plantilla_carga_alumnos.xlsx" class="mt-4 inline-flex items-center rounded-md border border-[#15529A] bg-[#EAF2FB] px-4 py-2.5 text-sm font-bold text-[#0D376D] hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-[#15529A]">
+                    Descargar plantilla de alumnos (.xlsx)
+                </a>
+                <p class="mt-2 text-xs text-slate-500">La plantilla está vacía. Llena una fila por alumno y selecciona carrera, grado y grupo al cargar cada archivo.</p>
             </div>
             <form method="POST" action="{{ route('usuarios.alumnos.previsualizar') }}" enctype="multipart/form-data" class="p-5">
                 @csrf
@@ -98,21 +102,21 @@
         @endif
 
         <article data-async-region="students-list" class="rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div class="flex flex-col gap-3 border-b border-slate-200 p-5 lg:flex-row lg:items-end lg:justify-between">
+            <div class="flex flex-col gap-3 border-b border-slate-200 p-5">
                 <div><h3 class="font-bold text-slate-900">Alumnos del periodo</h3><p class="mt-1 text-sm text-slate-500">Cada periodo inicia con sus propias listas, grupos, guías y proyectos.</p></div>
-                <form method="GET" action="{{ route('modulos.show', 'usuarios') }}" data-async-form data-async-targets="students-list" class="flex flex-wrap items-end gap-2">
+                <form method="GET" action="{{ route('modulos.show', 'usuarios') }}" data-async-form data-async-targets="students-list" class="grid w-full gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] xl:items-end">
                     <input type="hidden" name="seccion" value="alumnos">
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wide text-slate-500">Periodo</label>
-                        <select name="periodo_alumnos" class="mt-1 rounded-md border-slate-300 text-sm">@foreach ($periodos as $periodo)<option value="{{ $periodo->id }}" @selected((string) $filtrosAlumnos['periodo_id'] === (string) $periodo->id)>{{ $periodo->nombre }}</option>@endforeach</select>
+                        <select name="periodo_alumnos" class="mt-1 w-full rounded-md border-slate-300 text-sm">@foreach ($periodos as $periodo)<option value="{{ $periodo->id }}" @selected((string) $filtrosAlumnos['periodo_id'] === (string) $periodo->id)>{{ $periodo->nombre }}</option>@endforeach</select>
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wide text-slate-500">Carrera</label>
-                        <select name="carrera_alumnos" class="mt-1 rounded-md border-slate-300 text-sm">@foreach ($carreras as $carrera)<option value="{{ $carrera->id }}" @selected((string) $filtrosAlumnos['carrera_id'] === (string) $carrera->id)>{{ $carrera->clave }} - {{ $carrera->nombre }}</option>@endforeach</select>
+                        <select name="carrera_alumnos" class="mt-1 w-full rounded-md border-slate-300 text-sm">@foreach ($carreras as $carrera)<option value="{{ $carrera->id }}" @selected((string) $filtrosAlumnos['carrera_id'] === (string) $carrera->id)>{{ $carrera->clave }} - {{ $carrera->nombre }}</option>@endforeach</select>
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wide text-slate-500">Buscar matrícula</label>
-                        <input name="busqueda_alumnos" value="{{ $filtrosAlumnos['busqueda'] }}" placeholder="Matrícula, nombre o correo" class="mt-1 rounded-md border-slate-300 text-sm">
+                        <input name="busqueda_alumnos" value="{{ $filtrosAlumnos['busqueda'] }}" placeholder="Matrícula, nombre o correo" class="mt-1 w-full rounded-md border-slate-300 text-sm">
                     </div>
                     <button class="rounded-md bg-[#15529A] px-4 py-2 text-sm font-bold text-white">Cambiar carrera / filtrar</button>
                 </form>
@@ -184,17 +188,18 @@
                 @foreach ($carreras as $carrera)
                     <a href="{{ route('modulos.show', ['modulo' => 'usuarios', 'seccion' => 'docentes', 'carrera_docentes' => $carrera->id, 'busqueda_docentes' => $filtrosDocentes['busqueda']]) }}"
                        data-async-link data-async-targets="teachers-list"
-                       class="rounded-md px-4 py-2 text-sm font-bold transition {{ (int) $filtrosDocentes['carrera_id'] === (int) $carrera->id ? 'bg-[#0D376D] text-white shadow-sm' : 'border border-slate-300 bg-white text-[#15529A] hover:bg-[#EAF2FB]' }}">
+                       title="{{ $carrera->clave }} - {{ $carrera->nombre }}"
+                       class="max-w-40 truncate rounded-md px-4 py-2 text-sm font-bold transition {{ (int) $filtrosDocentes['carrera_id'] === (int) $carrera->id ? 'bg-[#0D376D] text-white shadow-sm' : 'border border-slate-300 bg-white text-[#15529A] hover:bg-[#EAF2FB]' }}">
                         {{ $carrera->clave }}
                     </a>
                 @endforeach
             </nav>
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <table class="min-w-[840px] w-full table-fixed divide-y divide-slate-200 text-sm">
                     <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">Clave</th><th class="px-4 py-3 text-left">Nombre</th><th class="px-4 py-3 text-left">Rol</th><th class="px-4 py-3 text-left">Carrera</th><th class="px-4 py-3 text-left">Correo</th></tr></thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($docentes as $docente)
-                            <tr><td class="px-4 py-3 font-semibold">{{ $docente->matricula }}</td><td class="px-4 py-3">{{ $docente->nombre }}</td><td class="px-4 py-3">{{ $docente->role?->nombre_visible }}</td><td class="px-4 py-3">{{ $docente->carrera?->clave ?? '-' }}</td><td class="px-4 py-3">{{ $docente->correo }}</td></tr>
+                            <tr><td class="break-all px-4 py-3 font-semibold">{{ $docente->matricula }}</td><td class="break-words px-4 py-3">{{ $docente->nombre }}</td><td class="px-4 py-3">{{ $docente->role?->nombre_visible }}</td><td class="break-all px-4 py-3">{{ $docente->carrera?->clave ?? '-' }}</td><td class="break-all px-4 py-3">{{ $docente->correo }}</td></tr>
                         @empty
                             <tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">No hay docentes en esta carrera o no coinciden con la búsqueda.</td></tr>
                         @endforelse
@@ -221,11 +226,11 @@
     @if($esCoordinacion)
     <template id="teacher-template">
         <div class="teacher-row grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 lg:grid-cols-6">
-            <input required maxlength="255" placeholder="Nombre completo" class="rounded-md border-slate-300 text-sm lg:col-span-2">
-            <input required maxlength="50" placeholder="Matrícula / clave" class="rounded-md border-slate-300 text-sm">
-            <input type="email" maxlength="255" required placeholder="Correo" class="rounded-md border-slate-300 text-sm">
-            <select required class="rounded-md border-slate-300 text-sm">@foreach($rolesDocentes as $rol)<option value="{{ $rol->nombre }}">{{ $rol->nombre_visible }}</option>@endforeach</select>
-            <div class="flex gap-2"><select required class="min-w-0 flex-1 rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}">{{ $carrera->clave }}</option>@endforeach</select><button type="button" class="remove-row font-bold text-red-600">×</button></div>
+            <label class="text-xs font-bold text-slate-600 lg:col-span-2">Nombre (máx. 120)<input required maxlength="120" placeholder="Nombre completo" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
+            <label class="text-xs font-bold text-slate-600">Matrícula / clave (máx. 30)<input required maxlength="30" placeholder="Matrícula / clave" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
+            <label class="text-xs font-bold text-slate-600">Correo (máx. 254)<input type="email" maxlength="254" required placeholder="Correo" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
+            <label class="text-xs font-bold text-slate-600">Rol<select required class="mt-1 block w-full rounded-md border-slate-300 text-sm">@foreach($rolesDocentes as $rol)<option value="{{ $rol->nombre }}">{{ $rol->nombre_visible }}</option>@endforeach</select></label>
+            <div class="flex min-w-0 items-end gap-2"><label class="min-w-0 flex-1 text-xs font-bold text-slate-600">Carrera<select required class="mt-1 block w-full rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}">{{ $carrera->clave }}</option>@endforeach</select></label><button type="button" class="remove-row rounded-md border border-red-300 px-2 py-2 text-xs font-bold text-red-700" aria-label="Quitar esta fila de docente">Quitar</button></div>
         </div>
     </template>
     @endif

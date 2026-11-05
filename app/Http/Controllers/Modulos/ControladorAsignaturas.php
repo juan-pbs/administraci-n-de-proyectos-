@@ -40,8 +40,8 @@ class ControladorAsignaturas extends Controller
 
         $datos = $request->validate([
             'carrera_id' => ['required', 'exists:carreras,id'],
-            'nombre' => ['required', 'string', 'max:255'],
-            'clave' => ['nullable', 'string', 'max:50', 'unique:asignaturas,clave'],
+            'nombre' => ['required', 'string', 'max:120'],
+            'clave' => ['nullable', 'string', 'max:30', 'unique:asignaturas,clave'],
             'grado' => ['required', 'integer', 'min:1', 'max:12'],
         ]);
 

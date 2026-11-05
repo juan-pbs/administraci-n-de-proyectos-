@@ -37,7 +37,7 @@ class ControladorEquipos extends Controller
 
         $datos = $request->validate([
             'grupo_academico_id' => ['required', 'exists:grupos_academicos,id'],
-            'nombre' => ['required', 'string', 'max:255'],
+            'nombre' => ['required', 'string', 'max:80'],
             'contexto_proyecto' => ['nullable', 'string', 'max:3000'],
         ]);
 

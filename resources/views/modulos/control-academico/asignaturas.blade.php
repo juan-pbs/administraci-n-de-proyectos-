@@ -15,19 +15,19 @@
 
     <section class="mt-5 grid gap-4 xl:grid-cols-2">
         <details class="rounded-lg border border-slate-200 bg-white shadow-sm" @if($errors->any()) open @endif>
-            <summary class="cursor-pointer list-none p-5"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Catálogo permanente</p><div class="mt-1 flex justify-between"><h3 class="font-bold text-[#0D376D]">Registrar asignatura</h3><span class="text-xl text-[#15529A]">＋</span></div></summary>
+            <summary class="cursor-pointer list-none p-5"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Catálogo permanente</p><div class="mt-1 flex justify-between"><h3 class="font-bold text-[#0D376D]">Registrar asignatura</h3><span class="text-sm font-semibold text-[#15529A]">Abrir formulario</span></div></summary>
             <form method="POST" action="{{ route('asignaturas.guardar') }}" class="grid gap-4 border-t border-slate-200 p-5 md:grid-cols-2">
                 @csrf
                 <div><label class="text-sm font-semibold text-slate-700">Carrera</label><select name="carrera_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}" @selected((string)old('carrera_id',$filtrosAsignaturas['carrera_id']) === (string)$carrera->id)>{{ $carrera->clave }} - {{ $carrera->nombre }}</option>@endforeach</select></div>
                 <div><label class="text-sm font-semibold text-slate-700">Cuatrimestre</label><input name="grado" type="number" min="1" max="12" value="{{ old('grado',$filtrosAsignaturas['grado']) }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
-                <div class="md:col-span-2"><label class="text-sm font-semibold text-slate-700">Nombre</label><input name="nombre" maxlength="255" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
-                <div><label class="text-sm font-semibold text-slate-700">Clave</label><input name="clave" maxlength="50" value="{{ old('clave') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm uppercase"></div>
+                <div class="md:col-span-2"><label class="text-sm font-semibold text-slate-700">Nombre (máximo 120 caracteres)</label><input name="nombre" maxlength="120" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
+                <div><label class="text-sm font-semibold text-slate-700">Clave (máximo 30 caracteres)</label><input name="clave" maxlength="30" value="{{ old('clave') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm uppercase"></div>
                 <div class="flex items-end"><button class="rounded-md bg-[#15529A] px-5 py-2.5 text-sm font-bold text-white">Guardar asignatura</button></div>
             </form>
         </details>
 
         <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
-            <summary class="cursor-pointer list-none p-5"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Asignación por periodo</p><div class="mt-1 flex justify-between"><h3 class="font-bold text-[#0D376D]">Asignar docente</h3><span class="text-xl text-[#15529A]">＋</span></div></summary>
+            <summary class="cursor-pointer list-none p-5"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Asignación por periodo</p><div class="mt-1 flex justify-between"><h3 class="font-bold text-[#0D376D]">Asignar docente</h3><span class="text-sm font-semibold text-[#15529A]">Abrir formulario</span></div></summary>
             <form method="POST" action="{{ route('asignaturas.docentes.guardar') }}" class="grid gap-4 border-t border-slate-200 p-5">
                 @csrf
                 <div><label class="text-sm font-semibold text-slate-700">Periodo</label><select name="periodo_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($periodos as $periodo)<option value="{{ $periodo->id }}" @selected((string)$filtrosAsignaturas['periodo_id'] === (string)$periodo->id)>{{ $periodo->nombre }}</option>@endforeach</select></div>
@@ -65,8 +65,8 @@
             @forelse($asignaturas as $asignatura)
                 @php($docentesAsignados = $asignaciones->get($asignatura->id, collect()))
                 <section class="grid gap-4 p-5 md:grid-cols-[130px_minmax(0,1fr)_minmax(260px,1fr)_100px] md:items-center">
-                    <div><p class="text-xs font-bold uppercase text-[#21A366]">{{ $asignatura->carrera?->clave }}</p><p class="mt-1 font-bold text-[#0D376D]">{{ $asignatura->clave }}</p></div>
-                    <div><h4 class="font-semibold text-slate-900">{{ $asignatura->nombre }}</h4><p class="mt-1 text-sm text-slate-500">{{ $asignatura->grado }}° cuatrimestre</p></div>
+                    <div class="min-w-0"><p class="break-all text-xs font-bold uppercase text-[#21A366]">{{ $asignatura->carrera?->clave }}</p><p class="mt-1 break-all font-bold text-[#0D376D]">{{ $asignatura->clave }}</p></div>
+                    <div class="min-w-0"><h4 class="break-words font-semibold text-slate-900">{{ $asignatura->nombre }}</h4><p class="mt-1 text-sm text-slate-500">{{ $asignatura->grado }}° cuatrimestre</p></div>
                     <div>
                         <p class="text-xs font-bold uppercase text-slate-500">Docentes en el periodo</p>
                         <div class="mt-2 flex flex-wrap gap-2">

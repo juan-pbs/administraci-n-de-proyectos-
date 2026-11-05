@@ -41,8 +41,8 @@ class ControladorPeriodos extends Controller
 
         $datos = $request->validate([
             'nombre' => ['required', 'string', 'max:255', 'unique:periodos,nombre'],
-            'fecha_inicio' => ['required', 'date'],
-            'fecha_fin' => ['required', 'date', 'after_or_equal:fecha_inicio'],
+            'fecha_inicio' => ['required', 'date', 'after_or_equal:2000-01-01', 'before_or_equal:2100-12-31'],
+            'fecha_fin' => ['required', 'date', 'after_or_equal:fecha_inicio', 'before_or_equal:2100-12-31'],
             'estado' => ['sometimes', 'in:borrador'],
         ]);
 

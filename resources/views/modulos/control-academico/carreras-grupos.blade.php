@@ -23,8 +23,8 @@
             <div class="border-b border-slate-200 p-5"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Catálogo permanente</p><h3 class="mt-1 font-bold text-slate-900">Nueva carrera</h3></div>
             <form method="POST" action="{{ route('carreras.guardar') }}" class="space-y-4 p-5">
                 @csrf
-                <div><label class="text-sm font-semibold text-slate-700">Nombre de la carrera</label><input name="nombre" maxlength="255" value="{{ old('nombre') }}" required placeholder="Tecnologías de la Información" class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
-                <div><label class="text-sm font-semibold text-slate-700">Clave</label><input name="clave" maxlength="30" value="{{ old('clave') }}" required placeholder="TI" class="mt-2 block w-full rounded-md border-slate-300 text-sm uppercase"></div>
+                <div><label class="text-sm font-semibold text-slate-700">Nombre de la carrera (máximo 120 caracteres)</label><input name="nombre" maxlength="120" value="{{ old('nombre') }}" required placeholder="Tecnologías de la Información" class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
+                <div><label class="text-sm font-semibold text-slate-700">Clave (máximo 20 caracteres)</label><input name="clave" maxlength="20" value="{{ old('clave') }}" required placeholder="TI" class="mt-2 block w-full rounded-md border-slate-300 text-sm uppercase"></div>
                 <button class="rounded-md bg-[#15529A] px-4 py-2.5 text-sm font-bold text-white">Guardar carrera</button>
             </form>
         </article>
@@ -69,7 +69,8 @@
             @foreach ($carreras as $carrera)
                 <a href="{{ route('modulos.show', ['modulo' => 'carreras-grupos', 'periodo_grupos' => $filtrosGrupos['periodo_id'], 'carrera_grupos' => $carrera->id, 'busqueda_grupos' => $filtrosGrupos['busqueda']]) }}"
                    data-async-link data-async-targets="career-groups career-metrics"
-                   class="rounded-md px-4 py-2 text-sm font-bold transition {{ (int) $filtrosGrupos['carrera_id'] === (int) $carrera->id ? 'bg-[#0D376D] text-white shadow-sm' : 'border border-slate-300 bg-white text-[#15529A] hover:bg-[#EAF2FB]' }}">
+                       title="{{ $carrera->clave }} - {{ $carrera->nombre }}"
+                       class="max-w-40 truncate rounded-md px-4 py-2 text-sm font-bold transition {{ (int) $filtrosGrupos['carrera_id'] === (int) $carrera->id ? 'bg-[#0D376D] text-white shadow-sm' : 'border border-slate-300 bg-white text-[#15529A] hover:bg-[#EAF2FB]' }}">
                     {{ $carrera->clave }}
                 </a>
             @endforeach
@@ -88,12 +89,12 @@
             @forelse ($gruposTabla as $grupoAcademico)
                 <section class="grid gap-4 px-5 py-4 transition hover:bg-slate-50 lg:grid-cols-[110px_minmax(180px,1fr)_100px_100px_minmax(220px,1fr)_100px_170px] lg:items-center">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#21A366]">{{ $grupoAcademico->carrera->clave }}</p>
+                        <p class="break-all text-xs font-bold uppercase tracking-[0.14em] text-[#21A366]">{{ $grupoAcademico->carrera->clave }}</p>
                         <h4 class="mt-1 text-xl font-bold text-[#0D376D]">{{ $grupoAcademico->grado }}{{ $grupoAcademico->grupo }}</h4>
                     </div>
                     <div>
                         <p class="text-xs font-semibold uppercase text-slate-400 lg:hidden">Periodo</p>
-                        <p class="mt-1 text-sm text-slate-600 lg:mt-0">{{ $grupoAcademico->periodo->nombre }}</p>
+                        <p class="mt-1 break-words text-sm text-slate-600 lg:mt-0">{{ $grupoAcademico->periodo->nombre }}</p>
                     </div>
                     <div>
                         <p class="text-xs font-semibold uppercase text-slate-400 lg:hidden">Alumnos</p>

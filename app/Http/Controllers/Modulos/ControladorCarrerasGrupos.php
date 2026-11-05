@@ -38,8 +38,8 @@ class ControladorCarrerasGrupos extends Controller
         $this->autorizarDireccion($request);
 
         $datos = $request->validate([
-            'nombre' => ['required', 'string', 'max:255'],
-            'clave' => ['required', 'string', 'max:30', 'unique:carreras,clave'],
+            'nombre' => ['required', 'string', 'max:120'],
+            'clave' => ['required', 'string', 'max:20', 'unique:carreras,clave'],
         ]);
 
         Carrera::query()->create([

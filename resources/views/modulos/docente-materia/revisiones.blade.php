@@ -31,7 +31,8 @@
                         class="boton-apartado min-w-fit rounded-md border px-4 py-2 text-sm font-bold transition hover:bg-blue-50"
                         style="border-color: {{ $loop->first ? '#155AA3' : '#CBD5E1' }}; background-color: {{ $loop->first ? '#155AA3' : '#FFFFFF' }}; color: {{ $loop->first ? '#FFFFFF' : '#155AA3' }};"
                     >
-                        {{ $apartado->titulo }}
+                        <span class="block">{{ $apartado->titulo }}</span>
+                        <span class="block text-xs font-normal">{{ $apartado->guiaIntegradora?->nombre }}</span>
                         <span class="ml-1 opacity-75">({{ $entregas->where('apartado_guia_id', $apartado->id)->count() }})</span>
                     </button>
                 @endforeach
@@ -60,14 +61,14 @@
                 @php($revision = $entrega->revisiones->first())
                 @php($grupo = $entrega->equipo?->grupoAcademico)
                 <article class="entrega overflow-hidden rounded-md border border-slate-300 border-l-4 border-l-[#155AA3] bg-white shadow-sm" data-apartado="{{ $entrega->apartado_guia_id }}" data-grupo="{{ $grupo?->id }}" data-estado="{{ $revision?->resultado ?? 'pendiente' }}" data-busqueda="{{ Str::lower(($entrega->equipo?->nombre ?? 'equipo '.$entrega->equipo?->numero).' '.$entrega->proyecto?->titulo.' '.$entrega->apartado?->titulo) }}">
-                    <button type="button" class="desplegar-entrega grid w-full gap-3 px-5 py-4 text-left hover:bg-slate-50 md:grid-cols-[190px_minmax(0,1fr)_180px_130px] md:items-center">
+                    <button type="button" class="desplegar-entrega grid w-full gap-3 px-5 py-4 text-left hover:bg-slate-50 md:grid-cols-[190px_minmax(0,1fr)_180px_130px] md:items-center" aria-label="Revisar entrega de {{ $entrega->equipo?->nombre ?? 'Equipo '.$entrega->equipo?->numero }}: {{ $entrega->apartado?->titulo }}">
                         <div class="border-b border-slate-200 pb-3 md:border-b-0 md:border-r md:pb-0 md:pr-4">
                             <p class="text-[11px] font-bold uppercase tracking-wider text-[#21A366]">{{ $grupo?->carrera?->clave }} · Grupo {{ $grupo?->grado }}{{ $grupo?->grupo }}</p>
                             <p class="mt-1 text-base font-extrabold text-[#0D376D]">{{ $entrega->equipo?->nombre ?? 'Equipo '.$entrega->equipo?->numero }}</p>
                         </div>
                         <div><p class="text-xs font-bold uppercase tracking-wider text-slate-400">Proyecto</p><p class="mt-1 font-semibold text-slate-900">{{ $entrega->proyecto?->titulo }}</p><p class="mt-1 text-xs font-semibold text-[#155AA3]">{{ $entrega->apartado?->titulo }} · Versión {{ $entrega->version }}</p></div>
                         <div><p class="text-xs text-slate-500">Entrega</p><p class="mt-1 text-sm font-semibold text-slate-700">{{ $entrega->entregado_en?->format('d/m/Y H:i') ?? 'Sin fecha' }}</p><p class="mt-1 text-xs text-[#155AA3]">Por {{ $entrega->entregadoPor?->nombre ?? 'Integrante del equipo' }}</p></div>
-                        <div class="flex items-center justify-between gap-2"><span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $revision ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700' }}">{{ $revision ? ucfirst($revision->resultado) : 'Pendiente' }}</span><span class="text-lg text-slate-400">⌄</span></div>
+                        <div class="flex items-center justify-between gap-2"><span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $revision ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700' }}">{{ $revision ? ucfirst($revision->resultado) : 'Pendiente' }}</span><span class="text-sm font-bold text-[#155AA3]">Revisar <span aria-hidden="true">⌄</span></span></div>
                     </button>
                     <div class="detalle-entrega hidden border-t border-slate-100 bg-slate-50 px-5 py-5">
                         <a href="{{ route('documentos.mostrar', ['proyecto' => $entrega->proyecto_id, 'origen' => 'docente-materia.revisiones', 'contexto' => request()->only('page')]) }}" class="mb-4 block text-sm font-bold text-[#155AA3] underline">Consultar formato final y firmas</a>

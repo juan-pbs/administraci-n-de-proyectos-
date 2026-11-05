@@ -47,7 +47,7 @@ class ControladorCierresProyectos extends Controller
             'motivo' => ['required', 'string', 'max:2000'],
             'apartados' => ['exclude_unless:decision,prorroga', 'required', 'array', 'min:1', 'max:100'],
             'apartados.*' => ['required', 'integer', 'distinct'],
-            'fecha_limite' => ['exclude_unless:decision,prorroga', 'required', 'date', 'after:now'],
+            'fecha_limite' => ['exclude_unless:decision,prorroga', 'required', 'date', 'after:now', 'before_or_equal:2100-12-31 23:59:59'],
             'confirmar_cierre' => ['exclude_unless:decision,cerrar', 'accepted'],
         ]);
         $servicio->decidir($request->user(), $proyecto, $datos);

@@ -15,6 +15,55 @@ use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
 
+test('la carga de alumnos ofrece una plantilla vacía compatible con la vista previa', function () {
+    $this->actingAs(direccionAutenticada())
+        ->get(route('modulos.show', 'usuarios'))
+        ->assertOk()
+        ->assertSee('Descargar plantilla de alumnos (.xlsx)')
+        ->assertSee(asset('plantillas/plantilla_carga_alumnos.xlsx'), false);
+
+    $ruta = public_path('plantillas/plantilla_carga_alumnos.xlsx');
+    $this->assertFileExists($ruta);
+    $hoja = \PhpOffice\PhpSpreadsheet\IOFactory::load($ruta)->getSheetByName('Carga alumnos');
+    expect($hoja->rangeToArray('A1:C1')[0])->toBe(['matricula', 'nombre_completo', 'correo_electronico']);
+    expect($hoja->getCell('A2')->getValue())->toBeNull();
+});
+
+test('periodos rechaza años fuera del rango operativo antes de guardar', function () {
+    $this->actingAs(direccionAutenticada())
+        ->post(route('periodos.guardar'), [
+            'nombre' => 'Periodo fuera de rango',
+            'fecha_inicio' => '8888-02-08',
+            'fecha_fin' => '8888-07-01',
+        ])
+        ->assertSessionHasErrors(['fecha_inicio', 'fecha_fin']);
+
+    expect(Periodo::query()->where('nombre', 'Periodo fuera de rango')->exists())->toBeFalse();
+});
+
+test('apartados rechaza una fecha anterior al rango operativo', function () {
+    $direccion = direccionAutenticada();
+    $periodo = Periodo::query()->create([
+        'nombre' => 'Periodo de validación', 'fecha_inicio' => '2026-09-01',
+        'fecha_fin' => '2026-12-20', 'estado' => 'activo',
+    ]);
+    $carrera = Carrera::query()->create(['nombre' => 'Mecatrónica', 'clave' => 'MEC', 'estado' => 'activa']);
+    $asignatura = Asignatura::query()->create(['carrera_id' => $carrera->id, 'nombre' => 'Integradora', 'grado' => 8]);
+    $guia = GuiaIntegradora::query()->create([
+        'periodo_id' => $periodo->id, 'asignatura_id' => $asignatura->id,
+        'creado_por' => $direccion->id, 'nombre' => 'Guía de validación',
+        'cuatrimestre' => 8, 'version' => '1.0', 'estado' => 'borrador',
+    ]);
+
+    $this->actingAs($direccion)->post(route('guias.apartados.guardar'), [
+        'guia_integradora_id' => $guia->id, 'orden' => 1,
+        'titulo' => 'Protocolo', 'ponderacion' => 50,
+        'fecha_limite' => '1212-02-21 12:00',
+    ])->assertSessionHasErrors('fecha_limite');
+
+    expect(ApartadoGuia::query()->where('guia_integradora_id', $guia->id)->exists())->toBeFalse();
+});
+
 function direccionAutenticada(): User
 {
     $rol = Role::query()->firstOrCreate([

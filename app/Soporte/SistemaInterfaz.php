@@ -74,32 +74,32 @@ class SistemaInterfaz
     public static function opcionesAyudaPara(string $rol): array
     {
         $inicio = [
-            ['titulo' => 'Iniciar Sesion', 'seccion' => 'iniciar-sesion'],
+            ['titulo' => 'Iniciar sesión', 'seccion' => 'iniciar-sesion'],
         ];
 
         $porRol = match ($rol) {
             'coordinacion' => [
                 ['titulo' => 'Panel principal', 'seccion' => 'panel-principal'],
-                ['titulo' => 'Jerarquia de proyectos', 'seccion' => 'jerarquia-proyectos'],
+                ['titulo' => 'Jerarquía de proyectos', 'seccion' => 'jerarquia-proyectos'],
                 ['titulo' => 'Periodos', 'seccion' => 'periodos'],
                 ['titulo' => 'Carreras y grupos', 'seccion' => 'carreras-grupos'],
                 ['titulo' => 'Usuarios', 'seccion' => 'usuarios'],
                 ['titulo' => 'Asignaturas', 'seccion' => 'asignaturas'],
-                ['titulo' => 'Guias', 'seccion' => 'guias'],
-                ['titulo' => 'Busqueda del panel', 'seccion' => 'busqueda-panel'],
+                ['titulo' => 'Guías', 'seccion' => 'guias'],
+                ['titulo' => 'Búsqueda del panel', 'seccion' => 'busqueda-panel'],
             ],
             'docente_lider' => [
                 ['titulo' => 'Panel principal', 'seccion' => 'panel-principal'],
                 ['titulo' => 'Lista de alumnos', 'seccion' => 'lista-alumnos'],
                 ['titulo' => 'Equipos', 'seccion' => 'equipos'],
                 ['titulo' => 'Proyectos', 'seccion' => 'proyectos'],
-                ['titulo' => 'Revision de codigo', 'seccion' => 'revision-codigo'],
-                ['titulo' => 'Estado de las guias', 'seccion' => 'estado-guias'],
+                ['titulo' => 'Revisión de código', 'seccion' => 'revision-codigo'],
+                ['titulo' => 'Estado de las guías', 'seccion' => 'estado-guias'],
                 ['titulo' => 'Cierres y prorrogas', 'seccion' => 'cierres'],
                 ['titulo' => 'Recordatorios', 'seccion' => 'recordatorios'],
                 ['titulo' => 'Mi firma', 'seccion' => 'mi-firma'],
                 ['titulo' => 'Formato y PDF', 'seccion' => 'formato-pdf'],
-                ['titulo' => 'Busqueda del panel', 'seccion' => 'busqueda-panel'],
+                ['titulo' => 'Búsqueda del panel', 'seccion' => 'busqueda-panel'],
             ],
             'docente_materia' => [
                 ['titulo' => 'Panel principal', 'seccion' => 'panel-principal'],
@@ -112,13 +112,13 @@ class SistemaInterfaz
                 ['titulo' => 'Panel principal', 'seccion' => 'panel-principal'],
                 ['titulo' => 'Mi proyecto', 'seccion' => 'mi-proyecto'],
                 ['titulo' => 'Entregas', 'seccion' => 'entregas'],
-                ['titulo' => 'Codigo y repositorio', 'seccion' => 'codigo-repositorio'],
+                ['titulo' => 'Código y repositorio', 'seccion' => 'codigo-repositorio'],
                 ['titulo' => 'Formato y PDF', 'seccion' => 'formato-pdf'],
             ],
         };
 
         $fin = [
-            ['titulo' => 'Cerrar Sesion', 'seccion' => 'cerrar-sesion'],
+            ['titulo' => 'Cerrar sesión', 'seccion' => 'cerrar-sesion'],
             ['titulo' => 'Contactanos', 'seccion' => 'contactanos'],
         ];
 

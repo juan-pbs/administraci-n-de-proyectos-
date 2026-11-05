@@ -90,9 +90,9 @@ class ControladorUsuarios extends Controller
 
         $datos = $request->validate([
             'docentes' => ['required', 'array', 'min:1', 'max:30'],
-            'docentes.*.nombre' => ['required', 'string', 'max:255'],
-            'docentes.*.matricula' => ['required', 'string', 'max:50', 'distinct', 'unique:usuarios,matricula'],
-            'docentes.*.correo' => ['required', 'email', 'max:255', 'distinct', 'unique:usuarios,correo'],
+            'docentes.*.nombre' => ['required', 'string', 'max:120'],
+            'docentes.*.matricula' => ['required', 'string', 'max:30', 'distinct', 'unique:usuarios,matricula'],
+            'docentes.*.correo' => ['required', 'email', 'max:254', 'distinct', 'unique:usuarios,correo'],
             'docentes.*.rol' => ['required', 'in:docente_lider,docente_materia'],
             'docentes.*.carrera_id' => ['required', 'exists:carreras,id'],
         ]);
