@@ -81,7 +81,7 @@ class ControladorUsuarios extends Controller
             contrasenaInicial: $contrasenaInicial,
         ));
 
-        return redirect()->route('modulos.show', 'usuarios')->with('estado', 'Usuario registrado correctamente. La contrasena fue enviada al correo registrado.');
+        return redirect()->route('modulos.show', 'usuarios')->with('estado', 'Usuario registrado correctamente. La contraseña fue enviada al correo registrado.');
     }
 
     public function guardarDocentes(Request $request): RedirectResponse
@@ -685,7 +685,7 @@ class ControladorUsuarios extends Controller
         }
 
         throw ValidationException::withMessages([
-            'archivo' => 'No se encontro la fila de encabezados. Verifica que exista la columna matricula.',
+            'archivo' => 'No se encontró la fila de encabezados. Verifica que exista la columna matrícula.',
         ]);
     }
 

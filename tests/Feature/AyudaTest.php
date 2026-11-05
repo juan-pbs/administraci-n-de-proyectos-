@@ -247,5 +247,19 @@ test('la ayuda nueva muestra el contenido correcto y sus opciones solo al rol co
         ->assertOk()
         ->assertSee('URL de demostración no es obligatoria')
         ->assertSee('estudiante-codigo-formulario.png')
-        ->assertDontSee('Cierres y prorrogas');
+        ->assertDontSee('Cierres y prórrogas');
+});
+
+test('la ayuda de coordinación explica la plantilla de alumnos y la letra del grupo', function () {
+    $rol = Role::query()->firstOrCreate(['nombre' => 'coordinacion'], ['nombre_visible' => 'Coordinación', 'descripcion' => 'Rol de prueba']);
+    $this->actingAs(User::factory()->create(['rol_id' => $rol->id]));
+
+    $this->get('/ayuda?seccion=usuarios')
+        ->assertOk()
+        ->assertSee('Descarga la plantilla de alumnos')
+        ->assertSee('Vista previa de alumnos');
+
+    $this->get('/ayuda?seccion=carreras-grupos')
+        ->assertOk()
+        ->assertSee('una sola letra de la A a la L');
 });

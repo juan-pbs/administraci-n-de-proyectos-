@@ -85,7 +85,7 @@ class ControladorAyuda extends Controller
                 $this->seccionActualizarContrasena(),
             ],
             'faqs' => [
-                ['pregunta' => 'No puedo entrar al sistema', 'respuesta' => 'Verifica matrícula y contraseña. Si el problema continúa, usa recuperación de acceso o reporta el mensaje que aparece.'],
+                ['pregunta' => 'No puedo entrar al sistema', 'respuesta' => 'Verifica matrícula y contraseña. Si el problema continúa, usa la recuperación de acceso o reporta el mensaje que aparece.'],
                 ['pregunta' => 'No recuerdo mi contraseña', 'respuesta' => 'Solicita un código al correo registrado, escríbelo en el sistema y define una contraseña nueva. El código vence a los 10 minutos y puedes pedir otro después de 3 minutos.'],
             ],
         ];
@@ -151,7 +151,7 @@ class ControladorAyuda extends Controller
                     descripcion: 'Esta vista organiza carreras y grupos para que después puedan relacionarse alumnos, docentes, equipos y proyectos.',
                     pasos: [
                         'Crea primero la carrera con su nombre y clave.',
-                        'Agrega grupos indicando carrera, periodo, grado y nombre del grupo.',
+                        'Agrega grupos indicando carrera, periodo y grado. El grupo debe ser una sola letra de la A a la L.',
                         'Usa los filtros para revisar que la estructura quedó guardada en el periodo correcto.',
                     ],
                     imagen: 'assets/ayuda/coordinacion/04-carreras-grupos.png',
@@ -165,12 +165,12 @@ class ControladorAyuda extends Controller
                     descripcion: 'Permite consultar listas de alumnos, registrar cuentas y revisar datos de acceso antes de guardar.',
                     pasos: [
                         'Usa las pestañas para cambiar entre lista de alumnos y registro de personal académico.',
-                        'Carga alumnos con la plantilla institucional cuando inicie un periodo.',
-                        'Valida matrícula, correo real, carrera, grupo y tipo de cuenta antes de guardar. El alta asigna una contraseña aleatoria normal.',
+                        'Descarga la plantilla de alumnos en formato Excel, llena una fila por alumno y selecciónala al cargar la lista del periodo.',
+                        'Revisa la vista previa y valida matrícula, nombre y correo. Selecciona carrera, grado y grupo para cada archivo antes de confirmar la carga.',
                     ],
                     imagen: 'assets/ayuda/coordinacion/05-usuarios.png',
                     ruta: $rutas['usuarios'] ?? null,
-                    notas: ['Pestañas de usuarios', 'Carga por plantilla', 'Filtros y listados'],
+                    notas: ['Descarga de plantilla', 'Vista previa de alumnos', 'Filtros y listados'],
                 ),
                 $this->seccionModulo(
                     id: 'asignaturas',
@@ -291,9 +291,9 @@ class ControladorAyuda extends Controller
                     titulo: 'Recordatorios de entrega',
                     descripcion: 'Como docente líder puedes recordar entregas pendientes a alumnos y revisiones pendientes a docentes de tus equipos, y editar el texto de cada tipo de correo.',
                     pasos: [
-                        'Abre Recordatorios. Enviar recordatorios a todos mis proyectos incluye todos tus proyectos en proceso, aun si no aparecen en la página actual. Enviar recordatorios ahora actúa solo sobre el proyecto de esa fila.',
+                        'Abre Recordatorios. Enviar recordatorios a todos mis proyectos incluye todos tus proyectos en proceso, aunque no aparezcan en la página actual. Enviar recordatorios ahora actúa solo sobre el proyecto de esa fila.',
                         'En Formatos de correo, edita el texto de 72 horas, 24 horas, envío manual y revisión pendiente de docentes. Usa las variables indicadas en la vista y pulsa Guardar formato en cada bloque.',
-                        'La cola envia los correos. Antes de mandar un aviso comprueba que el alumno aun tenga la entrega pendiente o que el docente siga asignado y no haya revisado la versión actual.',
+                        'La cola envía los correos. Antes de mandar un aviso, comprueba que el alumno aún tenga la entrega pendiente o que el docente siga asignado y no haya revisado la versión actual.',
                     ],
                     imagen: 'assets/ayuda/actualizadas/lider-recordatorios.png',
                     ruta: $rutas['recordatorios'] ?? null,
@@ -439,7 +439,7 @@ class ControladorAyuda extends Controller
                     pasos: [
                         'Revisa el porcentaje validado y la distribución de estados.',
                         'Ubica apartados sin entregar, pendientes, rechazados o validados.',
-                        'Usa el resumen para decidir que evidencia debes atender primero.',
+                        'Usa el resumen para decidir qué evidencia debes atender primero.',
                     ],
                     imagen: 'assets/ayuda/estudiante/01-panel-principal.png',
                     ruta: $rutas['dashboard'] ?? null,
@@ -499,7 +499,7 @@ class ControladorAyuda extends Controller
     {
         return $this->seccionModulo(
             id: 'iniciar-sesion',
-            menu: 'Iniciar Sesión',
+            menu: 'Iniciar sesión',
             titulo: 'Iniciar sesión',
             descripcion: 'La pantalla de acceso solicita matrícula y contraseña para abrir el panel asignado a tu cuenta.',
             pasos: [
@@ -524,7 +524,7 @@ class ControladorAyuda extends Controller
             titulo: 'Recuperar contraseña',
             descripcion: 'Solicita un código a tu correo registrado y completa el cambio de contraseña dentro del sistema.',
             pasos: [
-                'Presiona Olvidaste tu contraseña desde el inicio de sesión.',
+                'Presiona ¿Olvidaste tu contraseña? desde el inicio de sesión.',
                 'Escribe el correo registrado en tu cuenta.',
                 'Presiona Enviar código, revisa tu correo y escribe el código de 8 dígitos en el sistema.',
                 'Si el código es correcto, elige y confirma una nueva contraseña; después vuelve a iniciar sesión.',
@@ -602,7 +602,7 @@ class ControladorAyuda extends Controller
 
         return [
             'id' => 'cerrar-sesion',
-            'menu' => 'Cerrar Sesión',
+            'menu' => 'Cerrar sesión',
             'titulo' => 'Cerrar sesión',
             'descripcion' => 'Usa esta opción al terminar para proteger tu cuenta, especialmente en equipos compartidos.',
             'pasos' => [
@@ -631,12 +631,12 @@ class ControladorAyuda extends Controller
      */
     private function seccionContacto(): array
     {
-        $capturas = $this->capturasDeSeccion('assets/ayuda/actualizadas/ayuda-contactanos.png', 'Contactanos');
+        $capturas = $this->capturasDeSeccion('assets/ayuda/actualizadas/ayuda-contactanos.png', 'Contáctanos');
 
         return [
             'id' => 'contactanos',
-            'menu' => 'Contactanos',
-            'titulo' => 'Contactanos',
+            'menu' => 'Contáctanos',
+            'titulo' => 'Contáctanos',
             'descripcion' => 'Si el problema continúa, repórtalo con datos suficientes para que el responsable pueda reproducirlo.',
             'pasos' => [
                 'Nombre completo y matrícula con la que ingresaste.',
@@ -743,7 +743,7 @@ class ControladorAyuda extends Controller
                 $this->capturaContexto('assets/ayuda/actualizadas/acceso-nueva-contrasena.png', 'Paso 3: nueva contraseña', 'Pantalla para definir y confirmar la nueva contraseña antes de volver al inicio de sesión.'),
             ],
             'assets/ayuda/actualizadas/coordinacion-periodos.png' => [
-                $this->capturaContexto('assets/ayuda/actualizadas/coordinacion-periodo-nuevo.png', 'Nuevo periodo en borrador', 'Formulario actual: el estado inicial es borrador y la activacion se hace después desde el historial.'),
+                $this->capturaContexto('assets/ayuda/actualizadas/coordinacion-periodo-nuevo.png', 'Nuevo periodo en borrador', 'Formulario actual: el estado inicial es borrador y la activación se hace después desde el historial.'),
             ],
             'assets/ayuda/actualizadas/coordinacion-guias.png' => [
                 $this->capturaContexto('assets/ayuda/actualizadas/coordinacion-guia-nueva.png', 'Crear guía en borrador', 'Formulario actual de alta: la guía inicia como borrador.'),
@@ -912,7 +912,7 @@ class ControladorAyuda extends Controller
             ],
             'assets/ayuda/coordinacion/04-carreras-grupos.png' => [
                 $this->detalle('Nueva carrera', 'Captura nombre y clave de la carrera antes de crear grupos.'),
-                $this->detalle('Nuevo grupo', 'Selecciona carrera, periodo y grado. El grupo debe ser una sola letra de A a L.'),
+                $this->detalle('Nuevo grupo', 'Selecciona carrera, periodo y grado. El grupo debe ser una sola letra de la A a la L.'),
                 $this->detalle('Agregar docente', 'Relaciona participantes académicos con una carrera para que aparezcan en asignaciones posteriores.'),
                 $this->detalle('Filtros', 'Permiten revisar solo una carrera, un periodo o un grupo específico.'),
             ],
@@ -920,7 +920,7 @@ class ControladorAyuda extends Controller
                 $this->detalle('Pestañas', 'Cambia entre consulta de alumnos y registro de personal académico.'),
                 $this->detalle('Matrícula', 'Debe ser única; si ya existe, el sistema no permitirá duplicarla.'),
                 $this->detalle('Correo', 'Sirve para avisos y recuperación de acceso, por eso debe estar bien escrito.'),
-                $this->detalle('Importar alumnos', 'Carga una plantilla con matrícula, nombre, correo, carrera y grupo. Revisa la vista previa antes de guardar.'),
+                $this->detalle('Descargar plantilla de alumnos', 'Descarga el archivo de Excel, llena cédula o matrícula, nómina o nombre y correo en una fila por alumno. Después selecciona periodo, carrera, grado y grupo para cada archivo y revisa la vista previa antes de confirmar.'),
             ],
             'assets/ayuda/coordinacion/05-usuarios-docentes-formulario.png' => [
                 $this->detalle('Registro de docentes', 'Usa esta pestaña para capturar una o varias cuentas académicas en una sola operación.'),
@@ -994,25 +994,25 @@ class ControladorAyuda extends Controller
                 $this->detalle('Sin registros', 'Si no aparecen entregas, puede que ningún equipo haya registrado producto de código.'),
             ],
             'assets/ayuda/docente-materia/01-panel-principal.png' => [
-                $this->detalle('Entregas recibidas', 'Indica cuantas evidencias llegaron para revisión.'),
+                $this->detalle('Entregas recibidas', 'Indica cuántas evidencias llegaron para revisión.'),
                 $this->detalle('Pendientes por revisar', 'Muestra entregas que requieren atención. Atiende primero las vencidas o recibidas sin resultado.'),
                 $this->detalle('Próximos apartados', 'Ayuda a preparar revisiones antes de que lleguen nuevas entregas.'),
             ],
             'assets/ayuda/docente-materia/02-mis-asignaciones.png' => [
                 $this->detalle('Periodo', 'Confirma que el periodo visible coincida con el ciclo que estás revisando.'),
                 $this->detalle('Apartados asignados', 'Muestra título, orden, ponderación y fecha límite de cada apartado.'),
-                $this->detalle('Materia', 'Indica con que materia o etiqueta participa la revisión.'),
+                $this->detalle('Materia', 'Indica con qué materia o etiqueta participa la revisión.'),
                 $this->detalle('Sin apartados', 'Si aparece vacío, todavía no hay apartados asignados para tu cuenta.'),
             ],
             'assets/ayuda/docente-materia/03-revisiones.png' => [
                 $this->detalle('Filtros', 'Busca por equipo, proyecto, apartado, grupo o estado para encontrar entregas específicas.'),
                 $this->detalle('Entrega disponible', 'Abre la evidencia antes de registrar resultado.'),
                 $this->detalle('Resultado', 'Usa Aprobada cuando cumple, Corrección cuando necesita ajustes y Rechazada cuando no corresponde.'),
-                $this->detalle('Observaciones', 'Escribe comentarios claros para que el equipo sepa que corregir.'),
+                $this->detalle('Observaciones', 'Escribe comentarios claros para que el equipo sepa qué corregir.'),
             ],
             'assets/ayuda/docente-materia/03-revisiones-entrega-abierta.png' => [
                 $this->detalle('Apartado seleccionado', 'La bandeja muestra las entregas del apartado activo para revisar una a una.'),
-                $this->detalle('Entrega recibida', 'Cada fila indica equipo, proyecto, fecha de envío, persona que entrego y estado actual.'),
+                $this->detalle('Entrega recibida', 'Cada fila indica equipo, proyecto, fecha de envío, persona que entregó y estado actual.'),
                 $this->detalle('Abrir detalle', 'Al presionar la fila se despliegan evidencias, criterio y formulario de evaluación.'),
             ],
             'assets/ayuda/docente-materia/03-revisiones-entrega-formulario.png' => [
@@ -1024,11 +1024,11 @@ class ControladorAyuda extends Controller
             'assets/ayuda/estudiante/01-panel-principal.png' => [
                 $this->detalle('Progreso validado', 'Muestra el porcentaje de apartados aprobados del equipo.'),
                 $this->detalle('Estados', 'Distingue sin entregar, pendiente, corrección, rechazado o validado.'),
-                $this->detalle('Resumen de guía', 'Indica que apartado sigue y que fecha límite debes cuidar.'),
+                $this->detalle('Resumen de guía', 'Indica qué apartado sigue y qué fecha límite debes cuidar.'),
             ],
             'assets/ayuda/estudiante/02-mi-proyecto.png' => [
                 $this->detalle('Datos del proyecto', 'Confirma nombre del proyecto, equipo, estado y periodo.'),
-                $this->detalle('Guía integradora', 'Indica la guía que debera seguir tu equipo.'),
+                $this->detalle('Guía integradora', 'Indica la guía que deberá seguir tu equipo.'),
                 $this->detalle('Integrantes', 'Revisa que todos los integrantes aparezcan correctamente.'),
                 $this->detalle('Datos incorrectos', 'Si algo no coincide, reporta la captura con el responsable de seguimiento.'),
             ],
@@ -1046,7 +1046,7 @@ class ControladorAyuda extends Controller
                 $this->detalle('Repositorio', 'Captura la URL completa del repositorio del equipo.'),
                 $this->detalle('Versión', 'Indica la versión o avance que estás enviando para identificar la entrega.'),
                 $this->detalle('URL y archivos', 'La demostración HTTPS es opcional. Puedes adjuntar comprimidos, documentación o una aplicación móvil o de escritorio para descargar.'),
-                $this->detalle('Aviso rojo', 'Si aparece una advertencia, atiendela antes de la fecha límite.'),
+                $this->detalle('Aviso rojo', 'Si aparece una advertencia, atiéndela antes de la fecha límite.'),
             ],
         ];
 
@@ -1465,27 +1465,27 @@ class ControladorAyuda extends Controller
     {
         $base = [
             ['pregunta' => 'No puedo entrar al sistema', 'respuesta' => 'Verifica que la matrícula y la contraseña sean correctas. Si el problema continúa, pide que revisen el estado de tu cuenta.'],
-            ['pregunta' => 'No veo una opción del menú', 'respuesta' => 'El menú muestra las opciones disponibles para tu cuenta. Si falta algo, reporta la pantalla y la acción que necesitas realizar.'],
-            ['pregunta' => 'Una pantalla aparece sin registros', 'respuesta' => 'Revisa el periodo activo, filtros aplicados y grupo seleccionado. Algunas vistas solo muestran información cuando ya existen equipos, proyectos o entregas.'],
+                ['pregunta' => 'No veo una opción del menú', 'respuesta' => 'El menú muestra las opciones disponibles para tu cuenta. Si falta algo, reporta la pantalla y la acción que necesitas realizar.'],
+                ['pregunta' => 'Una pantalla aparece sin registros', 'respuesta' => 'Revisa el periodo activo, los filtros aplicados y el grupo seleccionado. Algunas vistas solo muestran información cuando ya existen equipos, proyectos o entregas.'],
         ];
 
         $porRol = match ($rol) {
             'coordinacion' => [
-                ['pregunta' => 'Qué debo configurar primero', 'respuesta' => 'Primero periodo, carreras, grupos y usuarios. Después asignaturas, responsables de grupo, guías, equipos y proyectos.'],
-                ['pregunta' => 'Por qué una persona no ve sus opciones', 'respuesta' => 'Debe estar vinculada al grupo, materia o proyecto correspondiente en el periodo activo.'],
+                ['pregunta' => '¿Qué debo configurar primero?', 'respuesta' => 'Primero periodo, carreras, grupos y usuarios. Después asignaturas, responsables de grupo, guías, equipos y proyectos.'],
+                ['pregunta' => '¿Por qué una persona no ve sus opciones?', 'respuesta' => 'Debe estar vinculada al grupo, materia o proyecto correspondiente en el periodo activo.'],
             ],
             'docente_lider' => [
-                ['pregunta' => 'Por qué no puedo crear proyectos', 'respuesta' => 'El equipo debe existir y contar con una guía disponible para el periodo. Revisa también que el grupo pertenezca a tu asignación.'],
-                ['pregunta' => 'Puedo mover alumnos entre equipos', 'respuesta' => 'Si tienes permiso sobre el grupo, puedes ajustar integrantes. El sistema evita que un alumno quede activo en dos equipos al mismo tiempo.'],
-                ['pregunta' => 'Por qué no se envió un recordatorio manual', 'respuesta' => 'Los alumnos deben tener entregas pendientes o por corregir y plazo vigente; los docentes deben tener una versión asignada sin revisar. Se evitan avisos repetidos del mismo día. Revisa también la cola y la configuración del correo.'],
+                ['pregunta' => '¿Por qué no puedo crear proyectos?', 'respuesta' => 'El equipo debe existir y contar con una guía disponible para el periodo. Revisa también que el grupo pertenezca a tu asignación.'],
+                ['pregunta' => '¿Puedo mover alumnos entre equipos?', 'respuesta' => 'Si tienes permiso sobre el grupo, puedes ajustar integrantes. El sistema evita que un alumno quede activo en dos equipos al mismo tiempo.'],
+                ['pregunta' => '¿Por qué no se envió un recordatorio manual?', 'respuesta' => 'Los alumnos deben tener entregas pendientes o por corregir y plazo vigente; los docentes deben tener una versión asignada sin revisar. Se evitan avisos repetidos del mismo día. Revisa también la cola y la configuración del correo.'],
             ],
             'docente_materia' => [
-                ['pregunta' => 'Por qué no hay entregas pendientes', 'respuesta' => 'Puede ocurrir cuando ningún equipo ha enviado evidencias o cuando no tienes apartados asignados en la guía del periodo.'],
-                ['pregunta' => 'Qué resultado debo usar', 'respuesta' => 'Usa aprobada cuando cumple, corrección cuando requiere ajustes y rechazada cuando la evidencia no corresponde o no se puede evaluar.'],
+                ['pregunta' => '¿Por qué no hay entregas pendientes?', 'respuesta' => 'Puede ocurrir cuando ningún equipo ha enviado evidencias o cuando no tienes apartados asignados en la guía del periodo.'],
+                ['pregunta' => '¿Qué resultado debo usar?', 'respuesta' => 'Usa aprobada cuando cumple, corrección cuando requiere ajustes y rechazada cuando la evidencia no corresponde o no se puede evaluar.'],
             ],
             default => [
-                ['pregunta' => 'Por qué no veo mi proyecto', 'respuesta' => 'Tu cuenta debe estar dentro de un equipo activo y ese equipo debe tener un proyecto integrador relacionado.'],
-                ['pregunta' => 'Puedo enviar otra versión', 'respuesta' => 'Si la fecha límite sigue abierta, puedes enviar una nueva versión desde Entregas o Código y repositorio.'],
+                ['pregunta' => '¿Por qué no veo mi proyecto?', 'respuesta' => 'Tu cuenta debe estar dentro de un equipo activo y ese equipo debe tener un proyecto integrador relacionado.'],
+                ['pregunta' => '¿Puedo enviar otra versión?', 'respuesta' => 'Si la fecha límite sigue abierta, puedes enviar una nueva versión desde Entregas o Código y repositorio.'],
             ],
         };
 

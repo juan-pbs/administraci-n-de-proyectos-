@@ -1,4 +1,4 @@
-<x-acceso titulo="Olvidaste tu contraseña" descripcion="Ingresa tu correo registrado. Te enviaremos un código para recuperar el acceso aquí mismo." paso="Paso 1 de 3">
+<x-acceso titulo="¿Olvidaste tu contraseña?" descripcion="Ingresa tu correo registrado. Te enviaremos un código para recuperar el acceso aquí mismo." paso="Paso 1 de 3">
     <form method="POST" action="{{ route('password.enviar') }}" autocomplete="off" class="mt-8 space-y-5">
         @csrf
         <div><label for="correo_recuperacion" class="block text-sm font-semibold text-slate-700">Correo registrado</label>

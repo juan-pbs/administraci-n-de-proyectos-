@@ -95,7 +95,7 @@ class SistemaInterfaz
                 ['titulo' => 'Proyectos', 'seccion' => 'proyectos'],
                 ['titulo' => 'Revisión de código', 'seccion' => 'revision-codigo'],
                 ['titulo' => 'Estado de las guías', 'seccion' => 'estado-guias'],
-                ['titulo' => 'Cierres y prorrogas', 'seccion' => 'cierres'],
+                ['titulo' => 'Cierres y prórrogas', 'seccion' => 'cierres'],
                 ['titulo' => 'Recordatorios', 'seccion' => 'recordatorios'],
                 ['titulo' => 'Mi firma', 'seccion' => 'mi-firma'],
                 ['titulo' => 'Formato y PDF', 'seccion' => 'formato-pdf'],
@@ -119,7 +119,7 @@ class SistemaInterfaz
 
         $fin = [
             ['titulo' => 'Cerrar sesión', 'seccion' => 'cerrar-sesion'],
-            ['titulo' => 'Contactanos', 'seccion' => 'contactanos'],
+            ['titulo' => 'Contáctanos', 'seccion' => 'contactanos'],
         ];
 
         return collect([...$inicio, ...$porRol, ...$fin])
