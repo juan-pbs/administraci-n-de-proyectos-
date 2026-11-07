@@ -6,7 +6,7 @@ Aplicación Laravel para administrar periodos, carreras, grupos, alumnos, docent
 
 El código sigue la estructura de Laravel: `app/` contiene la lógica, `routes/` las rutas, `resources/` las vistas y estilos, `database/` las migraciones y datos de prueba, `tests/` las pruebas, y `public/` los archivos públicos. `docker/` contiene la configuración del contenedor y `tools/` los generadores auxiliares. Consulta el [índice de documentación](documentacion/README.md) para el resto de materiales.
 
-El trabajo entra a `main` mediante solicitudes de cambio desde ramas cortas. La [guía de contribución](CONTRIBUTING.md) define nombres de ramas, revisión y verificaciones.
+El trabajo se organiza en ramas por sección y entra a `main` mediante solicitudes de cambio. La [guía de contribución](CONTRIBUTING.md) define las áreas, los nombres de ramas, la revisión y las verificaciones.
 
 ## Funciones
 
