@@ -2,6 +2,8 @@
 
 <!-- Explica qué cambia y por qué. -->
 
+Rama destino: <!-- seccion/<nombre> o main -->
+
 ## Verificación
 
 - [ ] `php artisan test --compact`
