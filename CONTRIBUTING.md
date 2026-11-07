@@ -2,32 +2,50 @@
 
 ## Ramas
 
-`main` es la rama estable y la base de cada cambio. No se trabaja directamente en ella. Cada tarea usa una rama corta creada desde la versión más reciente de `origin/main` y se integra mediante una solicitud de cambio (pull request). No se necesita una rama `develop` mientras los cambios se integren de forma continua.
+`main` es la rama estable y la única base de despliegue. No se trabaja directamente en ella. Las ramas `area/*` reúnen cambios de una sección del sistema; cada error o funcionalidad se desarrolla en una rama corta y se revisa mediante una solicitud de cambio (pull request). No se necesita una rama `develop` adicional.
+
+### Ramas por sección
+
+| Rama | Alcance principal |
+| --- | --- |
+| `area/autenticacion` | Inicio de sesión, contraseñas, recuperación y permisos de acceso. |
+| `area/control-academico` | Periodos, carreras, grupos, usuarios y asignaturas. |
+| `area/gestion-proyectos` | Equipos, proyectos, jerarquía y guías. |
+| `area/docente-lider` | Estado de guías, revisión del líder, cierres y prórrogas. |
+| `area/docente-materia` | Asignaciones, entregas asignadas, revisiones y comentarios. |
+| `area/estudiante` | Selección de proyecto, entregas y código del alumno. |
+| `area/documentos-firmas` | Archivos, firmas, PDF y documentos finales. |
+| `area/notificaciones` | Correos, avisos, recordatorios, cola y programación. |
+| `area/interfaz-ayuda` | Panel, navegación, estilos, componentes visuales y ayuda. |
+
+El área se elige por el comportamiento que cambia, aunque el trabajo toque archivos compartidos. Los cambios que cruzan varias áreas, como infraestructura o migraciones generales, salen de `main` y vuelven directamente a `main`. Las ramas de área se conservan después de integrar sus cambios; se actualizan desde `main` antes de iniciar otro bloque de trabajo.
 
 Nombres de ramas, en minúsculas y con palabras separadas por guiones:
 
 | Prefijo | Uso | Ejemplo |
 | --- | --- | --- |
-| `feature/` | Funcionalidad nueva | `feature/reportes-periodo` |
-| `fix/` | Corrección de un defecto | `fix/cierre-prorroga` |
-| `docs/` | Documentación | `docs/guia-despliegue` |
-| `chore/` | Mantenimiento, dependencias o estructura | `chore/ordenar-documentacion` |
-| `codex/` | Trabajo realizado por Codex; el tema debe explicar el cambio | `codex/reorganiza-repositorio` |
+| `feature/` | Funcionalidad nueva | `feature/control-academico/reportes-periodo` |
+| `fix/` | Corrección de un defecto | `fix/docente-lider/cierre-prorroga` |
+| `docs/` | Documentación | `docs/interfaz-ayuda/guia-acceso` |
+| `chore/` | Mantenimiento, dependencias o estructura | `chore/infraestructura/actualizar-contenedor` |
+| `codex/` | Trabajo realizado por Codex; incluye área y tema | `codex/estudiante/validar-entrega` |
 
-Una corrección urgente también sale de `main` mediante `fix/` y regresa por solicitud de cambio. No se reescribe el historial de `main` ni se hacen fusiones directas desde ramas antiguas. Después de integrar una rama, se elimina si ya no contiene trabajo pendiente. Las ramas históricas existentes se revisan antes de eliminarlas; `separa-materia-lider` aún contiene trabajo sin integrar.
+Una corrección urgente sale de `main` como `fix/<area>/<problema>` y vuelve directamente a `main`; luego se sincroniza el área afectada. No se reescribe el historial de `main` ni de las ramas compartidas. Las ramas cortas se eliminan después de integrarse. `separa-materia-lider` es una rama histórica con trabajo sin integrar y requiere revisión independiente antes de decidir su destino.
 
 ## Flujo de trabajo
 
 ```bash
 git fetch origin
-git switch main
-git pull --ff-only origin main
-git switch -c feature/tema-concreto
+git switch area/control-academico
+git pull --ff-only origin area/control-academico
+git switch -c fix/control-academico/descripcion-del-error
 # hacer el cambio y sus pruebas
-git push -u origin feature/tema-concreto
+git push -u origin fix/control-academico/descripcion-del-error
 ```
 
-Abre una solicitud de cambio hacia `main` con el alcance, la forma de probarlo y cualquier migración o configuración necesaria. Mantén cada solicitud enfocada en una tarea. Antes de integrarla, revisa el diff, espera la verificación automática y obtiene al menos una revisión de otra persona cuando haya colaboradores disponibles. Se recomienda integrar con *squash merge* y borrar la rama de trabajo al cerrar la solicitud.
+Abre la solicitud de la rama corta hacia su `area/*`, con el alcance, la forma de probarlo y cualquier migración o configuración necesaria. Mantén cada solicitud enfocada en una tarea. Antes de integrarla, revisa el diff y espera la verificación automática. Usa *squash merge* para la rama corta y elimínala al cerrar la solicitud.
+
+Cuando el conjunto del área esté listo, actualiza esa rama con `main`, ejecuta las pruebas y abre una solicitud `area/*` → `main`. Integra esa solicitud con **merge commit**, para conservar la relación entre ambas ramas. Después, avanza el área a la nueva punta de `main` con `git merge --ff-only main`. Si hay colaboradores, solicita una revisión antes de integrar. Los cambios transversales y urgentes pueden ir directamente de su rama corta a `main`.
 
 ## Verificación local
 
@@ -40,4 +58,4 @@ Las pruebas usan SQLite en memoria y un límite de 512 MB según `phpunit.xml`, 
 
 ## Configuración recomendada en GitHub
 
-Protege `main` con una regla que exija solicitud de cambio y la verificación `tests` de `.github/workflows/ci.yml`. Bloquea los pushes forzados y la eliminación de `main`. Si el equipo tiene varias personas, exige una aprobación antes de integrar. Las reglas de protección se configuran en GitHub por quien administre el repositorio.
+Protege `main` y `area/*` con reglas que exijan solicitud de cambio y la verificación `tests` de `.github/workflows/ci.yml`. Bloquea los pushes forzados y la eliminación de esas ramas. Si el equipo tiene varias personas, exige una aprobación antes de integrar. Las reglas de protección se configuran en GitHub por quien administre el repositorio.
