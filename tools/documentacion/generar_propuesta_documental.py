@@ -11,8 +11,9 @@ from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 
 
-OUT = Path("documentacion") / "Administracion de proyectos - propuesta documental sin notas.docx"
-ASSETS = Path("tools") / "doc_assets"
+ROOT = Path(__file__).resolve().parents[2]
+OUT = ROOT / "output" / "documentacion" / "Administracion de proyectos - propuesta documental sin notas.docx"
+ASSETS = Path(__file__).resolve().parent / "assets"
 BANNER = ASSETS / "banner_utvm.jpg"
 LOGO = ASSETS / "logo_utvm_recorte.png"
 USE_CASE_IMG = ASSETS / "modelo_casos_uso.png"
@@ -588,6 +589,7 @@ def build_doc():
     ], widths=[1.7, 4.8])
 
     add_p(doc, "Fuente visual consultada: sitio oficial de la Universidad Tecnologica del Valle del Mezquital, https://www.utvm.edu.mx/.", size=9, color=MUTED)
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     doc.save(OUT)
 
 

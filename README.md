@@ -2,6 +2,12 @@
 
 Aplicación Laravel para administrar periodos, carreras, grupos, alumnos, docentes, guías, equipos, entregas, firmas y documentos finales de la UTVM.
 
+## Organización del repositorio
+
+El código sigue la estructura de Laravel: `app/` contiene la lógica, `routes/` las rutas, `resources/` las vistas y estilos, `database/` las migraciones y datos de prueba, `tests/` las pruebas, y `public/` los archivos públicos. `docker/` contiene la configuración del contenedor y `tools/` los generadores auxiliares. Consulta el [índice de documentación](documentacion/README.md) para el resto de materiales.
+
+El trabajo entra a `main` mediante solicitudes de cambio desde ramas cortas. La [guía de contribución](CONTRIBUTING.md) define nombres de ramas, revisión y verificaciones.
+
 ## Funciones
 
 - Acceso por matrícula y contraseña, permisos y paneles por rol.
@@ -177,9 +183,9 @@ npm run build
 docker compose --profile test run --rm test
 ```
 
-- [Cambios realizados en esta etapa](documentacion/CAMBIOS-2026-09.md)
-- [Periodos, guías, cierres, prórrogas y PDF](documentacion/CICLO-ACADEMICO.md)
-- [Recorrido por los datos de práctica](documentacion/DATOS-PRACTICA.md)
+- [Cambios realizados en esta etapa](documentacion/historial/CAMBIOS-2026-09.md)
+- [Periodos, guías, cierres, prórrogas y PDF](documentacion/sistema/CICLO-ACADEMICO.md)
+- [Recorrido por los datos de práctica](documentacion/sistema/DATOS-PRACTICA.md)
 
 Tecnologías: Laravel 13, PHP 8.4, MariaDB/MySQL, Tailwind 4, Vite 8, Maatwebsite Excel/PhpSpreadsheet, Dompdf, PHPWord y Pest 4.
 
