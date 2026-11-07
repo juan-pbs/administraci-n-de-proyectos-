@@ -20,6 +20,10 @@
 
 El área se elige por el comportamiento que cambia, aunque el trabajo toque archivos compartidos. Los cambios que cruzan varias áreas, como infraestructura o migraciones generales, salen de `main` y vuelven directamente a `main`. Las ramas de área se conservan después de integrar sus cambios; se actualizan desde `main` antes de iniciar otro bloque de trabajo.
 
+### Ramas históricas
+
+`historial/*` marca versiones anteriores para consulta y comparación. No se usa como base de nuevas correcciones ni se integra otra vez en `main`, porque esos commits ya forman parte de su historia. Consulta el [catálogo de versiones anteriores a la reorganización](documentacion/historial/RAMAS-2026-11.md). Para corregir un error actual, crea `correccion/<seccion>/<problema>` desde la rama `seccion/*` correspondiente.
+
 Nombres de ramas, en minúsculas y con palabras separadas por guiones:
 
 | Prefijo | Uso | Ejemplo |
