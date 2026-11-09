@@ -31,7 +31,7 @@ function escenarioCiclo(): array
 test('altas siempre empiezan en borrador y no permiten sobrescribir un periodo existente', function () {
     $d = escenarioCiclo();
     $this->actingAs($d['coordinacion']);
-    $datos = ['nombre' => 'Nuevo ciclo', 'fecha_inicio' => '2026-05-01', 'fecha_fin' => '2026-08-31'];
+    $datos = ['nombre' => 'Nuevo ciclo', 'fecha_inicio' => now()->startOfMonth()->toDateString(), 'fecha_fin' => now()->addMonths(3)->endOfMonth()->toDateString()];
     foreach (['activo', 'cerrado'] as $estado) {
         $this->post(route('periodos.guardar'), [...$datos, 'estado' => $estado])->assertSessionHasErrors('estado');
     }

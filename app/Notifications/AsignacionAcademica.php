@@ -33,7 +33,7 @@ class AsignacionAcademica extends Notification
                 'nombre' => $notifiable->nombre,
                 'proyecto' => $this->proyecto->titulo,
                 'actividad' => $this->apartado->titulo,
-                'fecha_limite' => $fecha ? $fecha->format('d/m/Y H:i').' ('.config('app.timezone').')' : 'Sin fecha definida',
+                'fecha_limite' => $fecha ? $fecha->format('d/m/Y H:i') : 'Sin fecha definida',
             ]);
         }
 
@@ -45,7 +45,7 @@ class AsignacionAcademica extends Notification
                 'proyecto' => $this->proyecto->titulo,
                 'actividad' => $this->apartado->titulo,
                 'descripcion' => $this->apartado->descripcion ?: 'Consulta los requisitos en el sistema.',
-                'fechaLimite' => $fecha ? $fecha->format('d/m/Y H:i').' ('.config('app.timezone').')' : 'Sin fecha definida',
+                'fechaLimite' => $fecha ? $fecha->format('d/m/Y H:i') : 'Sin fecha definida',
                 'url' => route($this->apartado->requiere_codigo ? 'estudiante.codigo' : 'estudiante.entregas', ['proyecto_contexto' => $this->proyecto->id]),
                 'textoRecordatorio' => $textoRecordatorio,
             ]);

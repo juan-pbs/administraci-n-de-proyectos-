@@ -151,7 +151,7 @@ class ControladorAyuda extends Controller
                     descripcion: 'Esta vista organiza carreras y grupos para que después puedan relacionarse alumnos, docentes, equipos y proyectos.',
                     pasos: [
                         'Crea primero la carrera con su nombre y clave.',
-                        'Agrega grupos indicando carrera, periodo y grado. El grupo debe ser una sola letra de la A a la L.',
+                        'Agrega grupos indicando carrera, periodo y cuatrimestre. El grupo debe ser una sola letra de la A a la L.',
                         'Usa los filtros para revisar que la estructura quedó guardada en el periodo correcto.',
                     ],
                     imagen: 'assets/ayuda/coordinacion/04-carreras-grupos.png',
@@ -166,7 +166,7 @@ class ControladorAyuda extends Controller
                     pasos: [
                         'Usa las pestañas para cambiar entre lista de alumnos y registro de personal académico.',
                         'Descarga la plantilla de alumnos en formato Excel, llena una fila por alumno y selecciónala al cargar la lista del periodo.',
-                        'Revisa la vista previa y valida matrícula, nombre y correo. Selecciona carrera, grado y grupo para cada archivo antes de confirmar la carga.',
+                        'Revisa la vista previa y valida matrícula, nombre y correo. Selecciona carrera, cuatrimestre y grupo para cada archivo antes de confirmar la carga.',
                     ],
                     imagen: 'assets/ayuda/coordinacion/05-usuarios.png',
                     ruta: $rutas['usuarios'] ?? null,
@@ -178,7 +178,7 @@ class ControladorAyuda extends Controller
                     titulo: 'Asignaturas',
                     descripcion: 'Concentra el catálogo de materias y permite relacionarlas con las personas que las atenderán en el periodo.',
                     pasos: [
-                        'Registra asignaturas con carrera, clave, grado y nombre.',
+                        'Registra asignaturas con carrera, clave, cuatrimestre y nombre.',
                         'Vincula responsables a las asignaturas que participarán en la guía integradora.',
                         'Filtra por carrera y cuatrimestre para validar la carga académica.',
                     ],
@@ -912,7 +912,7 @@ class ControladorAyuda extends Controller
             ],
             'assets/ayuda/coordinacion/04-carreras-grupos.png' => [
                 $this->detalle('Nueva carrera', 'Captura nombre y clave de la carrera antes de crear grupos.'),
-                $this->detalle('Nuevo grupo', 'Selecciona carrera, periodo y grado. El grupo debe ser una sola letra de la A a la L.'),
+                $this->detalle('Nuevo grupo', 'Selecciona carrera, periodo y cuatrimestre. El grupo debe ser una sola letra de la A a la L.'),
                 $this->detalle('Agregar docente', 'Relaciona participantes académicos con una carrera para que aparezcan en asignaciones posteriores.'),
                 $this->detalle('Filtros', 'Permiten revisar solo una carrera, un periodo o un grupo específico.'),
             ],
@@ -920,7 +920,7 @@ class ControladorAyuda extends Controller
                 $this->detalle('Pestañas', 'Cambia entre consulta de alumnos y registro de personal académico.'),
                 $this->detalle('Matrícula', 'Debe ser única; si ya existe, el sistema no permitirá duplicarla.'),
                 $this->detalle('Correo', 'Sirve para avisos y recuperación de acceso, por eso debe estar bien escrito.'),
-                $this->detalle('Descargar plantilla de alumnos', 'Descarga el archivo de Excel, llena cédula o matrícula, nómina o nombre y correo en una fila por alumno. Después selecciona periodo, carrera, grado y grupo para cada archivo y revisa la vista previa antes de confirmar.'),
+                $this->detalle('Descargar plantilla de alumnos', 'Descarga el archivo de Excel, llena cédula o matrícula, nómina o nombre y correo en una fila por alumno. Después selecciona periodo, carrera, cuatrimestre y grupo para cada archivo y revisa la vista previa antes de confirmar.'),
             ],
             'assets/ayuda/coordinacion/05-usuarios-docentes-formulario.png' => [
                 $this->detalle('Registro de docentes', 'Usa esta pestaña para capturar una o varias cuentas académicas en una sola operación.'),
@@ -928,7 +928,7 @@ class ControladorAyuda extends Controller
                 $this->detalle('Guardar docentes', 'Guarda todas las filas completas; revisa matrícula, correo, tipo de cuenta y carrera antes de enviar.'),
             ],
             'assets/ayuda/coordinacion/06-asignaturas.png' => [
-                $this->detalle('Registrar asignatura', 'Captura nombre, clave, carrera y grado para agregarla al catálogo.'),
+                $this->detalle('Registrar asignatura', 'Captura nombre, clave, carrera y cuatrimestre para agregarla al catálogo.'),
                 $this->detalle('Asignar docente', 'Relaciona una persona con la asignatura y el periodo visible.'),
                 $this->detalle('Cambiar ciclo', 'Actualiza la carga mostrada cuando necesitas consultar otro periodo.'),
                 $this->detalle('Tabla de carga', 'Muestra materias y responsables ya registrados para confirmar que no falte información.'),

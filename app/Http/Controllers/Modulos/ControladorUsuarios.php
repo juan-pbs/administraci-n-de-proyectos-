@@ -152,6 +152,7 @@ class ControladorUsuarios extends Controller
             'listas.*.grupo.regex' => 'El grupo debe ser una sola letra de A a L.',
             'listas.*.grupo.size' => 'El grupo debe contener exactamente una letra.',
         ]);
+        $this->validarPeriodoActivoCarga(Periodo::query()->findOrFail($datos['periodo_id']));
 
         $vistaPrevia = [];
         foreach ($datos['listas'] as $indice => $configuracion) {
@@ -210,10 +211,12 @@ class ControladorUsuarios extends Controller
     {
         abort_unless($request->user()?->hasRole('coordinacion'), 403);
         $datos = $request->validate(['preview' => ['required', 'uuid']]);
-        $carga = $request->session()->pull("preview_alumnos.{$datos['preview']}");
+        $carga = $request->session()->get("preview_alumnos.{$datos['preview']}");
         abort_unless($carga, 419);
 
         $periodo = Periodo::query()->findOrFail($carga['periodo_id']);
+        $this->validarPeriodoActivoCarga($periodo);
+        $request->session()->forget("preview_alumnos.{$datos['preview']}");
         $rolEstudiante = Role::query()->where('nombre', 'estudiante')->firstOrFail();
         $resumen = [];
         $correosPendientes = [];
@@ -310,6 +313,7 @@ class ControladorUsuarios extends Controller
         ]);
 
         $periodo = Periodo::query()->findOrFail($datos['periodo_id']);
+        $this->validarPeriodoActivoCarga($periodo);
         $rolEstudiante = Role::query()->where('nombre', 'estudiante')->firstOrFail();
         $filas = $this->leerFilasCargaAlumnos($request->file('archivo')->getRealPath());
         [$encabezados, $filaInicio] = $this->detectarEncabezados($filas);
@@ -319,7 +323,7 @@ class ControladorUsuarios extends Controller
 
         if ($faltantes !== []) {
             throw ValidationException::withMessages([
-                'archivo' => 'La lista no contiene las columnas obligatorias: '.implode(', ', $faltantes).'.',
+                'archivo' => 'La lista no contiene las columnas obligatorias: '.implode(', ', array_map(fn ($columna) => $columna === 'grado' ? 'cuatrimestre' : $columna, $faltantes)).'.',
             ]);
         }
 
@@ -347,7 +351,8 @@ class ControladorUsuarios extends Controller
 
                 foreach ($obligatorias as $columna) {
                     if (($datosFila[$columna] ?? '') === '') {
-                        $errores[] = "Fila {$numeroFila}: falta {$columna}.";
+                        $etiqueta = $columna === 'grado' ? 'cuatrimestre' : $columna;
+                        $errores[] = "Fila {$numeroFila}: falta {$etiqueta}.";
                         $filaConErrores = true;
                     }
                 }
@@ -375,7 +380,7 @@ class ControladorUsuarios extends Controller
                 $grupoLetra = mb_strtoupper((string) $datosFila['grupo']);
 
                 if ($grado < 1 || $grado > 12) {
-                    $errores[] = "Fila {$numeroFila}: el grado debe estar entre 1 y 12.";
+                    $errores[] = "Fila {$numeroFila}: el cuatrimestre debe estar entre 1 y 12.";
 
                     continue;
                 }
@@ -723,7 +728,17 @@ class ControladorUsuarios extends Controller
             'nombre', 'nombre_completo', 'alumno', 'nomina' => 'nombre_completo',
             'correo', 'correo_electronico', 'email' => 'correo_electronico',
             'carrera', 'clave_carrera' => 'clave_carrera',
+            'cuatrimestre' => 'grado',
             default => $valor,
         };
+    }
+
+    private function validarPeriodoActivoCarga(Periodo $periodo): void
+    {
+        if ($periodo->estado !== 'activo') {
+            throw ValidationException::withMessages([
+                'periodo_id' => 'La carga de alumnos solo está disponible para el periodo activo.',
+            ]);
+        }
     }
 }

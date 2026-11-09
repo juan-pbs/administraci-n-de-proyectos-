@@ -93,14 +93,14 @@ test('modulos base guardan informacion en base de datos', function () {
 
     $this->actingAs($direccion)
         ->post(route('periodos.guardar'), [
-            'nombre' => 'Septiembre - Noviembre 2026',
-            'fecha_inicio' => '2026-09-10',
-            'fecha_fin' => '2026-11-20',
+            'nombre' => 'Periodo de prueba',
+            'fecha_inicio' => now()->startOfMonth()->toDateString(),
+            'fecha_fin' => now()->addMonths(2)->endOfMonth()->toDateString(),
             'estado' => 'borrador',
         ])
         ->assertRedirect(route('modulos.show', 'periodos'));
 
-    $periodo = Periodo::query()->where('nombre', 'Septiembre - Noviembre 2026')->firstOrFail();
+    $periodo = Periodo::query()->where('nombre', 'Periodo de prueba')->firstOrFail();
     $this->patch(route('periodos.activar', $periodo))->assertSessionHasNoErrors();
     $carrera = Carrera::query()->create(['nombre' => 'Tecnologías de la Información', 'clave' => 'TI', 'estado' => 'activa']);
     $grupo = GrupoAcademico::query()->create([

@@ -177,6 +177,16 @@ function iniciarPreviewApartado() {
         const region = form.parentElement;
         const frame = region.querySelector('[data-preview-frame]');
         const status = region.querySelector('[data-preview-estado]');
+        const selectorGuia = form.querySelector('select[name="guia_integradora_id"]');
+        const fechaLimite = form.querySelector('input[name="fecha_limite"]');
+        const actualizarRangoFecha = () => {
+            const opcion = selectorGuia.selectedOptions[0];
+            fechaLimite.min = opcion?.dataset.fechaInicio ? `${opcion.dataset.fechaInicio}T00:00` : '';
+            fechaLimite.max = opcion?.dataset.fechaFin ? `${opcion.dataset.fechaFin}T23:59` : '';
+            if (fechaLimite.value && (fechaLimite.value < fechaLimite.min || fechaLimite.value > fechaLimite.max)) fechaLimite.value = '';
+        };
+        selectorGuia.addEventListener('change', actualizarRangoFecha);
+        actualizarRangoFecha();
         let timer, controller, objectUrl;
         const update = async () => {
             if (!form.reportValidity()) return;
@@ -220,8 +230,9 @@ function iniciarRestriccionesCampos() {
     const fechaInicio = document.querySelector('input[name="fecha_inicio"][type="date"]');
     const fechaFin = document.querySelector('input[name="fecha_fin"][type="date"]');
     if (fechaInicio && fechaFin) {
+        const fechaMinimaBase = fechaFin.min;
         const actualizarFechaMinima = () => {
-            fechaFin.min = fechaInicio.value;
+            fechaFin.min = fechaInicio.value || fechaMinimaBase;
             if (fechaFin.value && fechaInicio.value && fechaFin.value < fechaInicio.value) fechaFin.value = '';
         };
         fechaInicio.addEventListener('change', actualizarFechaMinima);

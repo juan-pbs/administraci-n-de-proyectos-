@@ -40,7 +40,7 @@
 
             <div class="divide-y divide-slate-200">
                 @forelse($grupos as $grupo)
-                    <form method="POST" action="{{ route('jerarquia.lideres.guardar') }}" class="grid gap-4 p-5 lg:grid-cols-[150px_minmax(220px,1fr)_minmax(220px,1fr)_auto]" data-async-form data-async-targets="mensajes panel-jerarquia">
+                    <form id="grupo-{{ $grupo->id }}" method="POST" action="{{ route('jerarquia.lideres.guardar') }}" class="grid scroll-mt-6 gap-4 p-5 lg:grid-cols-[150px_minmax(220px,1fr)_minmax(220px,1fr)_auto]" data-async-form data-async-targets="mensajes panel-jerarquia">
                         @csrf
                         <input type="hidden" name="grupo_academico_id" value="{{ $grupo->id }}">
                         <div>

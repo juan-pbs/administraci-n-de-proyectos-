@@ -37,7 +37,7 @@
 <tr><td colspan="3" class="section">{{ $apartado->orden }}. {{ $apartado->titulo }}{{ $segmento > 0 ? ' (continuación)' : '' }}</td></tr>
 <tr>
     <td style="width:42%">@foreach($contenidos[$segmento] ?? [] as $linea)<div>{{ $linea }}</div>@endforeach
-        <p class="small">Ponderación: {{ $apartado->ponderacion }}%<br>Fecha límite: {{ ($proyecto ? $filas[$apartado->id]['fecha_limite'] : $apartado->fecha_limite)?->format('d/m/Y H:i') ?? 'Sin fecha' }} (hora de Ciudad de México)
+        <p class="small">Ponderación: {{ $apartado->ponderacion }}%<br>Fecha límite: {{ ($proyecto ? $filas[$apartado->id]['fecha_limite'] : $apartado->fecha_limite)?->format('d/m/Y H:i') ?? 'Sin fecha' }}
         @if($proyecto)<br>Entrega: {{ $filas[$apartado->id]['entrega'] ? 'Versión '.$filas[$apartado->id]['entrega']->version : 'Pendiente' }}@endif</p>
     </td>
     <td style="width:26%">@forelse($apartado->asignaturasContribuyentes as $materia)<div>• {{ $materia->nombre }}</div>@empty<div>{{ $guia->asignatura?->nombre ?? 'Por definir' }}</div>@endforelse</td>

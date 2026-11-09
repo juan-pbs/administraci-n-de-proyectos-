@@ -37,8 +37,10 @@ class ControladorEquipos extends Controller
 
         $datos = $request->validate([
             'grupo_academico_id' => ['required', 'exists:grupos_academicos,id'],
-            'nombre' => ['required', 'string', 'max:80'],
+            'nombre' => ['required', 'string', 'max:80', 'regex:/\A[\pL\pM\pN .,:;()\/+&-]+\z/u'],
             'contexto_proyecto' => ['nullable', 'string', 'max:3000'],
+        ], [
+            'nombre.regex' => 'El nombre del equipo solo admite letras, números y signos comunes; no admite emojis.',
         ]);
 
         $grupo = GrupoAcademico::query()->findOrFail($datos['grupo_academico_id']);

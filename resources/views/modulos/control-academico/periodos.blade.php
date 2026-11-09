@@ -20,7 +20,7 @@
         <summary class="flex cursor-pointer list-none items-center justify-between px-5 py-4">
             <div>
                 <h3 class="font-bold text-slate-900">Registrar nuevo periodo</h3>
-                <p class="mt-1 text-sm text-slate-500">Define las fechas. El nuevo ciclo se guarda como borrador.</p>
+                <p class="mt-1 text-sm text-slate-500">Define las fechas a partir del mes actual. El nuevo ciclo se guarda como borrador.</p>
             </div>
             <span class="rounded-md bg-[#15529A] px-3 py-2 text-sm font-bold text-white group-open:bg-[#0D376D]">Nuevo periodo</span>
         </summary>
@@ -30,10 +30,10 @@
                 <input name="nombre" maxlength="255" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm" placeholder="Septiembre - Diciembre 2026">
             </label>
             <label class="text-sm font-semibold text-slate-700">Inicio
-                <input name="fecha_inicio" type="date" min="2000-01-01" max="2100-12-31" value="{{ old('fecha_inicio') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">
+                <input name="fecha_inicio" type="date" min="{{ now()->startOfMonth()->toDateString() }}" max="2100-12-31" value="{{ old('fecha_inicio') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">
             </label>
             <label class="text-sm font-semibold text-slate-700">Cierre
-                <input name="fecha_fin" type="date" min="2000-01-01" max="2100-12-31" value="{{ old('fecha_fin') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">
+                <input name="fecha_fin" type="date" min="{{ now()->startOfMonth()->toDateString() }}" max="2100-12-31" value="{{ old('fecha_fin') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">
             </label>
             <p class="text-sm text-slate-500">Estado inicial: <strong>Borrador</strong>. Actívalo desde el historial cuando hayas preparado su estructura.</p>
             <div class="flex items-end md:col-span-3">

@@ -100,6 +100,13 @@ class ControladorGuias extends Controller
             'requiere_codigo' => ['nullable', 'boolean'],
         ]);
 
+        $guia = GuiaIntegradora::query()->findOrFail($datos['guia_integradora_id']);
+        if (! empty($datos['fecha_limite']) && ! $guia->admiteFechaLimite($datos['fecha_limite'])) {
+            throw ValidationException::withMessages([
+                'fecha_limite' => 'La fecha límite debe estar dentro de los periodos de la guía.',
+            ]);
+        }
+
         ApartadoGuia::query()->updateOrCreate(
             ['guia_integradora_id' => $datos['guia_integradora_id'], 'orden' => $datos['orden']],
             [
@@ -245,8 +252,8 @@ class ControladorGuias extends Controller
 
         $guias = GuiaIntegradora::query()
             ->with([
-                'periodo:id,nombre,estado',
-                'periodoFin:id,nombre,estado',
+                'periodo:id,nombre,estado,fecha_inicio,fecha_fin',
+                'periodoFin:id,nombre,estado,fecha_inicio,fecha_fin',
                 'asignatura:id,carrera_id,nombre,clave',
                 'apartados.asignaturasContribuyentes:id,nombre,clave',
                 'apartados.firmas.asignatura:id,nombre,clave',

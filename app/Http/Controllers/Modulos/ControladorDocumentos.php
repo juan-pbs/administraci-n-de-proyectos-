@@ -35,7 +35,13 @@ class ControladorDocumentos extends Controller
             'ponderacion' => ['required', 'numeric', 'decimal:0,2', 'between:0,100'], 'fecha_limite' => ['nullable', 'date'],
             'requiere_codigo' => ['nullable', 'boolean'], 'requiere_documento' => ['nullable', 'boolean'],
         ]);
-        $guia = $documentos->cargarGuia(GuiaIntegradora::findOrFail($datos['guia_integradora_id']));
+        $guia = GuiaIntegradora::findOrFail($datos['guia_integradora_id']);
+        if (! empty($datos['fecha_limite']) && ! $guia->admiteFechaLimite($datos['fecha_limite'])) {
+            throw ValidationException::withMessages([
+                'fecha_limite' => 'La fecha límite debe estar dentro de los periodos de la guía.',
+            ]);
+        }
+        $guia = $documentos->cargarGuia($guia);
         $apartado = $guia->apartados->firstWhere('orden', (int) $datos['orden']);
         $apartado = $apartado ? clone $apartado : new ApartadoGuia;
         $apartado->fill([...$datos, 'requiere_codigo' => $request->boolean('requiere_codigo'), 'requiere_documento' => $request->boolean('requiere_documento')]);

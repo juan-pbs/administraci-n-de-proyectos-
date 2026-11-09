@@ -28,18 +28,19 @@
             <div class="border-b border-slate-200 p-5">
                 <p class="text-xs font-bold uppercase tracking-[0.16em] text-[#21A366]">Carga principal</p>
                 <h3 class="mt-1 text-lg font-bold text-[#0D376D]">Listas de alumnos por periodo</h3>
-                <p class="mt-2 text-sm text-slate-600">Agrega una o varias listas. Para cada archivo indica carrera, grado y grupo; el Excel solo necesita cédula/matrícula, nómina/nombre y correo.</p>
+                <p class="mt-2 text-sm text-slate-600">Agrega una o varias listas. Para cada archivo indica carrera, cuatrimestre y grupo; el Excel solo necesita cédula/matrícula, nómina/nombre y correo.</p>
                 <a href="{{ asset('plantillas/plantilla_carga_alumnos.xlsx') }}" download="plantilla_carga_alumnos.xlsx" class="mt-4 inline-flex items-center rounded-md border border-[#15529A] bg-[#EAF2FB] px-4 py-2.5 text-sm font-bold text-[#0D376D] hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-[#15529A]">
                     Descargar plantilla de alumnos (.xlsx)
                 </a>
-                <p class="mt-2 text-xs text-slate-500">La plantilla está vacía. Llena una fila por alumno y selecciona carrera, grado y grupo al cargar cada archivo.</p>
+                <p class="mt-2 text-xs text-slate-500">La plantilla está vacía. Llena una fila por alumno y selecciona carrera, cuatrimestre y grupo al cargar cada archivo.</p>
             </div>
+            @if($periodos->contains('estado', 'activo'))
             <form method="POST" action="{{ route('usuarios.alumnos.previsualizar') }}" enctype="multipart/form-data" class="p-5">
                 @csrf
                 <div class="max-w-sm">
                     <label class="block text-sm font-semibold text-slate-700">Periodo de la carga</label>
                     <select name="periodo_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">
-                        @foreach ($periodos as $periodo)
+                        @foreach ($periodos->where('estado', 'activo') as $periodo)
                             <option value="{{ $periodo->id }}" @selected((string) $filtrosAlumnos['periodo_id'] === (string) $periodo->id)>
                                 {{ $periodo->nombre }}{{ $periodo->estado === 'activo' ? ' · Activo' : '' }}
                             </option>
@@ -53,6 +54,9 @@
                     <button class="rounded-md bg-[#15529A] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#0D376D]">Generar vista previa</button>
                 </div>
             </form>
+            @else
+                <p class="p-5 text-sm text-amber-800">Activa un periodo académico para cargar listas de alumnos.</p>
+            @endif
         </article>
 
         @if ($vistaPrevia)
@@ -121,7 +125,7 @@
                     <button class="rounded-md bg-[#15529A] px-4 py-2 text-sm font-bold text-white">Cambiar carrera / filtrar</button>
                 </form>
             </div>
-            <nav class="flex flex-wrap gap-2 border-b border-slate-200 bg-slate-50 px-5 py-3" aria-label="Listas por grado y grupo">
+            <nav class="flex flex-wrap gap-2 border-b border-slate-200 bg-slate-50 px-5 py-3" aria-label="Listas por cuatrimestre y grupo">
                 @forelse ($gruposPaginacion as $grupoLista)
                     <a href="{{ route('modulos.show', ['modulo' => 'usuarios', 'seccion' => 'alumnos', 'periodo_alumnos' => $filtrosAlumnos['periodo_id'], 'carrera_alumnos' => $filtrosAlumnos['carrera_id'], 'grupo_alumnos' => $grupoLista->id, 'busqueda_alumnos' => $filtrosAlumnos['busqueda']]) }}"
                        data-async-link data-async-targets="students-list"
@@ -216,7 +220,7 @@
         <div class="student-list-row grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[1.5fr_1fr_110px_110px_auto]">
             <div><label class="text-xs font-bold uppercase text-slate-500">Archivo Excel</label><input type="file" accept=".xlsx,.xls,.csv,.txt" data-max-mb="10" required class="mt-2 block w-full text-sm"></div>
             <div><label class="text-xs font-bold uppercase text-slate-500">Carrera</label><select required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}">{{ $carrera->clave }}</option>@endforeach</select></div>
-            <div><label class="text-xs font-bold uppercase text-slate-500">Grado</label><input type="number" min="1" max="12" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
+            <div><label class="text-xs font-bold uppercase text-slate-500">Cuatrimestre</label><select required class="mt-2 block w-full rounded-md border-slate-300 text-sm"><option value="">Seleccionar</option>@foreach(range(1, 12) as $cuatrimestre)<option value="{{ $cuatrimestre }}">{{ $cuatrimestre }}° cuatrimestre</option>@endforeach</select></div>
             <div><label class="text-xs font-bold uppercase text-slate-500">Grupo (A–L)</label><select required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach(range('A', 'L') as $letra)<option value="{{ $letra }}">{{ $letra }}</option>@endforeach</select></div>
             <button type="button" class="remove-row self-end rounded-md px-3 py-2 text-sm font-bold text-red-600">Quitar</button>
         </div>

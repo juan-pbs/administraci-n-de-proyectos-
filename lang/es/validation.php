@@ -159,6 +159,8 @@ return [
 
     'attributes' => [
         'email'     => 'correo',
+        'grado'     => 'cuatrimestre',
+        'listas.*.grado' => 'cuatrimestre',
         'matricula' => 'matrícula',
         'password'  => 'contraseña',
     ],

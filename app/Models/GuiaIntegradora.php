@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 #[Fillable(['periodo_id', 'periodo_fin_id', 'asignatura_id', 'creado_por', 'nombre', 'cuatrimestre', 'competencias_evaluar', 'objetivo_aprendizaje', 'version', 'estado'])]
 class GuiaIntegradora extends Model
@@ -49,5 +50,15 @@ class GuiaIntegradora extends Model
     public function apartados(): HasMany
     {
         return $this->hasMany(ApartadoGuia::class, 'guia_integradora_id');
+    }
+
+    public function admiteFechaLimite(string $fecha): bool
+    {
+        $this->loadMissing(['periodo', 'periodoFin']);
+        $inicio = Carbon::parse($this->periodo->fecha_inicio)->startOfDay();
+        $fin = Carbon::parse(($this->periodoFin ?? $this->periodo)->fecha_fin)->endOfDay();
+        $limite = Carbon::parse($fecha);
+
+        return $limite->greaterThanOrEqualTo($inicio) && $limite->lessThanOrEqualTo($fin);
     }
 }

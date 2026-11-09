@@ -43,7 +43,7 @@
                 </select>
             </label>
             <label class="text-sm font-semibold text-slate-700">Nombre
-                <input name="nombre" maxlength="80" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm" placeholder="Equipo 1"><span class="mt-1 block text-xs font-normal text-slate-500">Máximo 80 caracteres.</span>
+                <input name="nombre" maxlength="80" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm" placeholder="Equipo 1"><span class="mt-1 block text-xs font-normal text-slate-500">Máximo 80 caracteres. Usa letras, números y signos comunes; sin emojis.</span>
             </label>
             <label class="text-sm font-semibold text-slate-700">Contexto inicial
                 <textarea name="contexto_proyecto" rows="3" maxlength="3000" class="mt-2 block w-full rounded-md border-slate-300 text-sm" placeholder="Problema o necesidad que atenderá">{{ old('contexto_proyecto') }}</textarea>

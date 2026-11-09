@@ -36,7 +36,7 @@
                 <div><label class="text-sm font-semibold text-slate-700">Periodo</label><select name="periodo_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($periodos as $periodo)<option value="{{ $periodo->id }}" @selected((string) old('periodo_id', $filtrosGrupos['periodo_id']) === (string) $periodo->id)>{{ $periodo->nombre }}{{ $periodo->estado === 'activo' ? ' · Activo' : '' }}</option>@endforeach</select></div>
                 <div><label class="text-sm font-semibold text-slate-700">Carrera</label><select name="carrera_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}" @selected((string) old('carrera_id', $filtrosGrupos['carrera_id']) === (string) $carrera->id)>{{ $carrera->clave }} - {{ $carrera->nombre }}</option>@endforeach</select></div>
                 <div class="grid grid-cols-2 gap-3">
-                    <div><label class="text-sm font-semibold text-slate-700">Grado</label><input name="grado" type="number" min="1" max="12" value="{{ old('grado') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
+                    <div><label class="text-sm font-semibold text-slate-700">Cuatrimestre</label><input name="grado" type="number" min="1" max="12" value="{{ old('grado') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
                     <div><label class="text-sm font-semibold text-slate-700">Grupo (A–L)</label><select name="grupo" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach(range('A', 'L') as $letra)<option value="{{ $letra }}" @selected(mb_strtoupper(old('grupo', 'A')) === $letra)>{{ $letra }}</option>@endforeach</select></div>
                 </div>
                 <button class="rounded-md bg-[#15529A] px-4 py-2.5 text-sm font-bold text-white">Guardar grupo</button>
@@ -44,12 +44,12 @@
         </article>
 
         <article class="rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-200 p-5"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Plantilla docente</p><h3 class="mt-1 font-bold text-slate-900">Docente por carrera</h3></div>
+            <div class="border-b border-slate-200 p-5"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Plantilla docente</p><h3 class="mt-1 font-bold text-slate-900">Docente por carrera</h3><p class="mt-1 text-sm text-slate-500">Este vínculo no asigna al docente líder de un grupo. Haz esa asignación en Jerarquía.</p></div>
             <form method="POST" action="{{ route('docentes-carrera.guardar') }}" class="space-y-4 p-5">
                 @csrf
                 <div><label class="text-sm font-semibold text-slate-700">Carrera</label><select name="carrera_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}">{{ $carrera->clave }} - {{ $carrera->nombre }}</option>@endforeach</select></div>
                 <div><label class="text-sm font-semibold text-slate-700">Docente</label><select name="docente_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($docentes as $docente)<option value="{{ $docente->id }}">{{ $docente->matricula }} - {{ $docente->nombre }}</option>@endforeach</select></div>
-                <button class="rounded-md bg-[#15529A] px-4 py-2.5 text-sm font-bold text-white">Asignar docente</button>
+                <button class="rounded-md bg-[#15529A] px-4 py-2.5 text-sm font-bold text-white">Vincular docente a carrera</button>
             </form>
         </article>
     </section>
@@ -60,7 +60,7 @@
             <form method="GET" action="{{ route('modulos.show', 'carreras-grupos') }}" data-async-form data-async-targets="career-groups career-metrics" class="flex flex-wrap items-end gap-2">
                 <div><label class="block text-xs font-bold uppercase text-slate-500">Periodo</label><select name="periodo_grupos" class="mt-1 rounded-md border-slate-300 text-sm">@foreach($periodos as $periodo)<option value="{{ $periodo->id }}" @selected((string) $filtrosGrupos['periodo_id'] === (string) $periodo->id)>{{ $periodo->nombre }}</option>@endforeach</select></div>
                 <div><label class="block text-xs font-bold uppercase text-slate-500">Carrera</label><select name="carrera_grupos" class="mt-1 rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}" @selected((string) $filtrosGrupos['carrera_id'] === (string) $carrera->id)>{{ $carrera->clave }} - {{ $carrera->nombre }}</option>@endforeach</select></div>
-                <div><label class="block text-xs font-bold uppercase text-slate-500">Buscar grupo</label><input name="busqueda_grupos" value="{{ $filtrosGrupos['busqueda'] }}" placeholder="Grado, grupo o periodo" class="mt-1 rounded-md border-slate-300 text-sm"></div>
+                <div><label class="block text-xs font-bold uppercase text-slate-500">Buscar grupo</label><input name="busqueda_grupos" value="{{ $filtrosGrupos['busqueda'] }}" placeholder="Cuatrimestre, grupo o periodo" class="mt-1 rounded-md border-slate-300 text-sm"></div>
                 <button class="rounded-md bg-[#15529A] px-4 py-2 text-sm font-bold text-white">Cambiar vista</button>
             </form>
         </div>
@@ -112,7 +112,10 @@
                         <p class="text-xs font-semibold uppercase text-slate-400 lg:hidden">Estado</p>
                         <span class="mt-1 inline-flex rounded-full bg-[#EAF2FB] px-3 py-1 text-xs font-bold text-[#15529A] lg:mt-0">{{ ucfirst($grupoAcademico->periodo->estado) }}</span>
                     </div>
-                    <div class="lg:text-right">
+                    <div class="flex flex-wrap gap-2 lg:justify-end">
+                        @if($grupoAcademico->periodo->estado !== 'cerrado')
+                            <a href="{{ route('modulos.jerarquia', ['periodo_id' => $grupoAcademico->periodo_id, 'carrera_id' => $grupoAcademico->carrera_id]) }}#grupo-{{ $grupoAcademico->id }}" class="inline-flex rounded-md bg-[#15529A] px-3 py-2 text-sm font-bold text-white transition hover:bg-[#0D376D]">Asignar líder</a>
+                        @endif
                         <a href="{{ route('modulos.show', ['modulo' => 'usuarios', 'seccion' => 'alumnos', 'periodo_alumnos' => $grupoAcademico->periodo_id, 'carrera_alumnos' => $grupoAcademico->carrera_id, 'grupo_alumnos' => $grupoAcademico->id]) }}" class="inline-flex rounded-md border border-[#15529A] px-3 py-2 text-sm font-bold text-[#15529A] transition hover:bg-[#EAF2FB]">Ver alumnos</a>
                     </div>
                 </section>

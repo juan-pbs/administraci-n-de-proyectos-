@@ -94,7 +94,7 @@ class ControladorCarrerasGrupos extends Controller
             $datos['docente_id'] => ['activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
         ]);
 
-        return redirect()->route('modulos.show', 'carreras-grupos')->with('estado', 'Docente asignado a la carrera correctamente.');
+        return redirect()->route('modulos.show', 'carreras-grupos')->with('estado', 'Docente vinculado a la carrera. Para asignarlo como líder de un grupo, abre Jerarquía.');
     }
 
     /**
