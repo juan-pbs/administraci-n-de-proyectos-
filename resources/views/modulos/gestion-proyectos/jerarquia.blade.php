@@ -3,7 +3,7 @@
         <div>
             <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">Organización académica</p>
             <h2 class="mt-2 text-2xl font-bold text-[#0D376D]">Docentes líderes por grupo</h2>
-            <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Coordinación asigna el docente líder y la asignatura integradora. El docente líder será quien forme equipos y asigne sus proyectos.</p>
+            <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Selecciona el docente líder y la asignatura integradora del grupo. Al guardar, la materia queda vinculada al docente para este periodo y podrá formar equipos y asignar proyectos.</p>
         </div>
 
         <form method="GET" action="{{ route('modulos.jerarquia') }}" class="grid gap-3 sm:grid-cols-2" data-async-form data-async-targets="mensajes panel-jerarquia">

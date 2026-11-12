@@ -107,5 +107,8 @@
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') document.getElementById('menu-ayuda')?.removeAttribute('open');
         });
+        window.addEventListener('scroll', () => {
+            document.getElementById('menu-ayuda')?.removeAttribute('open');
+        }, true);
     </script>
 </x-layouts.app>

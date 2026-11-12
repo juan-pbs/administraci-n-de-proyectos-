@@ -218,10 +218,10 @@
     @if($esCoordinacion)
     <template id="student-list-template">
         <div class="student-list-row grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[1.5fr_1fr_110px_110px_auto]">
-            <div><label class="text-xs font-bold uppercase text-slate-500">Archivo Excel</label><input type="file" accept=".xlsx,.xls,.csv,.txt" data-max-mb="10" required class="mt-2 block w-full text-sm"></div>
+            <div><label class="text-xs font-bold uppercase text-slate-500">Archivo Excel</label><input type="file" accept=".xlsx,.xls,.csv,.txt" data-max-mb="10" required class="mt-2 block w-full cursor-pointer rounded-md border border-slate-300 bg-white text-sm text-slate-600 file:mr-3 file:cursor-pointer file:border-0 file:bg-[#15529A] file:px-4 file:py-2.5 file:font-bold file:text-white hover:file:bg-[#0D376D] focus:outline-none focus:ring-2 focus:ring-[#15529A]"></div>
             <div><label class="text-xs font-bold uppercase text-slate-500">Carrera</label><select required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}">{{ $carrera->clave }}</option>@endforeach</select></div>
             <div><label class="text-xs font-bold uppercase text-slate-500">Cuatrimestre</label><select required class="mt-2 block w-full rounded-md border-slate-300 text-sm"><option value="">Seleccionar</option>@foreach(range(1, 12) as $cuatrimestre)<option value="{{ $cuatrimestre }}">{{ $cuatrimestre }}° cuatrimestre</option>@endforeach</select></div>
-            <div><label class="text-xs font-bold uppercase text-slate-500">Grupo (A–L)</label><select required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach(range('A', 'L') as $letra)<option value="{{ $letra }}">{{ $letra }}</option>@endforeach</select></div>
+            <div><label class="text-xs font-bold uppercase text-slate-500">Grupo (A–M)</label><select required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach(range('A', 'M') as $letra)<option value="{{ $letra }}">{{ $letra }}</option>@endforeach</select></div>
             <button type="button" class="remove-row self-end rounded-md px-3 py-2 text-sm font-bold text-red-600">Quitar</button>
         </div>
     </template>
@@ -232,7 +232,7 @@
         <div class="teacher-row grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 lg:grid-cols-6">
             <label class="text-xs font-bold text-slate-600 lg:col-span-2">Nombre (máx. 120)<input required maxlength="120" placeholder="Nombre completo" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
             <label class="text-xs font-bold text-slate-600">Matrícula / clave (máx. 30)<input required maxlength="30" placeholder="Matrícula / clave" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
-            <label class="text-xs font-bold text-slate-600">Correo (máx. 254)<input type="email" maxlength="254" required placeholder="Correo" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
+            <label class="text-xs font-bold text-slate-600">Correo institucional (máx. 254)<input type="email" maxlength="254" required placeholder="{{ 'nombre@'.config('academico.dominio_correo_docente') }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
             <label class="text-xs font-bold text-slate-600">Rol<select required class="mt-1 block w-full rounded-md border-slate-300 text-sm">@foreach($rolesDocentes as $rol)<option value="{{ $rol->nombre }}">{{ $rol->nombre_visible }}</option>@endforeach</select></label>
             <div class="flex min-w-0 items-end gap-2"><label class="min-w-0 flex-1 text-xs font-bold text-slate-600">Carrera<select required class="mt-1 block w-full rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}">{{ $carrera->clave }}</option>@endforeach</select></label><button type="button" class="remove-row rounded-md border border-red-300 px-2 py-2 text-xs font-bold text-red-700" aria-label="Quitar esta fila de docente">Quitar</button></div>
         </div>

@@ -2,7 +2,6 @@
 
 namespace App\Servicios;
 
-use App\Models\Equipo;
 use App\Models\Proyecto;
 use Illuminate\Http\Request;
 
@@ -21,9 +20,16 @@ class ContextoEstudiante
 
             return [$estudiante, $proyecto->equipo, $proyecto];
         }
-        $equipo = Equipo::where('estado', 'activo')->whereHas('integrantes', fn ($q) => $q->where('usuarios.id', $estudiante->id))->latest('id')->first();
+        $proyectosDelGrupo = $this->proyectos($estudiante->id)
+            ->whereHas('equipo', fn ($q) => $q->where('grupo_academico_id', $estudiante->grupo_academico_id));
+        $proyecto = (clone $proyectosDelGrupo)
+            ->whereHas('equipo', fn ($q) => $q
+                ->whereHas('grupoAcademico.periodo', fn ($periodo) => $periodo->where('estado', 'activo')))
+            ->whereHas('guiaIntegradora.periodo', fn ($periodo) => $periodo->where('estado', 'activo'))
+            ->with(['equipo', 'guiaIntegradora'])->latest('id')->first()
+            ?? $proyectosDelGrupo->with(['equipo', 'guiaIntegradora'])->latest('id')->first();
 
-        return [$estudiante, $equipo, $equipo?->proyectos()->with('guiaIntegradora')->latest('id')->first()];
+        return [$estudiante, $proyecto?->equipo, $proyecto];
     }
 
     public function proyectos(int $estudianteId)

@@ -123,8 +123,8 @@ class ControladorAyuda extends Controller
                     descripcion: 'Aquí se indica quién queda como responsable de cada grupo y qué asignatura organiza el proyecto integrador.',
                     pasos: [
                         'Filtra por periodo o carrera cuando necesites trabajar con un bloque específico.',
-                        'Selecciona el responsable del grupo y la asignatura principal en la fila correspondiente.',
-                        'Presiona Guardar asignación en cada fila antes de pasar a equipos o proyectos.',
+                        'Selecciona un docente líder activo de la carrera y la asignatura principal del cuatrimestre en la fila correspondiente.',
+                        'Presiona Guardar asignación. La materia queda vinculada al docente para ese periodo y podrá organizar equipos y proyectos.',
                     ],
                     imagen: 'assets/ayuda/coordinacion/02-jerarquia-proyectos.png',
                     ruta: $rutas['jerarquia-proyectos'] ?? null,
@@ -137,7 +137,7 @@ class ControladorAyuda extends Controller
                     descripcion: 'Los periodos controlan las fechas de trabajo, entregas y configuración académica que usarán las demás pantallas.',
                     pasos: [
                         'Usa Nuevo periodo para abrir el formulario de captura.',
-                        'Captura nombre y fechas; el periodo nuevo se guarda como borrador.',
+                        'Captura nombre y fechas. El inicio no puede ser anterior al mes actual y el periodo nuevo se guarda como borrador.',
                         'Actívalo cuando no exista otro periodo activo. Para cerrarlo, revisa los pendientes y confirma el cierre; el historial queda disponible para consulta.',
                     ],
                     imagen: 'assets/ayuda/actualizadas/coordinacion-periodos.png',
@@ -151,7 +151,8 @@ class ControladorAyuda extends Controller
                     descripcion: 'Esta vista organiza carreras y grupos para que después puedan relacionarse alumnos, docentes, equipos y proyectos.',
                     pasos: [
                         'Crea primero la carrera con su nombre y clave.',
-                        'Agrega grupos indicando carrera, periodo y cuatrimestre. El grupo debe ser una sola letra de la A a la L.',
+                        'Agrega grupos indicando carrera, periodo y cuatrimestre. Elige una sola letra de la A a la M.',
+                        'Vincula docentes a la carrera y usa Jerarquía de proyectos para asignar un líder a cada grupo.',
                         'Usa los filtros para revisar que la estructura quedó guardada en el periodo correcto.',
                     ],
                     imagen: 'assets/ayuda/coordinacion/04-carreras-grupos.png',
@@ -165,8 +166,9 @@ class ControladorAyuda extends Controller
                     descripcion: 'Permite consultar listas de alumnos, registrar cuentas y revisar datos de acceso antes de guardar.',
                     pasos: [
                         'Usa las pestañas para cambiar entre lista de alumnos y registro de personal académico.',
-                        'Descarga la plantilla de alumnos en formato Excel, llena una fila por alumno y selecciónala al cargar la lista del periodo.',
-                        'Revisa la vista previa y valida matrícula, nombre y correo. Selecciona carrera, cuatrimestre y grupo para cada archivo antes de confirmar la carga.',
+                        'Descarga la plantilla, llena una fila por alumno y carga una o varias listas. Solo puedes elegir el periodo activo.',
+                        'Selecciona carrera, cuatrimestre y grupo para cada archivo. Revisa matrícula, nombre y correo en la vista previa antes de confirmar.',
+                        'En Docentes, registra matrícula, rol, carrera y correo institucional. La contraseña inicial aleatoria se envía a ese correo.',
                     ],
                     imagen: 'assets/ayuda/coordinacion/05-usuarios.png',
                     ruta: $rutas['usuarios'] ?? null,
@@ -178,7 +180,7 @@ class ControladorAyuda extends Controller
                     titulo: 'Asignaturas',
                     descripcion: 'Concentra el catálogo de materias y permite relacionarlas con las personas que las atenderán en el periodo.',
                     pasos: [
-                        'Registra asignaturas con carrera, clave, cuatrimestre y nombre.',
+                        'Registra asignaturas con carrera, clave, cuatrimestre y nombre. El nombre y la clave no admiten emojis.',
                         'Vincula responsables a las asignaturas que participarán en la guía integradora.',
                         'Filtra por carrera y cuatrimestre para validar la carga académica.',
                     ],
@@ -192,7 +194,7 @@ class ControladorAyuda extends Controller
                     titulo: 'Guías integradoras',
                     descripcion: 'Las guías definen apartados, ponderaciones, fechas límite y responsables de revisión.',
                     pasos: [
-                        'Crea la guía como borrador y agrega apartados con orden, ponderación, fecha límite y tipo de evidencia.',
+                        'Crea la guía como borrador y agrega apartados con orden, ponderación, fecha límite y tipo de evidencia. La fecha límite debe estar dentro de los periodos que abarca la guía.',
                         'Usa Actualizar vista previa para ver cambios sin guardar y abre el PDF de la guía antes de publicarla.',
                         'Asigna evaluadores y publica la guía cuando esté completa. Se cierra al terminar el periodo.',
                     ],
@@ -264,7 +266,8 @@ class ControladorAyuda extends Controller
                     descripcion: 'Organiza integrantes, responsable del equipo, asesores y relación con proyectos.',
                     pasos: [
                         'Selecciona el grupo que deseas revisar.',
-                        'Usa Nuevo equipo para crear un equipo o ajusta integrantes desde el detalle.',
+                        'Usa Nuevo equipo cuando haya alumnos libres en ese grupo. Una pertenencia a un equipo de otro ciclo no ocupa al alumno en el grupo actual.',
+                        'Agrega o retira integrantes desde el detalle del equipo.',
                         'Verifica que cada equipo tenga proyecto asignado antes de continuar.',
                     ],
                     imagen: 'assets/ayuda/docente-lider/03-equipos.png',
@@ -451,7 +454,7 @@ class ControladorAyuda extends Controller
                     titulo: 'Mi proyecto',
                     descripcion: 'Consulta información del equipo, proyecto, asesores, asignaturas e integrantes.',
                     pasos: [
-                        'Confirma que aparezcas dentro del equipo correcto.',
+                        'Confirma que aparezcas dentro del equipo de tu grupo y periodo actuales.',
                         'Revisa asesor, participantes académicos y guía integradora asignada.',
                         'Si hubo una prórroga, usa el selector de proyecto y periodo para volver al trabajo anterior. Si algún dato no coincide, repórtalo.',
                     ],
@@ -505,7 +508,7 @@ class ControladorAyuda extends Controller
             pasos: [
                 'Captura la matrícula institucional.',
                 'Escribe tu contraseña y presiona Ingresar.',
-                'La contraseña asignada al registrar tu cuenta permite ingresar directamente.',
+                'Usa la contraseña inicial aleatoria enviada al correo registrado. La matrícula no funciona como contraseña.',
             ],
             imagen: 'assets/ayuda/acceso/01-iniciar-sesion.png',
             ruta: route('login'),
@@ -767,74 +770,6 @@ class ControladorAyuda extends Controller
             'assets/ayuda/actualizadas/formato-firmas-pdf.png' => [
                 $this->capturaContexto('assets/ayuda/actualizadas/formato-pdf-emitido.png', 'Documento emitido', 'El PDF archivado se descarga desde Documentos emitidos; Volver conserva el origen.'),
             ],
-            'assets/ayuda/coordinacion/01-panel-principal.png' => [
-                $this->capturaContexto('assets/ayuda/coordinacion/01-panel-principal-detalle.png', 'Acercamiento: indicadores y avisos', 'Captura de contexto: métricas, avisos y resumen del periodo.'),
-            ],
-            'assets/ayuda/coordinacion/02-jerarquia-proyectos.png' => [
-                $this->capturaContexto('assets/ayuda/coordinacion/02-jerarquia-proyectos-detalle.png', 'Acercamiento: asignaciones por grupo', 'Captura de contexto: filtros, responsables, asignatura principal y botón de guardado.'),
-            ],
-            'assets/ayuda/coordinacion/03-periodos.png' => [
-                $this->capturaContexto('assets/ayuda/coordinacion/03-periodos-detalle.png', 'Acercamiento: registro e historial', 'Captura de contexto: botón para crear periodo, tarjetas de estado e historial.'),
-                $this->capturaContexto('assets/ayuda/coordinacion/03-periodos-formulario.png', 'Estado abierto: nuevo periodo', 'Captura de contexto: formulario que aparece al abrir Nuevo periodo.'),
-            ],
-            'assets/ayuda/coordinacion/04-carreras-grupos.png' => [
-                $this->capturaContexto('assets/ayuda/coordinacion/04-carreras-grupos-detalle.png', 'Acercamiento: carreras, grupos y docentes', 'Captura de contexto: formularios para registrar estructura académica y responsables.'),
-            ],
-            'assets/ayuda/coordinacion/05-usuarios.png' => [
-                $this->capturaContexto('assets/ayuda/coordinacion/05-usuarios-detalle.png', 'Acercamiento: alumnos y carga masiva', 'Captura de contexto: pestañas, filtros, plantilla y acciones de importación.'),
-                $this->capturaContexto('assets/ayuda/coordinacion/05-usuarios-docentes-formulario.png', 'Estado abierto: registro de docentes', 'Captura de contexto: pestaña de docentes con filas de captura y botones de alta.'),
-            ],
-            'assets/ayuda/coordinacion/06-asignaturas.png' => [
-                $this->capturaContexto('assets/ayuda/coordinacion/06-asignaturas-detalle.png', 'Acercamiento: catálogo y asignación', 'Captura de contexto: registro de asignaturas, asignación por periodo y carga operativa.'),
-                $this->capturaContexto('assets/ayuda/coordinacion/06-asignaturas-formularios.png', 'Estado abierto: formularios de asignatura', 'Captura de contexto: paneles abiertos para crear asignatura y asignar docente.'),
-            ],
-            'assets/ayuda/coordinacion/07-guias.png' => [
-                $this->capturaContexto('assets/ayuda/coordinacion/07-guias-detalle.png', 'Acercamiento: guía y apartados', 'Captura de contexto: alta de guía, apartados, ponderaciones y configuración.'),
-                $this->capturaContexto('assets/ayuda/coordinacion/07-guias-formularios.png', 'Estado abierto: guía y apartados', 'Captura de contexto: paneles abiertos para crear guía y capturar apartados.'),
-                $this->capturaContexto('assets/ayuda/coordinacion/07-guias-apartados-lista.png', 'Estado abierto: detalle de guía', 'Captura de contexto: detalle que aparece al abrir una guía publicada o en configuración.'),
-            ],
-            'assets/ayuda/docente-lider/01-panel-principal.png' => [
-                $this->capturaContexto('assets/ayuda/docente-lider/01-panel-principal-detalle.png', 'Acercamiento: grupos de trabajo', 'Captura de contexto: indicadores y listado de grupos activos.'),
-            ],
-            'assets/ayuda/docente-lider/02-lista-alumnos.png' => [
-                $this->capturaContexto('assets/ayuda/docente-lider/02-lista-alumnos-detalle.png', 'Acercamiento: filtros y alumnos', 'Captura de contexto: selector de grupo, búsqueda y tabla de alumnos.'),
-            ],
-            'assets/ayuda/docente-lider/03-equipos.png' => [
-                $this->capturaContexto('assets/ayuda/docente-lider/03-equipos-detalle.png', 'Acercamiento: equipos por grupo', 'Captura de contexto: botón para crear equipo, selección de grupo y tabla de equipos.'),
-                $this->capturaContexto('assets/ayuda/docente-lider/03-equipos-nuevo-equipo.png', 'Estado abierto: nuevo equipo', 'Captura de contexto: formulario que aparece al abrir Nuevo equipo.'),
-                $this->capturaContexto('assets/ayuda/docente-lider/03-equipos-integrantes.png', 'Estado abierto: integrantes del equipo', 'Captura de contexto: panel que aparece al abrir Ver información en un equipo.'),
-            ],
-            'assets/ayuda/docente-lider/04-proyectos.png' => [
-                $this->capturaContexto('assets/ayuda/docente-lider/04-proyectos-detalle.png', 'Acercamiento: proyectos y acciones', 'Captura de contexto: filtros, proyectos por equipo, estado y acciones de administración.'),
-                $this->capturaContexto('assets/ayuda/docente-lider/04-proyectos-administrar.png', 'Estado abierto: administrar proyecto', 'Captura de contexto: panel que aparece al abrir Administrar en un proyecto.'),
-            ],
-            'assets/ayuda/docente-lider/05-revision-codigo.png' => [
-                $this->capturaContexto('assets/ayuda/docente-lider/05-revision-codigo-detalle.png', 'Acercamiento: bandeja técnica', 'Captura de contexto: periodo visible y zona donde aparecen productos de código.'),
-            ],
-            'assets/ayuda/docente-materia/01-panel-principal.png' => [
-                $this->capturaContexto('assets/ayuda/docente-materia/01-panel-principal-detalle.png', 'Acercamiento: pendientes y avisos', 'Captura de contexto: indicadores, entregas por revisar y alertas de atención.'),
-            ],
-            'assets/ayuda/docente-materia/02-mis-asignaciones.png' => [
-                $this->capturaContexto('assets/ayuda/docente-materia/02-mis-asignaciones-detalle.png', 'Acercamiento: apartados asignados', 'Captura de contexto: periodo, materias, ponderación y apartados por revisar.'),
-            ],
-            'assets/ayuda/docente-materia/03-revisiones.png' => [
-                $this->capturaContexto('assets/ayuda/docente-materia/03-revisiones-detalle.png', 'Acercamiento: filtros y bandeja', 'Captura de contexto: búsqueda, filtros, apartado seleccionado y entregas disponibles.'),
-                $this->capturaContexto('assets/ayuda/docente-materia/03-revisiones-entrega-abierta.png', 'Estado abierto: entrega recibida', 'Captura de contexto: entrega desplegada desde la bandeja de revisión.'),
-                $this->capturaContexto('assets/ayuda/docente-materia/03-revisiones-entrega-formulario.png', 'Estado abierto: formulario de revisión', 'Captura de contexto: evidencias, resultado, calificación, observaciones y comentarios.'),
-            ],
-            'assets/ayuda/estudiante/01-panel-principal.png' => [
-                $this->capturaContexto('assets/ayuda/estudiante/01-panel-principal-detalle.png', 'Acercamiento: progreso y guía', 'Captura de contexto: porcentaje validado, estados y resumen de apartados.'),
-            ],
-            'assets/ayuda/estudiante/02-mi-proyecto.png' => [
-                $this->capturaContexto('assets/ayuda/estudiante/02-mi-proyecto-detalle.png', 'Acercamiento: datos del proyecto', 'Captura de contexto: equipo, asesor, guía e integrantes registrados.'),
-            ],
-            'assets/ayuda/estudiante/03-entregas.png' => [
-                $this->capturaContexto('assets/ayuda/estudiante/03-entregas-detalle.png', 'Acercamiento: apartados y estados', 'Captura de contexto: lista de apartados, fecha límite, último envío y estado.'),
-                $this->capturaContexto('assets/ayuda/estudiante/03-entregas-detalle-apartado.png', 'Estado abierto: detalle de apartado', 'Captura de contexto: información que aparece al abrir un apartado de entrega.'),
-            ],
-            'assets/ayuda/estudiante/04-codigo-repositorio.png' => [
-                $this->capturaContexto('assets/ayuda/estudiante/04-codigo-repositorio-detalle.png', 'Acercamiento: producto final', 'Captura de contexto: aviso, repositorio y archivos técnicos del producto.'),
-            ],
         ][$imagen] ?? [];
     }
 
@@ -870,7 +805,7 @@ class ControladorAyuda extends Controller
         $detalles = [
             'assets/ayuda/acceso/01-iniciar-sesion.png' => [
                 $this->detalle('Matrícula', 'Captura la matrícula tal como fue registrada, sin espacios adicionales.'),
-                $this->detalle('Contraseña', 'Escribe la contraseña asignada a tu cuenta o la que hayas elegido.'),
+                $this->detalle('Contraseña', 'Escribe la contraseña inicial aleatoria enviada a tu correo o la que hayas elegido después. No uses tu matrícula como contraseña.'),
                 $this->detalle('Iniciar sesión', 'Valida los datos y abre el panel asignado a tu cuenta.'),
                 $this->detalle('Olvidaste tu contraseña', 'Usa ese enlace cuando no recuerdes tu clave o no puedas entrar.'),
                 $this->detalle('Ayuda', 'Abre esta guía de acceso en otra ventana sin cerrar la pantalla actual.'),
@@ -898,12 +833,12 @@ class ControladorAyuda extends Controller
                 $this->detalle('Filtro de periodo', 'Úsalo para trabajar con el ciclo correcto antes de modificar asignaciones.'),
                 $this->detalle('Responsable del grupo', 'Selecciona la persona que dará seguimiento al grupo durante el periodo.'),
                 $this->detalle('Asignatura principal', 'Selecciona la materia que organizará el proyecto integrador del grupo.'),
-                $this->detalle('Guardar asignación', 'Guarda los cambios solo de la fila donde se presiona el botón.'),
+                $this->detalle('Guardar asignación', 'Guarda la fila y vincula la materia seleccionada al docente líder para ese periodo.'),
             ],
             'assets/ayuda/coordinacion/03-periodos.png' => [
                 $this->detalle('Nuevo periodo', 'Abre el formulario para registrar un nuevo ciclo de trabajo.'),
                 $this->detalle('Nombre del periodo', 'Usa un nombre claro, por ejemplo Mayo - Agosto 2026.'),
-                $this->detalle('Fechas', 'La fecha inicial y final definen el rango de trabajo para guías y entregas.'),
+                $this->detalle('Fechas', 'El inicio debe estar en el mes actual o uno posterior; el cierre debe ser igual o posterior al inicio. Este rango limita las fechas de los apartados.'),
                 $this->detalle('Estado', 'El periodo nuevo se guarda en borrador. Solo se activa cuando no hay otro activo; al cerrarlo se revisan pendientes y queda para consulta.'),
             ],
             'assets/ayuda/coordinacion/03-periodos-formulario.png' => [
@@ -912,23 +847,23 @@ class ControladorAyuda extends Controller
             ],
             'assets/ayuda/coordinacion/04-carreras-grupos.png' => [
                 $this->detalle('Nueva carrera', 'Captura nombre y clave de la carrera antes de crear grupos.'),
-                $this->detalle('Nuevo grupo', 'Selecciona carrera, periodo y cuatrimestre. El grupo debe ser una sola letra de la A a la L.'),
-                $this->detalle('Agregar docente', 'Relaciona participantes académicos con una carrera para que aparezcan en asignaciones posteriores.'),
+                $this->detalle('Nuevo grupo', 'Selecciona carrera, periodo, cuatrimestre y una letra de la A a la M.'),
+                $this->detalle('Vincular docente a carrera', 'Este vínculo no asigna al docente como líder de un grupo. Hazlo en Jerarquía de proyectos.'),
                 $this->detalle('Filtros', 'Permiten revisar solo una carrera, un periodo o un grupo específico.'),
             ],
             'assets/ayuda/coordinacion/05-usuarios.png' => [
                 $this->detalle('Pestañas', 'Cambia entre consulta de alumnos y registro de personal académico.'),
                 $this->detalle('Matrícula', 'Debe ser única; si ya existe, el sistema no permitirá duplicarla.'),
-                $this->detalle('Correo', 'Sirve para avisos y recuperación de acceso, por eso debe estar bien escrito.'),
-                $this->detalle('Descargar plantilla de alumnos', 'Descarga el archivo de Excel, llena cédula o matrícula, nómina o nombre y correo en una fila por alumno. Después selecciona periodo, carrera, cuatrimestre y grupo para cada archivo y revisa la vista previa antes de confirmar.'),
+                $this->detalle('Correo', 'Sirve para recibir la contraseña inicial, avisos y recuperación de acceso. Los docentes deben usar el dominio institucional configurado.'),
+                $this->detalle('Descargar plantilla de alumnos', 'Llena matrícula, nombre y correo en una fila por alumno. Solo el periodo activo está disponible para la carga; selecciona carrera, cuatrimestre y grupo por archivo antes de confirmar la vista previa.'),
             ],
             'assets/ayuda/coordinacion/05-usuarios-docentes-formulario.png' => [
                 $this->detalle('Registro de docentes', 'Usa esta pestaña para capturar una o varias cuentas académicas en una sola operación.'),
                 $this->detalle('Agregar docente', 'Inserta otra fila vacía cuando necesitas registrar más de una persona.'),
-                $this->detalle('Guardar docentes', 'Guarda todas las filas completas; revisa matrícula, correo, tipo de cuenta y carrera antes de enviar.'),
+                $this->detalle('Guardar docentes', 'Revisa matrícula, rol, carrera y correo institucional. Al guardar, se genera una contraseña aleatoria y se envía a cada correo.'),
             ],
             'assets/ayuda/coordinacion/06-asignaturas.png' => [
-                $this->detalle('Registrar asignatura', 'Captura nombre, clave, carrera y cuatrimestre para agregarla al catálogo.'),
+                $this->detalle('Registrar asignatura', 'Captura nombre, clave, carrera y cuatrimestre. El nombre y la clave no admiten emojis.'),
                 $this->detalle('Asignar docente', 'Relaciona una persona con la asignatura y el periodo visible.'),
                 $this->detalle('Cambiar ciclo', 'Actualiza la carga mostrada cuando necesitas consultar otro periodo.'),
                 $this->detalle('Tabla de carga', 'Muestra materias y responsables ya registrados para confirmar que no falte información.'),
@@ -939,7 +874,7 @@ class ControladorAyuda extends Controller
             ],
             'assets/ayuda/coordinacion/07-guias.png' => [
                 $this->detalle('Crear guía', 'Registra la guía base para la carrera y periodo seleccionados.'),
-                $this->detalle('Apartado', 'Captura título, orden, ponderación, fecha límite y tipo de evidencia requerida.'),
+                $this->detalle('Apartado', 'Captura título, orden, ponderación y tipo de evidencia. La fecha límite debe estar dentro de los periodos de la guía.'),
                 $this->detalle('Calificadores', 'Asigna quienes revisarán cada apartado antes de publicarlo.'),
                 $this->detalle('Publicación', 'Usa la vista previa y publica la guía cuando los apartados tengan fechas, ponderación y responsables de revisión.'),
             ],
@@ -970,7 +905,7 @@ class ControladorAyuda extends Controller
             ],
             'assets/ayuda/docente-lider/03-equipos-nuevo-equipo.png' => [
                 $this->detalle('Grupo del equipo', 'El equipo se crea dentro del grupo seleccionado; los alumnos disponibles se toman de ese mismo grupo.'),
-                $this->detalle('Alumnos libres', 'Si no hay alumnos libres, el sistema evita crear otro equipo hasta liberar o cargar alumnos.'),
+                $this->detalle('Alumnos libres', 'Cuenta alumnos de este grupo sin equipo activo en él. Un equipo de otro periodo no los ocupa aquí.'),
             ],
             'assets/ayuda/docente-lider/03-equipos-integrantes.png' => [
                 $this->detalle('Alumnos del mismo grupo', 'Solo aparecen integrantes del grupo al que pertenece el equipo; no se mezclan alumnos de otros grupos.'),
@@ -1073,7 +1008,7 @@ class ControladorAyuda extends Controller
             ],
             'assets/ayuda/acceso/03-actualizar-contrasena.png' => [
                 $this->marca('Ayuda', 'Abre esta guía en otra ventana.', 16, 15, 28, 15, 39, 15, '0%', '-50%', '8.5rem', 'green'),
-                $this->marca('Temporal', 'Escribe la contraseña que recibiste.', 22, 52, 32, 52, 50, 52, '0%', '-50%', '9rem', 'blue'),
+                $this->marca('Actual', 'Escribe la contraseña con la que entras ahora.', 22, 52, 32, 52, 50, 52, '0%', '-50%', '9rem', 'blue'),
                 $this->marca('Nueva', 'Captura una contraseña segura.', 80, 64, 70, 64, 50, 64, '-100%', '-50%', '8.5rem', 'amber'),
                 $this->marca('Confirmar', 'Repite la nueva contraseña.', 22, 77, 32, 77, 50, 77, '0%', '-50%', '9rem', 'blue'),
                 $this->marca('Actualizar', 'Guarda el cambio para continuar.', 80, 85, 70, 85, 50, 85, '-100%', '-50%', '8.5rem', 'green'),
@@ -1096,18 +1031,18 @@ class ControladorAyuda extends Controller
             'assets/ayuda/coordinacion/03-periodos-formulario.png' => [
                 $this->marca('Nuevo periodo', 'El botón despliega el formulario de captura.', 91, 42, 87, 42, 90, 44, '-100%', '-50%', '9.5rem', 'green'),
                 $this->marca('Datos basicos', 'Captura nombre, inicio y cierre del ciclo.', 26, 52, 35, 55, 43, 60, '0%', '-50%', '10rem', 'blue'),
-                $this->marca('Estado', 'Define si queda en borrador, activo o cerrado.', 26, 91, 35, 83, 30, 69, '0%', '-100%', '9rem', 'amber'),
+                $this->marca('Estado', 'El periodo se guarda como borrador; se activa desde el historial.', 26, 91, 35, 83, 30, 69, '0%', '-100%', '9rem', 'amber'),
                 $this->marca('Guardar', 'Registra el periodo con los datos completos.', 66, 76, 57, 76, 46, 73, '-50%', '-50%', '9rem', 'green'),
             ],
             'assets/ayuda/coordinacion/04-carreras-grupos.png' => [
                 $this->marca('Nueva carrera', 'Registra primero las carreras disponibles.', 26, 63, 34, 63, 31, 72, '0%', '-50%', '10rem', 'green'),
                 $this->marca('Nuevo grupo', 'Después crea grupos asociados al periodo.', 58, 63, 60, 63, 55, 72, '-50%', '-50%', '10rem', 'blue'),
-                $this->marca('Responsables', 'Asocia participantes académicos por carrera.', 92, 63, 86, 63, 84, 72, '-100%', '-50%', '10rem', 'amber'),
+                $this->marca('Docentes por carrera', 'Vincula docentes a la carrera; el líder de grupo se asigna en Jerarquía.', 92, 63, 86, 63, 84, 72, '-100%', '-50%', '10rem', 'amber'),
             ],
             'assets/ayuda/coordinacion/05-usuarios.png' => [
-                $this->marca('Tipo de cuenta', 'Cambia entre listas y registros desde estas pestañas.', 25, 37, 34, 37, 29, 42, '0%', '-50%', '10.5rem', 'blue'),
-                $this->marca('Filtros', 'Ajusta periodo, carrera o grupo para encontrar registros.', 74, 45, 69, 45, 60, 50, '-100%', '-50%', '10rem', 'amber'),
-                $this->marca('Acciones', 'Agrega listas o guarda la vista previa desde estos botones.', 28, 92, 38, 92, 27, 90, '0%', '-100%', '11rem', 'green'),
+                $this->marca('Tipo de cuenta', 'Cambia entre alumnos y docentes desde estas pestañas.', 26, 47, 36, 44, 42, 38, '0%', '-50%', '10.5rem', 'blue'),
+                $this->marca('Plantilla', 'Descarga el archivo vacío para capturar una fila por alumno.', 91, 58, 79, 58, 39, 63, '-100%', '-50%', '10rem', 'green'),
+                $this->marca('Periodo y grupo', 'Selecciona el periodo activo, carrera, cuatrimestre y grupo por archivo.', 91, 82, 79, 82, 63, 93, '-100%', '-50%', '11rem', 'amber'),
             ],
             'assets/ayuda/coordinacion/05-usuarios-docentes-formulario.png' => [
                 $this->marca('Docentes', 'Esta pestaña cambia al formulario de docentes.', 82, 35, 76, 35, 76, 36, '-100%', '-50%', '9.5rem', 'blue'),
@@ -1280,8 +1215,9 @@ class ControladorAyuda extends Controller
                 $this->resaltado(23.5, 50, 73, 28, 'green', true),
             ],
             'assets/ayuda/coordinacion/05-usuarios.png' => [
-                $this->resaltado(23.5, 36, 73, 14, 'blue'),
-                $this->resaltado(23.5, 52, 73, 34, 'green', true),
+                $this->resaltado(23.5, 32.5, 73, 11, 'blue'),
+                $this->resaltado(25, 60, 20.5, 6.5, 'green'),
+                $this->resaltado(25, 75, 70, 24, 'amber', true),
             ],
             'assets/ayuda/coordinacion/05-usuarios-docentes-formulario.png' => [
                 $this->resaltado(23.5, 34, 73, 10, 'blue'),
@@ -1464,19 +1400,19 @@ class ControladorAyuda extends Controller
     private function faqs(string $rol): array
     {
         $base = [
-            ['pregunta' => 'No puedo entrar al sistema', 'respuesta' => 'Verifica que la matrícula y la contraseña sean correctas. Si el problema continúa, pide que revisen el estado de tu cuenta.'],
+            ['pregunta' => 'No puedo entrar al sistema', 'respuesta' => 'Usa tu matrícula y la contraseña inicial enviada por correo o la que configuraste después. La matrícula no es la contraseña. Si el problema continúa, recupera el acceso o pide que revisen el estado de tu cuenta.'],
                 ['pregunta' => 'No veo una opción del menú', 'respuesta' => 'El menú muestra las opciones disponibles para tu cuenta. Si falta algo, reporta la pantalla y la acción que necesitas realizar.'],
                 ['pregunta' => 'Una pantalla aparece sin registros', 'respuesta' => 'Revisa el periodo activo, los filtros aplicados y el grupo seleccionado. Algunas vistas solo muestran información cuando ya existen equipos, proyectos o entregas.'],
         ];
 
         $porRol = match ($rol) {
             'coordinacion' => [
-                ['pregunta' => '¿Qué debo configurar primero?', 'respuesta' => 'Primero periodo, carreras, grupos y usuarios. Después asignaturas, responsables de grupo, guías, equipos y proyectos.'],
+                ['pregunta' => '¿Qué debo configurar primero?', 'respuesta' => 'Primero periodo, carreras, grupos, docentes y asignaturas. Después asigna líderes y materias en Jerarquía, carga alumnos en el periodo activo y prepara las guías, equipos y proyectos.'],
                 ['pregunta' => '¿Por qué una persona no ve sus opciones?', 'respuesta' => 'Debe estar vinculada al grupo, materia o proyecto correspondiente en el periodo activo.'],
             ],
             'docente_lider' => [
                 ['pregunta' => '¿Por qué no puedo crear proyectos?', 'respuesta' => 'El equipo debe existir y contar con una guía disponible para el periodo. Revisa también que el grupo pertenezca a tu asignación.'],
-                ['pregunta' => '¿Puedo mover alumnos entre equipos?', 'respuesta' => 'Si tienes permiso sobre el grupo, puedes ajustar integrantes. El sistema evita que un alumno quede activo en dos equipos al mismo tiempo.'],
+                ['pregunta' => '¿Puedo mover alumnos entre equipos?', 'respuesta' => 'Si tienes permiso sobre el grupo, puedes ajustar integrantes. Un alumno no puede estar en dos equipos activos del mismo grupo; su equipo de un ciclo anterior se conserva como historial.'],
                 ['pregunta' => '¿Por qué no se envió un recordatorio manual?', 'respuesta' => 'Los alumnos deben tener entregas pendientes o por corregir y plazo vigente; los docentes deben tener una versión asignada sin revisar. Se evitan avisos repetidos del mismo día. Revisa también la cola y la configuración del correo.'],
             ],
             'docente_materia' => [
@@ -1484,7 +1420,7 @@ class ControladorAyuda extends Controller
                 ['pregunta' => '¿Qué resultado debo usar?', 'respuesta' => 'Usa aprobada cuando cumple, corrección cuando requiere ajustes y rechazada cuando la evidencia no corresponde o no se puede evaluar.'],
             ],
             default => [
-                ['pregunta' => '¿Por qué no veo mi proyecto?', 'respuesta' => 'Tu cuenta debe estar dentro de un equipo activo y ese equipo debe tener un proyecto integrador relacionado.'],
+                ['pregunta' => '¿Por qué no veo mi proyecto?', 'respuesta' => 'Tu cuenta debe pertenecer a un equipo activo de tu grupo y ese equipo debe tener un proyecto. La vista inicial prioriza el periodo activo; el historial se abre con el selector de proyecto y periodo.'],
                 ['pregunta' => '¿Puedo enviar otra versión?', 'respuesta' => 'Si la fecha límite sigue abierta, puedes enviar una nueva versión desde Entregas o Código y repositorio.'],
             ],
         };

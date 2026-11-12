@@ -54,6 +54,13 @@ class ControladorUsuarios extends Controller
             'carrera_id' => ['nullable', 'exists:carreras,id'],
             'grupo_academico_id' => ['nullable', 'exists:grupos_academicos,id'],
         ]);
+        $rol = Role::query()->findOrFail($datos['rol_id']);
+        if (in_array($rol->nombre, ['docente_lider', 'docente_materia'], true)) {
+            $dominioDocente = strtolower(trim((string) config('academico.dominio_correo_docente')));
+            if ($dominioDocente !== '' && ! str_ends_with(strtolower($datos['correo']), '@'.$dominioDocente)) {
+                throw ValidationException::withMessages(['correo' => "El correo del docente debe pertenecer a @{$dominioDocente}."]);
+            }
+        }
 
         if ($request->user()->hasRole('docente_lider')) {
             $rolEstudiante = Role::query()->where('nombre', 'estudiante')->firstOrFail();
@@ -87,12 +94,19 @@ class ControladorUsuarios extends Controller
     public function guardarDocentes(Request $request): RedirectResponse
     {
         abort_unless($request->user()?->hasRole('coordinacion'), 403);
+        $dominioDocente = strtolower(trim((string) config('academico.dominio_correo_docente')));
 
         $datos = $request->validate([
             'docentes' => ['required', 'array', 'min:1', 'max:30'],
             'docentes.*.nombre' => ['required', 'string', 'max:120'],
             'docentes.*.matricula' => ['required', 'string', 'max:30', 'distinct', 'unique:usuarios,matricula'],
-            'docentes.*.correo' => ['required', 'email', 'max:254', 'distinct', 'unique:usuarios,correo'],
+            'docentes.*.correo' => ['required', 'email', 'max:254', 'distinct', 'unique:usuarios,correo',
+                function (string $attribute, mixed $value, \Closure $fail) use ($dominioDocente): void {
+                    if ($dominioDocente !== '' && ! str_ends_with(strtolower((string) $value), '@'.$dominioDocente)) {
+                        $fail("El correo del docente debe pertenecer a @{$dominioDocente}.");
+                    }
+                },
+            ],
             'docentes.*.rol' => ['required', 'in:docente_lider,docente_materia'],
             'docentes.*.carrera_id' => ['required', 'exists:carreras,id'],
         ]);
@@ -147,9 +161,9 @@ class ControladorUsuarios extends Controller
             'listas.*.archivo' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:10240'],
             'listas.*.carrera_id' => ['required', 'exists:carreras,id'],
             'listas.*.grado' => ['required', 'integer', 'between:1,12'],
-            'listas.*.grupo' => ['required', 'string', 'size:1', 'regex:/\A[A-La-l]\z/'],
+            'listas.*.grupo' => ['required', 'string', 'size:1', 'regex:/\A[A-Ma-m]\z/'],
         ], [
-            'listas.*.grupo.regex' => 'El grupo debe ser una sola letra de A a L.',
+            'listas.*.grupo.regex' => 'El grupo debe ser una sola letra de A a M.',
             'listas.*.grupo.size' => 'El grupo debe contener exactamente una letra.',
         ]);
         $this->validarPeriodoActivoCarga(Periodo::query()->findOrFail($datos['periodo_id']));
@@ -385,8 +399,8 @@ class ControladorUsuarios extends Controller
                     continue;
                 }
 
-                if (! preg_match('/\A[A-L]\z/', $grupoLetra)) {
-                    $errores[] = "Fila {$numeroFila}: el grupo debe ser una sola letra de A a L.";
+                if (! preg_match('/\A[A-M]\z/', $grupoLetra)) {
+                    $errores[] = "Fila {$numeroFila}: el grupo debe ser una sola letra de A a M.";
 
                     continue;
                 }

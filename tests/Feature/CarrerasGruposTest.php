@@ -83,7 +83,7 @@ test('direccion puede registrar carrera grupo y docente por carrera', function (
     ]);
 });
 
-test('el alta de grupos solo acepta una letra de A a L', function () {
+test('el alta de grupos solo acepta una letra de A a M', function () {
     $direccion = usuarioConRol('coordinacion');
     $periodo = Periodo::query()->create([
         'nombre' => 'Septiembre - Diciembre 2026',
@@ -95,9 +95,9 @@ test('el alta de grupos solo acepta una letra de A a L', function () {
     $datos = ['periodo_id' => $periodo->id, 'carrera_id' => $carrera->id, 'grado' => 8];
 
     $this->actingAs($direccion)->get(route('modulos.show', 'carreras-grupos'))
-        ->assertOk()->assertSee('Grupo (A–L)');
+        ->assertOk()->assertSee('Grupo (A–M)');
 
-    foreach (['dsds', '9', '#', 'M'] as $grupo) {
+    foreach (['dsds', '9', '#', 'N'] as $grupo) {
         $this->post(route('grupos-academicos.guardar'), [...$datos, 'grupo' => $grupo])
             ->assertSessionHasErrors('grupo');
     }
@@ -105,13 +105,13 @@ test('el alta de grupos solo acepta una letra de A a L', function () {
     $this->post(route('grupos-academicos.guardar'), [...$datos, 'grupo' => 'c'])
         ->assertSessionHasNoErrors();
     $this->assertDatabaseHas('grupos_academicos', [...$datos, 'grupo' => 'C', 'nombre' => '8C']);
-    $this->post(route('grupos-academicos.guardar'), [...$datos, 'grupo' => 'L'])
+    $this->post(route('grupos-academicos.guardar'), [...$datos, 'grupo' => 'M'])
         ->assertSessionHasNoErrors();
-    $this->assertDatabaseHas('grupos_academicos', [...$datos, 'grupo' => 'L', 'nombre' => '8L']);
+    $this->assertDatabaseHas('grupos_academicos', [...$datos, 'grupo' => 'M', 'nombre' => '8M']);
     expect(\App\Models\GrupoAcademico::query()->count())->toBe(2);
 });
 
-test('la carga de alumnos rechaza grupos fuera de A a L en ambos formatos', function () {
+test('la carga de alumnos rechaza grupos fuera de A a M en ambos formatos', function () {
     $direccion = usuarioConRol('coordinacion');
     Role::query()->firstOrCreate(['nombre' => 'estudiante'], ['nombre_visible' => 'Estudiante']);
     $periodo = Periodo::query()->create([

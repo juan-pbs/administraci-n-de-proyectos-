@@ -59,9 +59,9 @@ class ControladorCarrerasGrupos extends Controller
             'periodo_id' => ['required', 'exists:periodos,id'],
             'carrera_id' => ['required', 'exists:carreras,id'],
             'grado' => ['required', 'integer', 'min:1', 'max:12'],
-            'grupo' => ['required', 'string', 'size:1', 'regex:/\A[A-La-l]\z/'],
+            'grupo' => ['required', 'string', 'size:1', 'regex:/\A[A-Ma-m]\z/'],
         ], [
-            'grupo.regex' => 'El grupo debe ser una sola letra de A a L.',
+            'grupo.regex' => 'El grupo debe ser una sola letra de A a M.',
             'grupo.size' => 'El grupo debe contener exactamente una letra.',
         ]);
 

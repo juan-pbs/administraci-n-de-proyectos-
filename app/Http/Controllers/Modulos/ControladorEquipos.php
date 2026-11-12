@@ -51,7 +51,7 @@ class ControladorEquipos extends Controller
             $hayAlumnosLibres = User::query()
                 ->where('grupo_academico_id', $grupo->id)
                 ->whereHas('role', fn ($query) => $query->where('nombre', 'estudiante'))
-                ->whereDoesntHave('equiposComoIntegrante')
+                ->whereDoesntHave('equiposComoIntegrante', fn ($query) => $query->where('equipos.grupo_academico_id', $grupo->id)->where('equipos.estado', 'activo'))
                 ->exists();
             abort_unless($hayAlumnosLibres, 422, 'El grupo no tiene alumnos libres para crear otro equipo.');
 
@@ -89,7 +89,10 @@ class ControladorEquipos extends Controller
         abort_unless((int) $estudiante->grupo_academico_id === (int) $equipo->grupo_academico_id, 422);
 
         $yaTieneEquipo = DB::table('integrantes_equipo')
+            ->join('equipos', 'equipos.id', '=', 'integrantes_equipo.equipo_id')
             ->where('estudiante_id', $estudiante->id)
+            ->where('equipos.grupo_academico_id', $equipo->grupo_academico_id)
+            ->where('equipos.estado', 'activo')
             ->where('activo', true)
             ->where('equipo_id', '!=', $equipo->id)
             ->exists();
@@ -203,7 +206,7 @@ class ControladorEquipos extends Controller
             $grupo->setAttribute('alumnos_libres_count', User::query()
                 ->where('grupo_academico_id', $grupo->id)
                 ->whereHas('role', fn ($query) => $query->where('nombre', 'estudiante'))
-                ->whereDoesntHave('equiposComoIntegrante')
+                ->whereDoesntHave('equiposComoIntegrante', fn ($query) => $query->whereColumn('equipos.grupo_academico_id', 'usuarios.grupo_academico_id')->where('equipos.estado', 'activo'))
                 ->count());
         });
         $grupoSeleccionado = $grupos->contains('id', (int) $request->query('grupo_equipos'))
@@ -234,7 +237,7 @@ class ControladorEquipos extends Controller
             'grupoSeleccionado' => $grupoSeleccionado,
             'estudiantes' => User::query()
                 ->whereHas('role', fn ($query) => $query->where('nombre', 'estudiante'))
-                ->whereDoesntHave('equiposComoIntegrante')
+                ->whereDoesntHave('equiposComoIntegrante', fn ($query) => $query->whereColumn('equipos.grupo_academico_id', 'usuarios.grupo_academico_id')->where('equipos.estado', 'activo'))
                 ->when($usuario->hasRole('docente_lider'), fn ($query) => $query->whereHas('grupoAcademico', fn ($grupo) => $grupo->conMateriaLiderDelDocente($usuario->id)))
                 ->orderBy('nombre')
                 ->get(['id', 'nombre', 'matricula', 'grupo_academico_id']),

@@ -52,6 +52,7 @@ function escenarioFirmas(): array
     $coordinacion = $usuarios['coordinacion'];
     $lider->asignaturasComoDocente()->attach($materia->id, ['periodo_id' => $periodo->id, 'activo' => true]);
     $grupo = GrupoAcademico::create(['periodo_id' => $periodo->id, 'carrera_id' => $carrera->id, 'lider_proyecto_id' => $lider->id, 'asignatura_lider_id' => $materia->id, 'grado' => 5, 'grupo' => 'A', 'nombre' => '5A']);
+    $alumno->update(['grupo_academico_id' => $grupo->id]);
     $equipo = Equipo::create(['grupo_academico_id' => $grupo->id, 'nombre' => 'Equipo 1', 'estado' => 'activo']);
     $equipo->integrantes()->attach($alumno->id, ['activo' => true]);
     $guia = GuiaIntegradora::create(['periodo_id' => $periodo->id, 'asignatura_id' => $materia->id, 'nombre' => 'Guía', 'cuatrimestre' => 5, 'estado' => 'publicada', 'version' => '1']);

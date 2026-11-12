@@ -37,7 +37,7 @@
                 <div><label class="text-sm font-semibold text-slate-700">Carrera</label><select name="carrera_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}" @selected((string) old('carrera_id', $filtrosGrupos['carrera_id']) === (string) $carrera->id)>{{ $carrera->clave }} - {{ $carrera->nombre }}</option>@endforeach</select></div>
                 <div class="grid grid-cols-2 gap-3">
                     <div><label class="text-sm font-semibold text-slate-700">Cuatrimestre</label><input name="grado" type="number" min="1" max="12" value="{{ old('grado') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
-                    <div><label class="text-sm font-semibold text-slate-700">Grupo (A–L)</label><select name="grupo" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach(range('A', 'L') as $letra)<option value="{{ $letra }}" @selected(mb_strtoupper(old('grupo', 'A')) === $letra)>{{ $letra }}</option>@endforeach</select></div>
+                    <div><label class="text-sm font-semibold text-slate-700">Grupo (A–M)</label><select name="grupo" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach(range('A', 'M') as $letra)<option value="{{ $letra }}" @selected(mb_strtoupper(old('grupo', 'A')) === $letra)>{{ $letra }}</option>@endforeach</select></div>
                 </div>
                 <button class="rounded-md bg-[#15529A] px-4 py-2.5 text-sm font-bold text-white">Guardar grupo</button>
             </form>

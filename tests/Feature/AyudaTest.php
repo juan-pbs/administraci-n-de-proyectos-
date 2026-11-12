@@ -199,6 +199,21 @@ test('todos los apartados de ayuda por rol y acceso publico muestran una captura
     }
 });
 
+test('la ayuda de coordinacion usa cuatrimestre y el rango actual de grupos', function () {
+    $rol = Role::query()->firstOrCreate(
+        ['nombre' => 'coordinacion'],
+        ['nombre_visible' => 'Coordinación', 'descripcion' => 'Rol de prueba'],
+    );
+
+    $this->actingAs(User::factory()->create(['rol_id' => $rol->id]))
+        ->get('/ayuda?seccion=carreras-grupos')
+        ->assertOk()
+        ->assertSee('cuatrimestre')
+        ->assertSee('de la A a la M')
+        ->assertSee('coordinacion/04-carreras-grupos.png')
+        ->assertDontSee('Grado');
+});
+
 test('ayuda de estudiante no muestra apartados administrativos', function () {
     $role = Role::query()->firstOrCreate(
         ['nombre' => 'estudiante'],
@@ -256,10 +271,10 @@ test('la ayuda de coordinación explica la plantilla de alumnos y la letra del g
 
     $this->get('/ayuda?seccion=usuarios')
         ->assertOk()
-        ->assertSee('Descarga la plantilla de alumnos')
+        ->assertSee('Descarga la plantilla, llena una fila por alumno')
         ->assertSee('Vista previa de alumnos');
 
     $this->get('/ayuda?seccion=carreras-grupos')
         ->assertOk()
-        ->assertSee('una sola letra de la A a la L');
+        ->assertSee('una sola letra de la A a la M');
 });

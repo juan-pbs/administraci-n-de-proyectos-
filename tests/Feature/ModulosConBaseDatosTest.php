@@ -189,14 +189,14 @@ test('coordinacion registra varios docentes en una sola operacion', function () 
             [
                 'nombre' => 'Docente Líder',
                 'matricula' => 'DOC-LOTE-1',
-                'correo' => 'lider-lote@example.test',
+                'correo' => 'lider-lote@utvm.edu.mx',
                 'rol' => 'docente_lider',
                 'carrera_id' => $carrera->id,
             ],
             [
                 'nombre' => 'Docente de Materia',
                 'matricula' => 'DOC-LOTE-2',
-                'correo' => 'materia-lote@example.test',
+                'correo' => 'materia-lote@utvm.edu.mx',
                 'rol' => 'docente_materia',
                 'carrera_id' => $carrera->id,
             ],

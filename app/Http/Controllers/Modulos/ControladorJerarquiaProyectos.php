@@ -12,6 +12,7 @@ use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ControladorJerarquiaProyectos extends Controller
 {
@@ -42,10 +43,7 @@ class ControladorJerarquiaProyectos extends Controller
             'carreraId' => $carreraId,
             'lideres' => User::query()
                 ->whereHas('role', fn ($q) => $q->where('nombre', 'docente_lider'))
-                ->whereHas('asignaturasComoDocente', fn ($asignaturas) => $asignaturas
-                    ->where('docentes_asignatura.periodo_id', $periodoId)
-                    ->where('docentes_asignatura.activo', true)
-                    ->when($carreraId, fn ($query) => $query->where('asignaturas.carrera_id', $carreraId)))
+                ->where('estado', 'activo')
                 ->when($carreraId, fn ($query) => $query->where(function ($docentes) use ($carreraId) {
                     $docentes->where('carrera_id', $carreraId)
                         ->orWhereHas('carrerasComoDocente', fn ($carreras) => $carreras
@@ -74,16 +72,13 @@ class ControladorJerarquiaProyectos extends Controller
         abort_unless($lider->hasRole('docente_lider'), 422);
         $asignatura = Asignatura::query()->findOrFail($datos['asignatura_lider_id']);
         abort_unless((int) $asignatura->carrera_id === (int) $grupo->carrera_id && (int) $asignatura->grado === (int) $grupo->grado, 422);
-        abort_unless(
-            $lider->asignaturasComoDocente()
-                ->where('asignaturas.id', $asignatura->id)
-                ->where('docentes_asignatura.periodo_id', $grupo->periodo_id)
-                ->where('docentes_asignatura.activo', true)
-                ->exists(),
-            422,
-            'El docente seleccionado no imparte esta materia en el periodo del grupo.'
-        );
-        $grupo->update(['lider_proyecto_id' => $lider->id, 'asignatura_lider_id' => $asignatura->id]);
+        abort_unless($lider->estado === 'activo' && ($lider->carrera_id === $grupo->carrera_id || $lider->carrerasComoDocente()->whereKey($grupo->carrera_id)->exists()), 422);
+        DB::transaction(function () use ($grupo, $lider, $asignatura): void {
+            $clave = ['periodo_id' => $grupo->periodo_id, 'asignatura_id' => $asignatura->id, 'docente_id' => $lider->id];
+            DB::table('docentes_asignatura')->insertOrIgnore([...$clave, 'activo' => true, 'creado_en' => now(), 'actualizado_en' => now()]);
+            DB::table('docentes_asignatura')->where($clave)->update(['activo' => true, 'actualizado_en' => now()]);
+            $grupo->update(['lider_proyecto_id' => $lider->id, 'asignatura_lider_id' => $asignatura->id]);
+        });
         return back()->with('estado', 'Líder de proyecto y materia líder asignados al grupo.');
     }
 }
