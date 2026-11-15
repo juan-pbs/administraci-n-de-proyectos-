@@ -1,7 +1,7 @@
 <x-contenedor-aplicacion title="Pendientes del periodo | Administración de proyectos" active="periodos" :navegacion="$navegacion" :role-name="$roleName">
     <section class="border-b border-slate-200 pb-5">
         <a href="{{ route('modulos.show', 'periodos') }}" class="text-sm font-bold text-[#15529A] underline">← Volver a periodos</a>
-        <p class="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">Revisión antes del cierre</p>
+        <p class="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-[#005227]">Revisión antes del cierre</p>
         <h2 class="mt-2 text-2xl font-bold text-[#0D376D]">Pendientes de {{ $periodo->nombre }}</h2>
         <p class="mt-2 text-sm text-slate-600">Consulta los proyectos sin PDF final y las guías en borrador de este periodo. Esta vista no modifica entregas ni aprobaciones.</p>
     </section>

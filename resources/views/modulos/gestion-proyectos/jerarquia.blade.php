@@ -1,7 +1,10 @@
 <x-contenedor-aplicacion title="Docentes líderes | Administración de proyectos" active="jerarquia-proyectos" :navegacion="$navegacion" :role-name="$roleName">
+    @if(request()->query('origen') === 'carreras-grupos')
+        <a href="{{ route('modulos.show', ['modulo' => 'carreras-grupos', 'periodo_grupos' => $periodoId, 'carrera_grupos' => $carreraId]) }}" class="mb-4 inline-flex rounded-md border border-[#15529A] px-4 py-2 text-sm font-bold text-[#15529A] hover:bg-[#EAF2FB]">← Volver a Carreras y grupos</a>
+    @endif
     <section class="flex flex-col gap-4 border-b border-slate-200 pb-5 xl:flex-row xl:items-end xl:justify-between">
         <div>
-            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">Organización académica</p>
+            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#005227]">Organización académica</p>
             <h2 class="mt-2 text-2xl font-bold text-[#0D376D]">Docentes líderes por grupo</h2>
             <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Selecciona el docente líder y la asignatura integradora del grupo. Al guardar, la materia queda vinculada al docente para este periodo y podrá formar equipos y asignar proyectos.</p>
         </div>
@@ -35,7 +38,7 @@
                     <h3 class="font-bold text-slate-900">Asignación vigente</h3>
                     <p class="mt-1 text-sm text-slate-500">{{ $grupos->count() }} grupos en la selección actual</p>
                 </div>
-                <span class="w-fit rounded-full bg-[#EAF7EF] px-3 py-1 text-xs font-bold text-[#0F7D47]">Periodo independiente</span>
+                <span class="w-fit rounded-full bg-[#EAF7EF] px-3 py-1 text-xs font-bold text-[#005227]">Periodo independiente</span>
             </div>
 
             <div class="divide-y divide-slate-200">
@@ -44,7 +47,7 @@
                         @csrf
                         <input type="hidden" name="grupo_academico_id" value="{{ $grupo->id }}">
                         <div>
-                            <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#21A366]">{{ $grupo->carrera->clave }}</p>
+                            <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#005227]">{{ $grupo->carrera->clave }}</p>
                             <p class="mt-1 text-2xl font-bold text-[#0D376D]">{{ $grupo->grado }}{{ $grupo->grupo }}</p>
                             <p class="mt-1 text-xs text-slate-500">{{ $grupo->periodo->nombre }}</p>
                         </div>

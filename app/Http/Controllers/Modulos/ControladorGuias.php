@@ -16,6 +16,7 @@ use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ControladorGuias extends Controller
@@ -50,8 +51,10 @@ class ControladorGuias extends Controller
             'cuatrimestre' => ['required', 'integer', 'between:1,12'],
             'competencias_evaluar' => ['nullable', 'string'],
             'objetivo_aprendizaje' => ['nullable', 'string'],
-            'version' => ['required', 'string', 'max:30'],
+            'version' => ['required', 'string', 'max:30', 'regex:/\A[0-9]+(?:\.[0-9]+)*\z/'],
             'estado' => ['sometimes', 'in:borrador'],
+        ], [
+            'version.regex' => 'La versión debe contener números separados por puntos, por ejemplo 1.0.',
         ]);
 
         $asignatura = Asignatura::query()->findOrFail($datos['asignatura_id']);
@@ -74,7 +77,9 @@ class ControladorGuias extends Controller
 
         GuiaIntegradora::query()->create([...$datos, 'estado' => 'borrador', 'creado_por' => $request->user()->id]);
 
-        return redirect()->route('modulos.show', 'guias')->with('estado', 'Guía integradora guardada correctamente.');
+        return redirect()->route('modulos.show', [
+            'modulo' => 'guias', 'periodo_guias' => $inicio->id, 'carrera_guias' => $asignatura->carrera_id,
+        ])->with('estado', 'Guía integradora guardada correctamente.');
     }
 
     public function publicar(Request $request, GuiaIntegradora $guia, CicloAcademico $ciclo): RedirectResponse
@@ -94,10 +99,12 @@ class ControladorGuias extends Controller
             'orden' => ['required', 'integer', 'between:1,999'],
             'titulo' => ['required', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string', 'max:20000'],
-            'fecha_limite' => ['nullable', 'date', 'after_or_equal:2000-01-01', 'before_or_equal:2100-12-31'],
+            'fecha_limite' => ['nullable', 'date', 'after:now', 'after_or_equal:2000-01-01', 'before_or_equal:2100-12-31'],
             'ponderacion' => ['required', 'numeric', 'decimal:0,2', 'min:0', 'max:100'],
             'requiere_documento' => ['nullable', 'boolean'],
             'requiere_codigo' => ['nullable', 'boolean'],
+        ], [
+            'fecha_limite.after' => 'La fecha límite debe ser posterior al momento actual.',
         ]);
 
         $guia = GuiaIntegradora::query()->findOrFail($datos['guia_integradora_id']);
@@ -120,6 +127,57 @@ class ControladorGuias extends Controller
         );
 
         return redirect()->route('modulos.show', 'guias')->with('estado', 'Apartado de guía guardado correctamente.');
+    }
+
+    public function guardarApartados(Request $request): RedirectResponse
+    {
+        $this->autorizarDireccion($request);
+
+        $datos = $request->validate([
+            'guia_integradora_id' => ['required', 'exists:guias_integradoras,id'],
+            'apartados' => ['required', 'array', 'min:1', 'max:20'],
+            'apartados.*.orden' => ['required', 'integer', 'between:1,999', 'distinct'],
+            'apartados.*.titulo' => ['required', 'string', 'max:255'],
+            'apartados.*.descripcion' => ['nullable', 'string', 'max:20000'],
+            'apartados.*.fecha_limite' => ['nullable', 'date', 'after:now', 'after_or_equal:2000-01-01', 'before_or_equal:2100-12-31'],
+            'apartados.*.ponderacion' => ['required', 'numeric', 'decimal:0,2', 'min:0', 'max:100'],
+            'apartados.*.requiere_documento' => ['nullable', 'boolean'],
+            'apartados.*.requiere_codigo' => ['nullable', 'boolean'],
+        ], [
+            'apartados.*.orden.distinct' => 'No repitas el orden de un apartado en la misma carga.',
+            'apartados.*.fecha_limite.after' => 'Cada fecha límite debe ser posterior al momento actual.',
+        ]);
+
+        $guia = GuiaIntegradora::query()->with(['periodo', 'periodoFin', 'asignatura'])->findOrFail($datos['guia_integradora_id']);
+        if ($guia->estado === 'cerrada' || ($guia->periodoFin ?? $guia->periodo)->estado === 'cerrado') {
+            throw ValidationException::withMessages(['guia_integradora_id' => 'No se pueden modificar apartados de una guía cerrada.']);
+        }
+        foreach ($datos['apartados'] as $indice => $apartado) {
+            if (! empty($apartado['fecha_limite']) && ! $guia->admiteFechaLimite($apartado['fecha_limite'])) {
+                throw ValidationException::withMessages(["apartados.{$indice}.fecha_limite" => 'La fecha límite debe estar dentro de los periodos de la guía.']);
+            }
+        }
+
+        DB::transaction(function () use ($request, $guia, $datos): void {
+            foreach ($datos['apartados'] as $indice => $apartado) {
+                ApartadoGuia::query()->updateOrCreate(
+                    ['guia_integradora_id' => $guia->id, 'orden' => $apartado['orden']],
+                    [
+                        'titulo' => $apartado['titulo'],
+                        'descripcion' => $apartado['descripcion'] ?? null,
+                        'fecha_limite' => $apartado['fecha_limite'] ?? null,
+                        'ponderacion' => $apartado['ponderacion'],
+                        'requiere_documento' => $request->boolean("apartados.{$indice}.requiere_documento"),
+                        'requiere_codigo' => $request->boolean("apartados.{$indice}.requiere_codigo"),
+                    ],
+                );
+            }
+        });
+
+        return redirect()->route('modulos.show', [
+            'modulo' => 'guias', 'periodo_guias' => $guia->periodo_id,
+            'carrera_guias' => $guia->asignatura->carrera_id,
+        ])->with('estado', count($datos['apartados']).' apartados guardados correctamente.');
     }
 
     public function asignarAsignaturaApartado(Request $request): RedirectResponse

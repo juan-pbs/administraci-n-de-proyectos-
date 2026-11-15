@@ -15,7 +15,7 @@
     <ul id="buscar-acciones-resultados" class="mt-2 grid gap-2 md:grid-cols-2" data-busqueda-resultados @if($consultaBusqueda === '') hidden @endif>
         @foreach($resultadosBusqueda as $resultado)
             <li><a href="{{ $resultado['ruta'] }}" class="block h-full rounded-md border border-slate-200 p-3 transition hover:border-[#15529A] hover:bg-[#F5F9FE] focus:outline-none focus:ring-2 focus:ring-[#15529A]">
-                <span class="text-xs font-semibold text-[#21A366]">{{ $resultado['modulo'] }}</span>
+                <span class="text-xs font-semibold text-[#005227]">{{ $resultado['modulo'] }}</span>
                 <span class="mt-1 block font-bold text-[#0D376D]">{{ $resultado['titulo'] }}</span>
                 <span class="mt-1 block text-sm leading-5 text-slate-500">{{ $resultado['descripcion'] }}</span>
             </a></li>

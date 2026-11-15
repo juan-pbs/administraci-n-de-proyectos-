@@ -14,7 +14,7 @@
             </div>
 
             <div class="mt-7 text-center">
-                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">Seguridad de tu cuenta</p>
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#005227]">Seguridad de tu cuenta</p>
                 <h1 class="mt-2 text-2xl font-bold text-[#0D376D]">Actualiza tu contraseña</h1>
                 <p class="mt-2 text-sm leading-6 text-slate-600">Puedes cambiar tu contraseña cuando lo necesites.</p>
             </div>

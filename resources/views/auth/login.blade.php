@@ -37,9 +37,9 @@
                         </div>
 
                         <div class="mt-7 text-center">
-                            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">Acceso al sistema</p>
+                            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#005227]">Acceso al sistema</p>
                             <h2 class="mt-2 text-2xl font-bold text-[#0D376D]">Iniciar sesión</h2>
-                            <p class="mt-2 text-sm leading-6 text-slate-600">Ingresa con tu matrícula y contraseña.</p>
+                            <p class="mt-2 text-sm leading-6 text-slate-600">Alumnos: matrícula de 7 dígitos. Docentes y coordinación: su clave institucional.</p>
                         </div>
 
                         @if(session('estado'))<p role="status" class="mt-5 rounded-md bg-green-50 p-3 text-sm text-green-800">{{ session('estado') }}</p>@endif
@@ -57,7 +57,7 @@
                                     autofocus
                                     required
                                     class="mt-2 block w-full rounded-md border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#15529A] focus:ring-2 focus:ring-[#15529A]/20"
-                                    placeholder="Ej. 20260001"
+                                    placeholder="Ej. 2026001 o DOC-TI-01"
                                 >
                                 @error('matricula')
                                     <p class="mt-2 text-sm font-medium text-red-600">{{ $message }}</p>

@@ -1,5 +1,5 @@
 <x-contenedor-aplicacion title="Entregas | Administración de proyectos" active="mis-entregas" :navegacion="$navegacion" :role-name="$roleName">
-    <section class="border-b border-slate-200 pb-5"><p class="text-sm font-semibold uppercase tracking-[.18em] text-[#21A366]">Avances de la guía</p><h2 class="mt-3 text-2xl font-bold text-[#0D376D]">Entregas del proyecto</h2><p class="mt-2 text-sm text-slate-600">Envía evidencias y consulta calificaciones, correcciones y comentarios por apartado.</p></section>
+    <section class="border-b border-slate-200 pb-5"><p class="text-sm font-semibold uppercase tracking-[.18em] text-[#005227]">Avances de la guía</p><h2 class="mt-3 text-2xl font-bold text-[#0D376D]">Entregas del proyecto</h2><p class="mt-2 text-sm text-slate-600">Envía evidencias y consulta calificaciones, correcciones y comentarios por apartado.</p></section>
     @if(session('status'))<div class="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">{{ session('status') }}</div>@endif
     @if($errors->any())<div class="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ $errors->first() }}</div>@endif
     <section class="mt-5 space-y-3">

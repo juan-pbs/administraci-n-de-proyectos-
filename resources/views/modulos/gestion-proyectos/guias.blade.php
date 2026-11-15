@@ -1,6 +1,6 @@
 <x-contenedor-aplicacion title="Guías | Administración de proyectos" active="guias" :navegacion="$navegacion" :role-name="$roleName">
     <section class="border-b border-slate-200 pb-5">
-        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">Estructura por periodo</p>
+        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#005227]">Estructura por periodo</p>
         <h2 class="mt-2 text-2xl font-bold text-[#0D376D]">Guías integradoras</h2>
         <p class="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Coordinación configura una guía común para todos los equipos de la misma carrera y cuatrimestre. No se crea una guía por equipo.</p>
     </section>
@@ -14,15 +14,15 @@
     </section>
 
     <section class="mt-5 grid gap-4 xl:grid-cols-2">
-        <details class="rounded-lg border border-slate-200 bg-white shadow-sm" @if($errors->any()) open @endif>
-            <summary class="cursor-pointer list-none p-5"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Alta periódica</p><div class="mt-1 flex items-center justify-between"><h3 class="font-bold text-[#0D376D]">Crear nueva guía</h3><span class="text-xl text-[#15529A]">＋</span></div></summary>
+        <details class="group rounded-lg border border-slate-200 bg-white shadow-sm" @if($errors->any()) open @endif>
+            <summary class="cursor-pointer list-none p-5 transition hover:bg-[#EAF2FB] [&::-webkit-details-marker]:hidden"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#005227]">Alta periódica</p><div class="mt-1 flex items-center justify-between"><h3 class="font-bold text-[#0D376D]">Crear nueva guía</h3><span class="text-sm font-bold text-[#15529A]">Abrir formulario <span class="inline-block transition-transform group-open:rotate-180">▾</span></span></div></summary>
             <form method="POST" action="{{ route('guias.guardar') }}" class="grid gap-4 border-t border-slate-200 p-5 md:grid-cols-2">
                 @csrf
                 <div><label class="text-sm font-semibold text-slate-700">Periodo</label><select name="periodo_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($periodos->where('estado', '!=', 'cerrado') as $periodo)<option value="{{ $periodo->id }}" @selected((string) old('periodo_id', $filtrosGuias['periodo_id']) === (string) $periodo->id)>{{ $periodo->nombre }}</option>@endforeach</select></div>
                 <div><label class="text-sm font-semibold text-slate-700">Asignatura principal</label><select name="asignatura_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($asignaturas as $asignatura)<option value="{{ $asignatura->id }}">{{ $asignatura->carrera?->clave }} - {{ $asignatura->nombre }}</option>@endforeach</select></div>
                 <div class="md:col-span-2"><label class="text-sm font-semibold text-slate-700">Nombre</label><input name="nombre" maxlength="255" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
                 <div><label class="text-sm font-semibold text-slate-700">Cuatrimestre</label><input name="cuatrimestre" type="number" min="1" max="12" value="{{ old('cuatrimestre') }}" placeholder="4" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
-                <div><label class="text-sm font-semibold text-slate-700">Versión</label><input name="version" maxlength="30" value="{{ old('version', '1.0') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
+                <div><label class="text-sm font-semibold text-slate-700">Versión</label><input name="version" maxlength="30" pattern="[0-9]+(\.[0-9]+)*" title="Usa números separados por puntos, por ejemplo 1.0" value="{{ old('version', '1.0') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm"><p class="mt-1 text-xs text-slate-500">Formato: 1, 1.0 o 1.0.1.</p></div>
                 <div><label class="text-sm font-semibold text-slate-700">Periodo final, si abarca varios ciclos</label><select name="periodo_fin_id" class="mt-2 block w-full rounded-md border-slate-300 text-sm"><option value="">Mismo periodo inicial</option>@foreach($periodos->where('estado', '!=', 'cerrado') as $periodo)<option value="{{ $periodo->id }}" @selected((string) old('periodo_fin_id') === (string) $periodo->id)>{{ $periodo->nombre }}</option>@endforeach</select></div>
                 <p class="text-sm text-slate-500 md:col-span-2">Estado inicial: <strong>Borrador</strong>. Configura sus apartados y evaluadores; después pulsa Publicar guía.</p>
                 <div><label class="text-sm font-semibold text-slate-700">Competencias</label><textarea name="competencias_evaluar" rows="3" class="mt-2 block w-full rounded-md border-slate-300 text-sm">{{ old('competencias_evaluar') }}</textarea></div>
@@ -31,8 +31,8 @@
             </form>
         </details>
 
-        <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
-            <summary class="cursor-pointer list-none p-5"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Configuración</p><div class="mt-1 flex items-center justify-between"><h3 class="font-bold text-[#0D376D]">Apartados y materias</h3><span class="text-xl text-[#15529A]">＋</span></div></summary>
+        <details class="group rounded-lg border border-slate-200 bg-white shadow-sm" @if(old('apartados')) open @endif>
+            <summary class="cursor-pointer list-none p-5 transition hover:bg-[#EAF2FB] [&::-webkit-details-marker]:hidden"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#005227]">Configuración</p><div class="mt-1 flex items-center justify-between"><h3 class="font-bold text-[#0D376D]">Apartados y materias</h3><span class="text-sm font-bold text-[#15529A]">Abrir formularios <span class="inline-block transition-transform group-open:rotate-180">▾</span></span></div></summary>
             <div class="space-y-5 border-t border-slate-200 p-5">
                 <form method="POST" action="{{ route('guias.apartados.guardar') }}" data-preview-apartado data-preview-url="{{ route('guias.preview-apartado') }}" class="grid gap-3 rounded-md bg-slate-50 p-4 md:grid-cols-2">
                     @csrf
@@ -42,12 +42,38 @@
                     <div class="grid grid-cols-2 gap-2"><label class="text-xs font-semibold text-slate-700">Orden del apartado<input name="orden" type="number" min="1" max="999" step="1" value="1" required class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label><label class="text-xs font-semibold text-slate-700">Ponderación (%)<input name="ponderacion" type="number" min="0" max="100" step="0.01" value="10" required class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label></div>
                     <input name="titulo" maxlength="255" required placeholder="Título del apartado" class="rounded-md border-slate-300 text-sm md:col-span-2">
                     <textarea name="descripcion" rows="3" maxlength="20000" placeholder="Descripción y puntos requeridos" class="rounded-md border-slate-300 text-sm md:col-span-2"></textarea>
-                    <label class="text-sm font-semibold text-slate-700">Fecha y hora límite<input name="fecha_limite" type="datetime-local" class="mt-2 block w-full rounded-md border-slate-300 text-sm"></label>
+                    <label class="text-sm font-semibold text-slate-700">Fecha y hora límite<input name="fecha_limite" type="datetime-local" min="{{ now()->addMinute()->format('Y-m-d\TH:i') }}" class="mt-2 block w-full rounded-md border-slate-300 text-sm"></label>
                     <div class="flex gap-4 text-sm"><label><input name="requiere_documento" value="1" type="checkbox" checked> Documento</label><label><input name="requiere_codigo" value="1" type="checkbox"> Código</label></div>
                     <button class="w-fit rounded-md bg-[#15529A] px-4 py-2 text-sm font-bold text-white">Guardar apartado</button>
                     <button type="button" data-actualizar-preview class="w-fit rounded-md border border-[#15529A] px-4 py-2 text-sm font-bold text-[#15529A]">Actualizar vista previa</button>
                 </form>
                 <div class="rounded-md border bg-white p-3"><h4 class="font-bold text-[#0D376D]">Vista previa de la guía</h4><p data-preview-estado aria-live="polite" class="my-2 text-sm text-slate-500">Completa el título para ver cómo quedará el apartado antes de guardarlo.</p><iframe data-preview-frame title="Vista previa con cambios sin guardar" class="h-[65vh] w-full border"></iframe></div>
+
+                <form method="POST" action="{{ route('guias.apartados.lote.guardar') }}" id="batch-apartados" class="space-y-4 rounded-md border border-slate-200 p-4">
+                    @csrf
+                    <div><h4 class="font-bold text-slate-900">Crear o actualizar varios apartados</h4><p class="mt-1 text-xs text-slate-600">Cada orden existente actualiza su apartado. Revisa las fechas vencidas antes de guardar.</p></div>
+                    <label class="block text-sm font-semibold text-slate-700">Guía
+                        <select name="guia_integradora_id" id="batch-guia" required class="mt-1 block w-full rounded-md border-slate-300 text-sm">
+                            @foreach($guiasEditables as $guia)
+                                <option value="{{ $guia->id }}" data-apartados="{{ json_encode($guia->apartados->map(fn ($apartado) => ['orden' => $apartado->orden, 'titulo' => $apartado->titulo, 'descripcion' => $apartado->descripcion, 'fecha_limite' => $apartado->fecha_limite?->format('Y-m-d\TH:i'), 'ponderacion' => $apartado->ponderacion, 'requiere_documento' => $apartado->requiere_documento, 'requiere_codigo' => $apartado->requiere_codigo])->values()->all(), JSON_UNESCAPED_UNICODE) }}" @selected((int) old('guia_integradora_id') === (int) $guia->id)>{{ $guia->nombre }} v{{ $guia->version }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <div class="flex flex-wrap gap-2"><button type="button" id="load-apartados" class="rounded-md border border-[#15529A] px-3 py-2 text-sm font-bold text-[#15529A] hover:bg-[#EAF2FB]">Cargar apartados existentes</button><button type="button" id="add-apartado" class="rounded-md border border-[#15529A] px-3 py-2 text-sm font-bold text-[#15529A] hover:bg-[#EAF2FB]">+ Añadir apartado</button></div>
+                    <div id="batch-apartados-rows" class="space-y-3"></div>
+                    <button class="rounded-md bg-[#15529A] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#0D376D]">Guardar todos los apartados</button>
+                </form>
+                <template id="batch-apartado-template">
+                    <div class="batch-apartado grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
+                        <label class="text-xs font-semibold text-slate-700">Orden<input data-field="orden" type="number" min="1" max="999" required class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
+                        <label class="text-xs font-semibold text-slate-700">Ponderación (%)<input data-field="ponderacion" type="number" min="0" max="100" step="0.01" value="10" required class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
+                        <label class="text-xs font-semibold text-slate-700 md:col-span-2">Título<input data-field="titulo" maxlength="255" required class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
+                        <label class="text-xs font-semibold text-slate-700 md:col-span-2">Descripción<textarea data-field="descripcion" rows="2" maxlength="20000" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></textarea></label>
+                        <label class="text-xs font-semibold text-slate-700">Fecha y hora límite<input data-field="fecha_limite" type="datetime-local" min="{{ now()->addMinute()->format('Y-m-d\TH:i') }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
+                        <div class="flex items-center gap-4 text-sm"><label><input data-field="requiere_documento" value="1" type="checkbox" checked> Documento</label><label><input data-field="requiere_codigo" value="1" type="checkbox"> Código</label></div>
+                        <button type="button" data-remove-apartado class="w-fit rounded-md border border-red-300 px-3 py-1.5 text-sm font-bold text-red-700 hover:bg-red-50">Quitar fila</button>
+                    </div>
+                </template>
 
                 <div>
                     <form method="POST" action="{{ route('guias.apartados.asignaturas.guardar') }}" class="space-y-3 rounded-md border border-slate-200 p-4">
@@ -66,7 +92,7 @@
 
     <article data-async-region="guides-list" class="mt-5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <div class="flex flex-col gap-4 border-b border-slate-200 p-5 xl:flex-row xl:items-end xl:justify-between">
-            <div><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Vista operativa</p><h3 class="mt-1 text-lg font-bold text-[#0D376D]">Lista de guías</h3></div>
+            <div><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#005227]">Vista operativa</p><h3 class="mt-1 text-lg font-bold text-[#0D376D]">Lista de guías</h3></div>
             <form method="GET" action="{{ route('modulos.show', 'guias') }}" data-async-form data-async-targets="guides-list guide-metrics" class="flex flex-wrap items-end gap-2">
                 <div><label class="block text-xs font-bold uppercase text-slate-500">Periodo</label><select name="periodo_guias" class="mt-1 rounded-md border-slate-300 text-sm">@foreach($periodos as $periodo)<option value="{{ $periodo->id }}" @selected((string)$filtrosGuias['periodo_id'] === (string)$periodo->id)>{{ $periodo->nombre }}</option>@endforeach</select></div>
                 <div><label class="block text-xs font-bold uppercase text-slate-500">Carrera</label><select name="carrera_guias" class="mt-1 rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}" @selected((string)$filtrosGuias['carrera_id'] === (string)$carrera->id)>{{ $carrera->clave }} - {{ $carrera->nombre }}</option>@endforeach</select></div>
@@ -85,12 +111,12 @@
         <div class="divide-y divide-slate-200">
             @forelse($guias as $guia)
                 <details class="group">
-                    <summary class="grid cursor-pointer list-none gap-3 p-5 transition hover:bg-slate-50 md:grid-cols-[minmax(0,1fr)_150px_110px_100px_auto] md:items-center">
-                        <div><p class="text-xs font-bold uppercase tracking-[0.14em] text-[#21A366]">{{ $guia->asignatura?->clave ?? 'Sin materia' }}</p><h4 class="mt-1 font-bold text-[#0D376D]">{{ $guia->nombre }}</h4><p class="mt-1 text-sm text-slate-500">{{ $guia->cuatrimestre ?: 'Sin cuatrimestre' }}</p></div>
+                    <summary class="grid cursor-pointer list-none gap-3 p-5 transition hover:bg-[#EAF2FB] md:grid-cols-[minmax(0,1fr)_150px_110px_100px_auto] md:items-center [&::-webkit-details-marker]:hidden">
+                        <div><p class="text-xs font-bold uppercase tracking-[0.14em] text-[#005227]">{{ $guia->asignatura?->clave ?? 'Sin materia' }}</p><h4 class="mt-1 font-bold text-[#0D376D]">{{ $guia->nombre }}</h4><p class="mt-1 text-sm text-slate-500">{{ $guia->cuatrimestre ?: 'Sin cuatrimestre' }}</p></div>
                         <div><p class="text-xs text-slate-500">Periodo</p><p class="text-sm font-semibold text-slate-800">{{ $guia->periodo->nombre }}</p></div>
                         <div><p class="text-xs text-slate-500">Versión</p><p class="font-bold text-slate-800">v{{ $guia->version }}</p></div>
-                        <span class="w-fit rounded-full px-3 py-1 text-xs font-bold {{ $guia->estado === 'publicada' ? 'bg-[#EAF7EF] text-[#0F7D47]' : 'bg-[#EAF2FB] text-[#15529A]' }}">{{ ucfirst($guia->estado) }}</span>
-                        <span class="text-sm font-bold text-[#15529A]">{{ $guia->apartados_count }} apartados ▾</span>
+                        <span class="w-fit rounded-full px-3 py-1 text-xs font-bold {{ $guia->estado === 'publicada' ? 'bg-[#EAF7EF] text-[#005227]' : 'bg-[#EAF2FB] text-[#15529A]' }}">{{ ucfirst($guia->estado) }}</span>
+                        <span class="text-sm font-bold text-[#15529A]">{{ $guia->apartados_count }} apartados <span class="inline-block transition-transform group-open:rotate-180">▾</span></span>
                     </summary>
                     <div class="border-t border-slate-100 bg-slate-50 p-5">
                         @if($guia->estado === 'borrador' && $guiasEditables->contains('id', $guia->id))
@@ -154,4 +180,38 @@
         </div>
         <div class="border-t border-slate-200 px-5 py-3 text-sm text-slate-500">Lista completa: <strong class="text-slate-800">{{ $guias->count() }} guías</strong></div>
     </article>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const rows = document.getElementById('batch-apartados-rows');
+            const template = document.getElementById('batch-apartado-template');
+            const guia = document.getElementById('batch-guia');
+            if (!rows || !template || !guia) return;
+            let nextIndex = 0;
+            const addRow = (values = {}) => {
+                if (rows.children.length >= 20) return;
+                const row = template.content.firstElementChild.cloneNode(true);
+                for (const field of row.querySelectorAll('[data-field]')) {
+                    const key = field.dataset.field;
+                    field.name = `apartados[${nextIndex}][${key}]`;
+                    if (field.type === 'checkbox') field.checked = values[key] === undefined ? key === 'requiere_documento' : [true, 1, '1'].includes(values[key]);
+                    else if (values[key] !== undefined && values[key] !== null) field.value = values[key];
+                }
+                nextIndex += 1;
+                row.querySelector('[data-remove-apartado]').addEventListener('click', () => {
+                    if (rows.children.length > 1) row.remove();
+                });
+                rows.appendChild(row);
+            };
+            document.getElementById('add-apartado')?.addEventListener('click', () => addRow({orden: rows.children.length + 1}));
+            document.getElementById('load-apartados')?.addEventListener('click', () => {
+                const existing = JSON.parse(guia.selectedOptions[0]?.dataset.apartados || '[]');
+                rows.replaceChildren();
+                if (existing.length) existing.forEach(addRow);
+                else addRow({orden: 1});
+            });
+            const previous = @json(old('apartados'));
+            if (previous && Object.keys(previous).length) Object.values(previous).forEach(addRow);
+            else addRow({orden: 1});
+        });
+    </script>
 </x-contenedor-aplicacion>

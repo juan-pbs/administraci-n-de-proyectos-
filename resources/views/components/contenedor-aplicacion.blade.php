@@ -13,11 +13,11 @@
 <x-layouts.app title="{{ $title }}">
     <div class="h-screen overflow-hidden bg-slate-100">
         <div class="flex h-full min-h-0">
-            <aside class="hidden h-screen w-72 shrink-0 border-r border-slate-200 bg-white lg:block">
+            <aside id="app-sidebar" class="hidden h-screen w-72 shrink-0 border-r border-slate-200 bg-white lg:block">
                 <div class="flex h-full min-h-0 flex-col">
                     <div class="shrink-0 border-b border-slate-200 px-5 py-5">
                         <img src="{{ asset('assets/utvm/utvm-correo.png') }}" alt="Logo UTVM" class="h-16 w-[170px] object-contain">
-                        <p class="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#21A366]">Sistema académico</p>
+                        <p class="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#005227]">Sistema académico</p>
                         <p class="mt-1 text-sm font-bold text-[#0D376D]">Proyectos integradores</p>
                     </div>
 
@@ -25,7 +25,7 @@
                         @foreach ($navegacion as $item)
                             <a
                                 href="{{ $item['ruta'] }}"
-                                class="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold transition {{ $active === $item['clave'] ? 'bg-[#EAF7EF] text-[#0F7D47]' : 'text-slate-600 hover:bg-slate-100 hover:text-[#0D376D]' }}"
+                                class="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold transition {{ $active === $item['clave'] ? 'bg-[#EAF7EF] text-[#005227]' : 'text-slate-600 hover:bg-slate-100 hover:text-[#0D376D]' }}"
                             >
                                 <span class="grid h-7 w-7 place-items-center rounded-md border border-slate-200 bg-white text-sm">{{ $item['icono'] }}</span>
                                 <span class="truncate">{{ $item['titulo'] }}</span>
@@ -38,9 +38,12 @@
             <div class="flex min-h-0 min-w-0 flex-1 flex-col">
                 <header class="z-20 shrink-0 border-b border-slate-200 bg-white/95 backdrop-blur">
                     <div class="flex items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-                        <div class="min-w-0">
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#21A366]">UTVM</p>
+                        <div class="flex min-w-0 items-center gap-3">
+                            <button id="toggle-sidebar" type="button" aria-controls="app-sidebar" aria-expanded="true" class="hidden rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-[#0D376D] hover:bg-[#EAF2FB] lg:inline-flex">Ocultar menú</button>
+                            <div class="min-w-0">
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#005227]">UTVM</p>
                             <h1 class="truncate text-lg font-bold text-[#0D376D]">Administración de proyectos integradores</h1>
+                            </div>
                         </div>
 
                         <div class="flex items-center gap-3">
@@ -100,6 +103,22 @@
         </div>
     </div>
     <script>
+        (() => {
+            const sidebar = document.getElementById('app-sidebar');
+            const toggle = document.getElementById('toggle-sidebar');
+            if (!sidebar || !toggle) return;
+            const setCollapsed = (collapsed) => {
+                sidebar.style.display = collapsed ? 'none' : '';
+                toggle.textContent = collapsed ? 'Mostrar menú' : 'Ocultar menú';
+                toggle.setAttribute('aria-expanded', String(!collapsed));
+            };
+            try { setCollapsed(localStorage.getItem('app-sidebar-collapsed') === '1'); } catch (_) { setCollapsed(false); }
+            toggle.addEventListener('click', () => {
+                const collapsed = toggle.getAttribute('aria-expanded') === 'true';
+                setCollapsed(collapsed);
+                try { localStorage.setItem('app-sidebar-collapsed', collapsed ? '1' : '0'); } catch (_) {}
+            });
+        })();
         document.addEventListener('click', (event) => {
             const menu = document.getElementById('menu-ayuda');
             if (menu?.open && !menu.contains(event.target)) menu.open = false;

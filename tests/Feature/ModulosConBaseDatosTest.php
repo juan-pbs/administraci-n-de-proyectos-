@@ -115,7 +115,7 @@ test('modulos base guardan informacion en base de datos', function () {
     $this->actingAs($direccion)
         ->post(route('usuarios.guardar'), [
             'nombre' => 'Alumno de Prueba',
-            'matricula' => '20269999',
+            'matricula' => '2026999',
             'correo' => 'alumno.prueba@utvm.edu.mx',
             'rol_id' => $rolEstudiante->id,
             'carrera_id' => $carrera->id,
@@ -123,7 +123,7 @@ test('modulos base guardan informacion en base de datos', function () {
         ])
         ->assertRedirect(route('modulos.show', 'usuarios'));
 
-    $estudiante = User::query()->where('matricula', '20269999')->firstOrFail();
+    $estudiante = User::query()->where('matricula', '2026999')->firstOrFail();
     expect($estudiante->debe_cambiar_contrasena)->toBeFalse();
 
     Mail::assertSent(ContrasenaInicial::class, fn (ContrasenaInicial $correo) => $correo->hasTo('alumno.prueba@utvm.edu.mx'));
@@ -135,7 +135,7 @@ test('modulos base guardan informacion en base de datos', function () {
             'clave' => 'TI-INT-09',
             'grado' => 9,
         ])
-        ->assertRedirect(route('modulos.show', 'asignaturas'));
+        ->assertRedirectContains('/modulos/asignaturas?');
 
     $asignatura = Asignatura::query()->where('clave', 'TI-INT-09')->firstOrFail();
     $docenteLider->asignaturasComoDocente()->attach($asignatura->id, ['periodo_id' => $periodo->id, 'activo' => true]);

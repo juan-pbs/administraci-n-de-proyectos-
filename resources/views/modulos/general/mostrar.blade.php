@@ -6,7 +6,7 @@
 >
     <section class="flex flex-col gap-4 border-b border-slate-200 pb-5 xl:flex-row xl:items-end xl:justify-between">
         <div class="min-w-0">
-            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">Módulo</p>
+            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#005227]">Módulo</p>
             <h2 class="mt-2 text-2xl font-bold text-[#0D376D]">{{ $pagina['titulo'] }}</h2>
             <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{{ $pagina['subtitulo'] }}</p>
         </div>
@@ -58,7 +58,7 @@
                                 <input
                                     type="{{ $campo['tipo'] }}"
                                     value="{{ $campo['valor'] ?? '' }}"
-                                    class="mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition file:mr-3 file:rounded-md file:border-0 file:bg-[#EAF7EF] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#0F7D47] focus:border-[#15529A] focus:ring-2 focus:ring-[#15529A]/20"
+                                    class="mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition file:mr-3 file:rounded-md file:border-0 file:bg-[#EAF7EF] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#005227] focus:border-[#15529A] focus:ring-2 focus:ring-[#15529A]/20"
                                 >
                             @endif
                         @endif
@@ -99,7 +99,7 @@
                                     <td class="whitespace-nowrap px-4 py-3 text-slate-700">{{ $celda }}</td>
                                 @endforeach
                                 <td class="whitespace-nowrap px-4 py-3">
-                                    <button type="button" class="rounded-md bg-[#EAF7EF] px-3 py-1.5 text-xs font-bold text-[#0F7D47]">
+                                    <button type="button" class="rounded-md bg-[#EAF7EF] px-3 py-1.5 text-xs font-bold text-[#005227]">
                                         Abrir
                                     </button>
                                 </td>

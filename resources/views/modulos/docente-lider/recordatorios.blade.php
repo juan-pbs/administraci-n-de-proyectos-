@@ -1,6 +1,6 @@
 <x-contenedor-aplicacion title="Recordatorios | Administración de proyectos" active="recordatorios" :navegacion="$navegacion" :role-name="$roleName">
     <section class="border-b border-slate-200 pb-5">
-        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">Docente líder</p>
+        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#005227]">Docente líder</p>
         <h2 class="mt-2 text-2xl font-bold text-[#0D376D]">Recordatorios de entrega</h2>
         <p class="mt-2 max-w-3xl text-sm text-slate-600">Envía recordatorios de entrega a estudiantes y avisos de revisión a docentes con versiones pendientes de tus equipos.</p>
     </section>

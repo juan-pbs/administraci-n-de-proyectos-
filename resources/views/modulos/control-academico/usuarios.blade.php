@@ -1,6 +1,9 @@
 <x-contenedor-aplicacion title="Usuarios | Administración de proyectos" active="usuarios" :navegacion="$navegacion" :role-name="$roleName">
+    @if(request()->query('origen') === 'carreras-grupos')
+        <a href="{{ route('modulos.show', ['modulo' => 'carreras-grupos', 'periodo_grupos' => $filtrosAlumnos['periodo_id'], 'carrera_grupos' => $filtrosAlumnos['carrera_id']]) }}" class="mb-4 inline-flex rounded-md border border-[#15529A] px-4 py-2 text-sm font-bold text-[#15529A] hover:bg-[#EAF2FB]">← Volver a Carreras y grupos</a>
+    @endif
     <section class="border-b border-slate-200 pb-5">
-        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">{{ $esCoordinacion ? 'Control de acceso' : 'Grupos asignados' }}</p>
+        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#005227]">{{ $esCoordinacion ? 'Control de acceso' : 'Grupos asignados' }}</p>
         <h2 class="mt-2 text-2xl font-bold text-[#0D376D]">{{ $esCoordinacion ? 'Usuarios' : 'Lista de alumnos' }}</h2>
         <p class="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
             {{ $esCoordinacion ? 'Los alumnos se cargan por listas y periodo. Los docentes permanecen en el sistema, pero sus asignaciones académicas se realizan nuevamente en cada periodo.' : 'Consulta y carga únicamente los alumnos de los grupos donde eres docente líder.' }}
@@ -26,9 +29,9 @@
         @if($esCoordinacion)
         <article class="rounded-lg border border-slate-200 bg-white shadow-sm">
             <div class="border-b border-slate-200 p-5">
-                <p class="text-xs font-bold uppercase tracking-[0.16em] text-[#21A366]">Carga principal</p>
+                <p class="text-xs font-bold uppercase tracking-[0.16em] text-[#005227]">Carga principal</p>
                 <h3 class="mt-1 text-lg font-bold text-[#0D376D]">Listas de alumnos por periodo</h3>
-                <p class="mt-2 text-sm text-slate-600">Agrega una o varias listas. Para cada archivo indica carrera, cuatrimestre y grupo; el Excel solo necesita cédula/matrícula, nómina/nombre y correo.</p>
+                <p class="mt-2 text-sm text-slate-600">Agrega una o varias listas. Para cada archivo indica carrera, cuatrimestre y grupo; el Excel necesita matrícula de 7 dígitos, nombre y correo.</p>
                 <a href="{{ asset('plantillas/plantilla_carga_alumnos.xlsx') }}" download="plantilla_carga_alumnos.xlsx" class="mt-4 inline-flex items-center rounded-md border border-[#15529A] bg-[#EAF2FB] px-4 py-2.5 text-sm font-bold text-[#0D376D] hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-[#15529A]">
                     Descargar plantilla de alumnos (.xlsx)
                 </a>
@@ -63,7 +66,7 @@
             <article class="rounded-lg border-2 border-[#21A366] bg-white shadow-sm">
                 <div class="flex flex-col gap-3 border-b border-slate-200 p-5 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-[#21A366]">Revisión antes de guardar</p>
+                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-[#005227]">Revisión antes de guardar</p>
                         <h3 class="mt-1 text-lg font-bold text-[#0D376D]">Vista previa de {{ count($vistaPrevia['listas']) }} {{ count($vistaPrevia['listas']) === 1 ? 'lista' : 'listas' }}</h3>
                     </div>
                     <form method="POST" action="{{ route('usuarios.alumnos.confirmar') }}">
@@ -81,7 +84,7 @@
                                     <h4 class="font-bold text-slate-900">{{ $lista['nombre'] }}</h4>
                                     <p class="text-sm text-slate-500">{{ $carreraLista?->clave }} · {{ $lista['grado'] }}{{ $lista['grupo'] }} · {{ count($lista['alumnos']) }} alumnos detectados</p>
                                 </div>
-                                <span class="rounded-full bg-[#EAF7EF] px-3 py-1 text-xs font-bold text-[#0F7D47]">{{ count($lista['alumnos']) }} admitibles</span>
+                                <span class="rounded-full bg-[#EAF7EF] px-3 py-1 text-xs font-bold text-[#005227]">{{ count($lista['alumnos']) }} admitibles</span>
                             </div>
                             <div class="overflow-x-auto">
                                 <table class="min-w-full divide-y divide-slate-200 text-sm">
@@ -158,7 +161,7 @@
     <section data-user-panel="docentes" class="mt-5 space-y-5">
         <article class="rounded-lg border border-slate-200 bg-white shadow-sm">
             <div class="border-b border-slate-200 p-5">
-                <p class="text-xs font-bold uppercase tracking-[0.16em] text-[#21A366]">Alta múltiple</p>
+                <p class="text-xs font-bold uppercase tracking-[0.16em] text-[#005227]">Alta múltiple</p>
                 <h3 class="mt-1 text-lg font-bold text-[#0D376D]">Registrar docentes</h3>
                 <p class="mt-2 text-sm text-slate-600">Los docentes se conservan entre periodos. Agrega tantas filas como necesites y guárdalas en una sola operación.</p>
             </div>
@@ -200,16 +203,32 @@
             </nav>
             <div class="overflow-x-auto">
                 <table class="min-w-[840px] w-full table-fixed divide-y divide-slate-200 text-sm">
-                    <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">Clave</th><th class="px-4 py-3 text-left">Nombre</th><th class="px-4 py-3 text-left">Rol</th><th class="px-4 py-3 text-left">Carrera</th><th class="px-4 py-3 text-left">Correo</th></tr></thead>
+                    <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">Clave</th><th class="px-4 py-3 text-left">Nombre</th><th class="px-4 py-3 text-left">Rol</th><th class="px-4 py-3 text-left">Carrera</th><th class="px-4 py-3 text-left">Correo</th><th class="px-4 py-3 text-left">Acción</th></tr></thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($docentes as $docente)
-                            <tr><td class="break-all px-4 py-3 font-semibold">{{ $docente->matricula }}</td><td class="break-words px-4 py-3">{{ $docente->nombre }}</td><td class="px-4 py-3">{{ $docente->role?->nombre_visible }}</td><td class="break-all px-4 py-3">{{ $docente->carrera?->clave ?? '-' }}</td><td class="break-all px-4 py-3">{{ $docente->correo }}</td></tr>
+                            <tr><td class="break-all px-4 py-3 font-semibold">{{ $docente->matricula }}</td><td class="break-words px-4 py-3">{{ $docente->nombre }}</td><td class="px-4 py-3">{{ $docente->role?->nombre_visible }}</td><td class="break-all px-4 py-3">{{ $docente->carrera?->clave ?? '-' }}</td><td class="break-all px-4 py-3">{{ $docente->correo }}</td><td class="px-4 py-3"><button type="button" data-edit-docente="{{ $docente->id }}" class="rounded-md border border-[#15529A] px-3 py-1.5 font-bold text-[#15529A] hover:bg-[#EAF2FB]">Editar</button></td></tr>
                         @empty
-                            <tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">No hay docentes en esta carrera o no coinciden con la búsqueda.</td></tr>
+                            <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">No hay docentes en esta carrera o no coinciden con la búsqueda.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
+            @foreach ($docentes as $docente)
+                @php($editando = (int) old('docente_editando') === (int) $docente->id)
+                <dialog id="editar-docente-{{ $docente->id }}" class="w-full max-w-xl rounded-lg border border-slate-200 p-0 shadow-xl backdrop:bg-slate-950/40">
+                    <form method="POST" action="{{ route('usuarios.docentes.actualizar', ['docente' => $docente, 'seccion' => 'docentes', 'carrera_docentes' => $filtrosDocentes['carrera_id']]) }}" class="space-y-4 p-6">
+                        @csrf @method('PATCH')
+                        <input type="hidden" name="docente_editando" value="{{ $docente->id }}">
+                        <div><h3 class="text-lg font-bold text-[#0D376D]">Editar docente</h3><p class="text-sm text-slate-600">{{ $docente->role?->nombre_visible }}</p></div>
+                        @if($editando && $errors->any())<ul class="list-disc rounded-md bg-red-50 px-6 py-3 text-sm text-red-700">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>@endif
+                        <label class="block text-sm font-semibold text-slate-700">Nombre<input name="nombre" required maxlength="120" value="{{ $editando ? old('nombre') : $docente->nombre }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
+                        <label class="block text-sm font-semibold text-slate-700">Matrícula / clave<input name="matricula" required maxlength="30" value="{{ $editando ? old('matricula') : $docente->matricula }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
+                        <label class="block text-sm font-semibold text-slate-700">Correo institucional<input name="correo" type="email" required maxlength="254" value="{{ $editando ? old('correo') : $docente->correo }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
+                        <label class="block text-sm font-semibold text-slate-700">Carrera principal<select name="carrera_id" required class="mt-1 block w-full rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}" @selected((int) ($editando ? old('carrera_id') : $docente->carrera_id) === (int) $carrera->id)>{{ $carrera->clave }} - {{ $carrera->nombre }}</option>@endforeach</select></label>
+                        <div class="flex justify-end gap-3"><button type="button" data-close-dialog class="rounded-md border border-slate-300 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50">Cancelar</button><button class="rounded-md bg-[#15529A] px-4 py-2 font-bold text-white hover:bg-[#0D376D]">Guardar cambios</button></div>
+                    </form>
+                </dialog>
+            @endforeach
             <div class="border-t border-slate-200 px-5 py-3 text-sm text-slate-500">Lista completa: <strong class="text-slate-800">{{ $docentes->count() }} {{ $docentes->count() === 1 ? 'docente' : 'docentes' }}</strong></div>
         </article>
     </section>
@@ -251,6 +270,14 @@
             };
             document.querySelectorAll('[data-user-tab]').forEach(tab => tab.addEventListener('click', () => activate(tab.dataset.userTab)));
             activate(active);
+
+            document.addEventListener('click', (event) => {
+                const editar = event.target.closest('[data-edit-docente]');
+                if (editar) document.getElementById(`editar-docente-${editar.dataset.editDocente}`)?.showModal();
+                if (event.target.closest('[data-close-dialog]')) event.target.closest('dialog')?.close();
+            });
+            const docenteConErrores = @json(old('docente_editando'));
+            if (docenteConErrores) document.getElementById(`editar-docente-${docenteConErrores}`)?.showModal();
 
             const addRepeatedRow = (containerId, templateId, prefix, fields) => {
                 const container = document.getElementById(containerId);

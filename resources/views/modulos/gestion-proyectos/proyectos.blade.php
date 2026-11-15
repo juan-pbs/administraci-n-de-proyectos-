@@ -1,6 +1,6 @@
 <x-contenedor-aplicacion title="Proyectos | Administración de proyectos" active="proyectos" :navegacion="$navegacion" :role-name="$roleName">
     <section class="border-b border-slate-200 pb-5">
-        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">Proyecto integrador</p>
+        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#005227]">Proyecto integrador</p>
         <h2 class="mt-2 text-2xl font-bold text-[#0D376D]">Proyectos asignados</h2>
         <p class="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Consulta los proyectos de tus equipos y despliega cada registro para incorporar docentes y asignaturas participantes.</p>
     </section>
@@ -72,7 +72,7 @@
                             <p class="text-sm text-slate-700">{{ $proyecto->guiaIntegradora->nombre }}</p>
                             <p class="mt-1 text-xs text-slate-500">Versión {{ $proyecto->guiaIntegradora->version }}</p>
                         </div>
-                        <div><span class="rounded-full bg-[#EAF7EF] px-3 py-1 text-xs font-bold text-[#0F7D47]">{{ ucfirst(str_replace('_', ' ', $proyecto->estado)) }}</span></div>
+                        <div><span class="rounded-full bg-[#EAF7EF] px-3 py-1 text-xs font-bold text-[#005227]">{{ ucfirst(str_replace('_', ' ', $proyecto->estado)) }}</span></div>
                         <div class="flex items-center justify-end gap-2 text-sm font-bold text-[#15529A]">
                             <span class="group-open:hidden">Administrar</span><span class="hidden group-open:inline">Cerrar</span><span class="transition group-open:rotate-180">⌄</span>
                         </div>
@@ -83,7 +83,7 @@
                         <div class="grid gap-5 xl:grid-cols-2">
                             <article class="rounded-lg border border-slate-200 bg-white">
                                 <div class="border-b border-slate-200 px-4 py-3">
-                                    <p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Docentes participantes</p>
+                                    <p class="text-xs font-bold uppercase tracking-[0.15em] text-[#005227]">Docentes participantes</p>
                                 </div>
                                 <div class="divide-y divide-slate-100">
                                     @forelse($proyecto->docentes as $docente)
@@ -114,7 +114,7 @@
 
                             <article class="rounded-lg border border-slate-200 bg-white">
                                 <div class="border-b border-slate-200 px-4 py-3">
-                                    <p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Asignaturas participantes</p>
+                                    <p class="text-xs font-bold uppercase tracking-[0.15em] text-[#005227]">Asignaturas participantes</p>
                                 </div>
                                 <div class="divide-y divide-slate-100">
                                     @forelse($proyecto->asignaturas as $asignatura)

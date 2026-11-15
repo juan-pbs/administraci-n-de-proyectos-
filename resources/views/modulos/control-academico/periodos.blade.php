@@ -1,6 +1,6 @@
 <x-contenedor-aplicacion title="Periodos | Administración de proyectos" active="periodos" :navegacion="$navegacion" :role-name="$roleName">
     <section class="border-b border-slate-200 pb-5">
-        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">Control académico</p>
+        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#005227]">Control académico</p>
         <h2 class="mt-2 text-2xl font-bold text-[#0D376D]">Periodos académicos</h2>
         <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Cada periodo inicia una operación independiente: se cargan nuevos alumnos, grupos, asignaciones y guías; únicamente se conserva el catálogo de docentes.</p>
     </section>
@@ -51,7 +51,7 @@
             @forelse($periodos as $periodo)
                 @php
                     $estiloEstado = match($periodo->estado) {
-                        'activo' => 'bg-[#EAF7EF] text-[#0F7D47]',
+                        'activo' => 'bg-[#EAF7EF] text-[#005227]',
                         'cerrado' => 'bg-slate-100 text-slate-600',
                         default => 'bg-amber-50 text-amber-700',
                     };

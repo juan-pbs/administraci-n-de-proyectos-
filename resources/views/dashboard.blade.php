@@ -5,14 +5,14 @@
     :role-name="$roleName"
 >
     <section class="border-b border-slate-200 pb-5">
-        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">{{ $panel['eyebrow'] }}</p>
+        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#005227]">{{ $panel['eyebrow'] }}</p>
         <div class="mt-3 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
             <div class="min-w-0">
                 <h2 class="text-2xl font-bold text-[#0D376D]">{{ $panel['title'] }}</h2>
                 <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{{ $panel['description'] }}</p>
             </div>
             <div class="text-left xl:text-right">
-                <span class="inline-flex w-fit rounded-md bg-[#EAF7EF] px-3 py-2 text-sm font-semibold text-[#0F7D47]">{{ $panel['badge'] }}</span>
+                <span class="inline-flex w-fit rounded-md bg-[#EAF7EF] px-3 py-2 text-sm font-semibold text-[#005227]">{{ $panel['badge'] }}</span>
                 <p class="mt-2 text-xs font-semibold text-slate-500">{{ $periodoActual?->nombre ?? 'Sin periodo configurado' }}</p>
             </div>
         </div>
@@ -141,7 +141,7 @@
                 </div>
             </div>
             <div>
-                <p class="text-xs font-bold uppercase tracking-[0.16em] text-[#21A366]">Progreso del equipo</p>
+                <p class="text-xs font-bold uppercase tracking-[0.16em] text-[#005227]">Progreso del equipo</p>
                 <h3 class="mt-2 text-xl font-bold text-[#0D376D]">{{ $validadas }} de {{ $totalApartados }} apartados validados</h3>
                 <p class="mt-2 text-sm leading-6 text-slate-500">La gráfica resume únicamente las entregas del proyecto correspondiente a tu equipo.</p>
                 <div class="mt-5 grid gap-3 sm:grid-cols-2">
@@ -209,7 +209,7 @@
             @forelse($gruposResumen as $grupo)
                 <article class="grid gap-3 px-5 py-4 sm:grid-cols-[100px_minmax(0,1fr)_100px_100px] sm:items-center">
                     <div>
-                        <p class="text-xs font-bold uppercase text-[#21A366]">{{ $grupo->carrera->clave }}</p>
+                        <p class="text-xs font-bold uppercase text-[#005227]">{{ $grupo->carrera->clave }}</p>
                         <p class="mt-1 text-lg font-bold text-[#0D376D]">{{ $grupo->grado }}{{ $grupo->grupo }}</p>
                     </div>
                     <div>

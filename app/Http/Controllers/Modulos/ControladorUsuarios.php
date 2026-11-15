@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Throwable;
@@ -60,6 +61,9 @@ class ControladorUsuarios extends Controller
             if ($dominioDocente !== '' && ! str_ends_with(strtolower($datos['correo']), '@'.$dominioDocente)) {
                 throw ValidationException::withMessages(['correo' => "El correo del docente debe pertenecer a @{$dominioDocente}."]);
             }
+        }
+        if ($rol->nombre === 'estudiante' && ! preg_match('/\A[0-9]{7}\z/', $datos['matricula'])) {
+            throw ValidationException::withMessages(['matricula' => 'La matrícula del alumno debe tener exactamente 7 dígitos.']);
         }
 
         if ($request->user()->hasRole('docente_lider')) {
@@ -151,6 +155,42 @@ class ControladorUsuarios extends Controller
             ->with('estado', count($datos['docentes'])." docentes registrados. Correos fallidos: {$correosFallidos}.");
     }
 
+    public function actualizarDocente(Request $request, User $docente): RedirectResponse
+    {
+        abort_unless($request->user()?->hasRole('coordinacion'), 403);
+        abort_unless($docente->hasAnyRole('docente_lider', 'docente_materia'), 404);
+
+        $dominioDocente = strtolower(trim((string) config('academico.dominio_correo_docente')));
+        $datos = $request->validate([
+            'nombre' => ['required', 'string', 'max:120'],
+            'matricula' => ['required', 'string', 'max:30', Rule::unique('usuarios', 'matricula')->ignore($docente->id)],
+            'correo' => ['required', 'email', 'max:254', Rule::unique('usuarios', 'correo')->ignore($docente->id),
+                function (string $attribute, mixed $value, \Closure $fail) use ($dominioDocente): void {
+                    if ($dominioDocente !== '' && ! str_ends_with(strtolower((string) $value), '@'.$dominioDocente)) {
+                        $fail("El correo del docente debe pertenecer a @{$dominioDocente}.");
+                    }
+                },
+            ],
+            'carrera_id' => ['required', 'exists:carreras,id'],
+        ]);
+
+        DB::transaction(function () use ($docente, $datos): void {
+            $docente->update($datos);
+            if ($docente->wasChanged('carrera_id')) {
+                $docente->carrerasComoDocente()->newPivotStatement()
+                    ->where('docente_id', $docente->id)
+                    ->update(['activo' => false, 'actualizado_en' => now()]);
+                $docente->carrerasComoDocente()->syncWithoutDetaching([
+                    $datos['carrera_id'] => ['activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
+                ]);
+            }
+        });
+
+        return redirect()->route('modulos.show', [
+            'modulo' => 'usuarios', 'seccion' => 'docentes', 'carrera_docentes' => $datos['carrera_id'],
+        ])->with('estado', 'Datos del docente actualizados correctamente.');
+    }
+
     public function previsualizarAlumnos(Request $request): RedirectResponse
     {
         abort_unless($request->user()?->hasRole('coordinacion'), 403);
@@ -192,14 +232,14 @@ class ControladorUsuarios extends Controller
                 ->values()
                 ->all();
 
-            $filasInvalidas = collect($alumnos)->filter(fn (array $alumno) => $alumno['matricula'] === ''
+            $filasInvalidas = collect($alumnos)->filter(fn (array $alumno) => ! preg_match('/\A[0-9]{7}\z/', $alumno['matricula'])
                 || $alumno['nombre_completo'] === ''
                 || ! filter_var($alumno['correo_electronico'], FILTER_VALIDATE_EMAIL)
             );
 
             if ($filasInvalidas->isNotEmpty()) {
                 throw ValidationException::withMessages([
-                    "listas.{$indice}.archivo" => "La lista contiene {$filasInvalidas->count()} filas incompletas o con correo inválido.",
+                    "listas.{$indice}.archivo" => "La lista contiene {$filasInvalidas->count()} filas inválidas. Cada alumno necesita matrícula de 7 dígitos, nombre y correo válido.",
                 ]);
             }
 
@@ -251,8 +291,8 @@ class ControladorUsuarios extends Controller
                 $creados = 0;
                 $actualizados = 0;
                 foreach ($lista['alumnos'] as $fila) {
-                    if ($fila['matricula'] === '' || $fila['nombre_completo'] === '' || ! filter_var($fila['correo_electronico'], FILTER_VALIDATE_EMAIL)) {
-                        throw ValidationException::withMessages(['listas' => "La lista {$lista['nombre']} contiene datos incompletos o un correo inválido."]);
+                    if (! preg_match('/\A[0-9]{7}\z/', $fila['matricula']) || $fila['nombre_completo'] === '' || ! filter_var($fila['correo_electronico'], FILTER_VALIDATE_EMAIL)) {
+                        throw ValidationException::withMessages(['listas' => "La lista {$lista['nombre']} necesita matrículas de 7 dígitos, nombres y correos válidos."]);
                     }
                     $existente = User::query()->where('matricula', $fila['matricula'])->first();
                     $contrasena = $existente ? null : $this->generarContrasenaAleatoria();
@@ -392,6 +432,12 @@ class ControladorUsuarios extends Controller
                 $correo = (string) $datosFila['correo_electronico'];
                 $grado = (int) $datosFila['grado'];
                 $grupoLetra = mb_strtoupper((string) $datosFila['grupo']);
+
+                if (! preg_match('/\A[0-9]{7}\z/', $matricula)) {
+                    $errores[] = "Fila {$numeroFila}: la matrícula del alumno debe tener exactamente 7 dígitos.";
+
+                    continue;
+                }
 
                 if ($grado < 1 || $grado > 12) {
                     $errores[] = "Fila {$numeroFila}: el cuatrimestre debe estar entre 1 y 12.";

@@ -1,6 +1,6 @@
 <x-contenedor-aplicacion title="Equipos | Administración de proyectos" active="equipos" :navegacion="$navegacion" :role-name="$roleName">
     <section class="border-b border-slate-200 pb-5">
-        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">Trabajo colaborativo</p>
+        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#005227]">Trabajo colaborativo</p>
         <h2 class="mt-2 text-2xl font-bold text-[#0D376D]">Equipos de trabajo</h2>
         <p class="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Selecciona un equipo para consultar sus alumnos, docente líder y proyecto. Los datos faltantes pueden completarse dentro del mismo panel.</p>
     </section>
@@ -108,7 +108,7 @@
                 <details class="group">
                     <summary class="grid cursor-pointer list-none gap-4 px-5 py-4 transition hover:bg-slate-50 lg:grid-cols-[90px_minmax(180px,1fr)_120px_150px_170px] lg:items-center">
                         <div>
-                            <p class="text-xs font-bold uppercase text-[#21A366]">N.º</p>
+                            <p class="text-xs font-bold uppercase text-[#005227]">N.º</p>
                             <p class="mt-1 text-xl font-bold text-[#0D376D]">{{ $equipo->numero ?? '—' }}</p>
                         </div>
                         <div>
@@ -132,7 +132,7 @@
                     <div class="border-t border-slate-200 bg-slate-50/60 p-5">
                         <div class="grid gap-5 xl:grid-cols-3">
                             <article class="rounded-lg border border-slate-200 bg-white p-4">
-                                <p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Docente líder</p>
+                                <p class="text-xs font-bold uppercase tracking-[0.15em] text-[#005227]">Docente líder</p>
                                 @if($equipo->grupoAcademico->liderProyecto)
                                     <p class="mt-3 font-bold text-slate-900">{{ $equipo->grupoAcademico->liderProyecto->nombre }}</p>
                                     <p class="mt-1 text-sm text-slate-500">{{ $equipo->grupoAcademico->liderProyecto->matricula }}</p>
@@ -143,7 +143,7 @@
                             </article>
 
                             <article class="rounded-lg border border-slate-200 bg-white p-4 xl:col-span-2">
-                                <p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Proyecto</p>
+                                <p class="text-xs font-bold uppercase tracking-[0.15em] text-[#005227]">Proyecto</p>
                                 @if($proyecto)
                                     <div class="mt-3">
                                         <p class="font-bold text-slate-900">{{ $proyecto->titulo }}</p>
@@ -176,7 +176,7 @@
                         <article class="mt-5 rounded-lg border border-slate-200 bg-white">
                             <div class="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <p class="text-xs font-bold uppercase tracking-[0.15em] text-[#21A366]">Alumnos del equipo</p>
+                                    <p class="text-xs font-bold uppercase tracking-[0.15em] text-[#005227]">Alumnos del equipo</p>
                                     <p class="mt-1 text-sm text-slate-500">{{ $equipo->integrantes_count }} {{ (int) $equipo->integrantes_count === 1 ? 'integrante asignado' : 'integrantes asignados' }}</p>
                                 </div>
                                 @if($alumnosDisponibles->isNotEmpty())

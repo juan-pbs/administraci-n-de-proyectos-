@@ -54,6 +54,7 @@ Route::post('/docentes-carrera', [ControladorCarrerasGrupos::class, 'asignarDoce
 Route::get('/modulos/usuarios', [ControladorUsuarios::class, 'mostrar'])->name('modulos.usuarios');
 Route::post('/usuarios', [ControladorUsuarios::class, 'guardar'])->name('usuarios.guardar');
 Route::post('/usuarios/docentes', [ControladorUsuarios::class, 'guardarDocentes'])->name('usuarios.docentes.guardar');
+Route::patch('/usuarios/docentes/{docente}', [ControladorUsuarios::class, 'actualizarDocente'])->name('usuarios.docentes.actualizar');
 Route::post('/usuarios/alumnos/previsualizar', [ControladorUsuarios::class, 'previsualizarAlumnos'])->name('usuarios.alumnos.previsualizar');
 Route::post('/usuarios/alumnos/confirmar', [ControladorUsuarios::class, 'confirmarAlumnos'])->name('usuarios.alumnos.confirmar');
 Route::post('/usuarios/alumnos/importar', [ControladorUsuarios::class, 'importarAlumnos'])->name('usuarios.alumnos.importar');
@@ -71,6 +72,7 @@ Route::get('/modulos/guias', [ControladorGuias::class, 'mostrar'])->name('modulo
 Route::post('/guias', [ControladorGuias::class, 'guardar'])->name('guias.guardar');
 Route::patch('/guias/{guia}/publicar', [ControladorGuias::class, 'publicar'])->name('guias.publicar');
 Route::post('/guias/apartados', [ControladorGuias::class, 'guardarApartado'])->name('guias.apartados.guardar');
+Route::post('/guias/apartados/lote', [ControladorGuias::class, 'guardarApartados'])->name('guias.apartados.lote.guardar');
 Route::post('/guias/apartados/asignaturas', [ControladorGuias::class, 'asignarAsignaturaApartado'])->name('guias.apartados.asignaturas.guardar');
 Route::post('/guias/apartados/firmas', [ControladorGuias::class, 'guardarFirmaApartado'])->name('guias.apartados.firmas.guardar');
 Route::post('/guias/apartados/calificadores', [ControladorGuias::class, 'asignarDocenteCalificador'])->name('guias.apartados.calificadores.guardar');

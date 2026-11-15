@@ -48,9 +48,13 @@ class ControladorAsignaturas extends Controller
             'clave.regex' => 'La clave solo admite letras, números, puntos, guiones y guiones bajos.',
         ]);
 
-        Asignatura::query()->create([...$datos, 'estado' => 'activo']);
+        $asignatura = Asignatura::query()->create([...$datos, 'estado' => 'activo']);
 
-        return redirect()->route('modulos.show', 'asignaturas')->with('estado', 'Asignatura guardada correctamente.');
+        return redirect()->route('modulos.show', [
+            'modulo' => 'asignaturas', 'periodo_asignaturas' => $request->input('periodo_asignaturas'),
+            'carrera_asignaturas' => $asignatura->carrera_id, 'grado_asignaturas' => $asignatura->grado,
+            'asignar_docente' => 1, 'asignatura_id' => $asignatura->id,
+        ])->with('estado', 'Asignatura guardada. Selecciona un docente en el formulario abierto para asignarlo al periodo.');
     }
 
     public function asignarDocente(Request $request): RedirectResponse
@@ -80,7 +84,10 @@ class ControladorAsignaturas extends Controller
             ['activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
         );
 
-        return redirect()->route('modulos.show', 'asignaturas')->with('estado', 'Docente vinculado a la asignatura correctamente.');
+        return redirect()->route('modulos.show', [
+            'modulo' => 'asignaturas', 'periodo_asignaturas' => $datos['periodo_id'],
+            'carrera_asignaturas' => $asignatura->carrera_id, 'grado_asignaturas' => $asignatura->grado,
+        ])->with('estado', 'Docente vinculado a la asignatura correctamente.');
     }
 
     public function quitarDocente(Request $request): RedirectResponse

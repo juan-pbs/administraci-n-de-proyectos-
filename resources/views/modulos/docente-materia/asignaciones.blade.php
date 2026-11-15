@@ -5,13 +5,13 @@
     :role-name="$roleName"
 >
     <section class="border-b border-slate-200 pb-5">
-        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#21A366]">Alcance de evaluación</p>
+        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#005227]">Alcance de evaluación</p>
         <div class="mt-3 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
                 <h2 class="text-2xl font-bold text-[#0D376D]">Mis asignaciones</h2>
                 <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Apartados de la guía que Coordinación te asignó para revisar y calificar durante el periodo.</p>
             </div>
-            <span class="w-fit rounded-md bg-[#EAF7EF] px-3 py-2 text-sm font-semibold text-[#0F7D47]">{{ $periodo?->nombre ?? 'Sin periodo activo' }}</span>
+            <span class="w-fit rounded-md bg-[#EAF7EF] px-3 py-2 text-sm font-semibold text-[#005227]">{{ $periodo?->nombre ?? 'Sin periodo activo' }}</span>
         </div>
     </section>
 
