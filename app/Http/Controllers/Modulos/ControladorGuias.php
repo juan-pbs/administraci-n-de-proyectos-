@@ -335,6 +335,17 @@ class ControladorGuias extends Controller
             ->get();
 
         $editables = $guias->filter(fn ($guia) => $guia->estado !== 'cerrada' && ($guia->periodoFin ?? $guia->periodo)->estado !== 'cerrado');
+        $guiasParaApartados = GuiaIntegradora::query()
+            ->with([
+                'periodo:id,nombre,estado,fecha_inicio,fecha_fin',
+                'periodoFin:id,nombre,estado,fecha_inicio,fecha_fin',
+            ])
+            ->where('estado', '!=', 'cerrada')
+            ->orderByDesc('creado_en')
+            ->get()
+            ->filter(fn ($guia) => ($guia->periodoFin ?? $guia->periodo)->estado !== 'cerrado')
+            ->load(['asignatura:id,carrera_id', 'asignatura.carrera:id,clave,nombre', 'apartados' => fn ($query) => $query->orderBy('orden')]);
+
         $apartados = ApartadoGuia::query()
             ->with('guiaIntegradora:id,nombre,version')
             ->whereIn('guia_integradora_id', $editables->pluck('id'))
@@ -345,6 +356,7 @@ class ControladorGuias extends Controller
         return [
             'guias' => $guias,
             'guiasEditables' => $editables,
+            'guiasParaApartados' => $guiasParaApartados,
             'periodos' => $periodos,
             'carreras' => $carreras,
             'filtrosGuias' => $filtros,

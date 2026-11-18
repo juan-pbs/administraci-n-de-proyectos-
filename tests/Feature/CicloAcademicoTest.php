@@ -103,6 +103,38 @@ test('el cierre respeta el periodo final de guías de varios ciclos y conserva b
     expect($larga->fresh()->estado)->toBe('cerrada');
 });
 
+test('el selector de apartados incluye guías editables de otras carreras con la lista filtrada', function () {
+    $d = escenarioCiclo();
+    $carrera = Carrera::create(['nombre' => 'Administración', 'clave' => 'ADM', 'estado' => 'activa']);
+    $materia = Asignatura::create(['nombre' => 'Integradora', 'carrera_id' => $carrera->id, 'grado' => 5]);
+    $otraGuia = $d['guia']->replicate()->fill(['asignatura_id' => $materia->id]);
+    $otraGuia->save();
+    $otraGuia->apartados()->create(['orden' => 1, 'titulo' => 'Diagnóstico', 'ponderacion' => 50]);
+    $guiaCerrada = $otraGuia->replicate()->fill(['cuatrimestre' => 6, 'estado' => 'cerrada']);
+    $guiaCerrada->save();
+
+    $respuesta = $this->actingAs($d['coordinacion'])->get(route('modulos.show', [
+        'modulo' => 'guias',
+        'periodo_guias' => $d['periodo']->id,
+        'carrera_guias' => $d['materia']->carrera_id,
+    ]))->assertOk();
+
+    expect($respuesta->viewData('guias')->modelKeys())->toBe([$d['guia']->id]);
+    $html = new DOMDocument;
+    $html->loadHTML($respuesta->getContent(), LIBXML_NOERROR | LIBXML_NOWARNING);
+    $opciones = new DOMXPath($html);
+    $opcion = $opciones->query("//select[@id='batch-guia']/option[@value='{$otraGuia->id}']")->item(0);
+    expect($opcion->textContent)->toContain('ADM', $d['periodo']->nombre);
+    expect(json_decode($opcion->getAttribute('data-apartados'), true)[0]['titulo'])->toBe('Diagnóstico');
+    expect($opciones->query("//select[@id='batch-guia']/option[@value='{$guiaCerrada->id}']")->length)->toBe(0);
+
+    $this->post(route('guias.apartados.lote.guardar'), [
+        'guia_integradora_id' => $otraGuia->id,
+        'apartados' => [['orden' => 2, 'titulo' => 'Propuesta', 'ponderacion' => 50]],
+    ])->assertSessionHasNoErrors();
+    $this->assertDatabaseHas('apartados_guia', ['guia_integradora_id' => $otraGuia->id, 'orden' => 2, 'titulo' => 'Propuesta']);
+});
+
 test('los borradores no se asignan a proyectos y los periodos cerrados bloquean entregas y revisiones', function () {
     $d = escenarioFirmas();
     $entrega = entregaFirmaPrueba($d);

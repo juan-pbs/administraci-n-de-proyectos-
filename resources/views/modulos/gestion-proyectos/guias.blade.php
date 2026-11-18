@@ -13,10 +13,17 @@
         @endforeach
     </section>
 
-    <section class="mt-5 grid gap-4 xl:grid-cols-2">
-        <details class="group rounded-lg border border-slate-200 bg-white shadow-sm" @if($errors->any()) open @endif>
-            <summary class="cursor-pointer list-none p-5 transition hover:bg-[#EAF2FB] [&::-webkit-details-marker]:hidden"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#005227]">Alta periódica</p><div class="mt-1 flex items-center justify-between"><h3 class="font-bold text-[#0D376D]">Crear nueva guía</h3><span class="text-sm font-bold text-[#15529A]">Abrir formulario <span class="inline-block transition-transform group-open:rotate-180">▾</span></span></div></summary>
-            <form method="POST" action="{{ route('guias.guardar') }}" class="grid gap-4 border-t border-slate-200 p-5 md:grid-cols-2">
+    @php
+        $abrirApartados = (bool) old('apartados');
+        $abrirAltaGuia = $errors->any() && ! $abrirApartados;
+    @endphp
+    <section class="mt-5 space-y-4">
+        <x-controles-formularios
+            :paneles="['alta-guia' => 'Crear nueva guía', 'configurar-apartados' => 'Apartados y materias']"
+            :activo="$abrirApartados ? 'configurar-apartados' : ($abrirAltaGuia ? 'alta-guia' : null)" />
+
+        <div id="alta-guia" class="rounded-lg border border-slate-200 bg-white shadow-sm" @if(! $abrirAltaGuia) hidden @endif>
+            <form method="POST" action="{{ route('guias.guardar') }}" class="grid gap-4 p-5 md:grid-cols-2">
                 @csrf
                 <div><label class="text-sm font-semibold text-slate-700">Periodo</label><select name="periodo_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($periodos->where('estado', '!=', 'cerrado') as $periodo)<option value="{{ $periodo->id }}" @selected((string) old('periodo_id', $filtrosGuias['periodo_id']) === (string) $periodo->id)>{{ $periodo->nombre }}</option>@endforeach</select></div>
                 <div><label class="text-sm font-semibold text-slate-700">Asignatura principal</label><select name="asignatura_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($asignaturas as $asignatura)<option value="{{ $asignatura->id }}">{{ $asignatura->carrera?->clave }} - {{ $asignatura->nombre }}</option>@endforeach</select></div>
@@ -29,16 +36,15 @@
                 <div><label class="text-sm font-semibold text-slate-700">Objetivo de aprendizaje</label><textarea name="objetivo_aprendizaje" rows="3" class="mt-2 block w-full rounded-md border-slate-300 text-sm">{{ old('objetivo_aprendizaje') }}</textarea></div>
                 <div class="md:col-span-2"><button class="rounded-md bg-[#15529A] px-5 py-2.5 text-sm font-bold text-white">Guardar guía</button></div>
             </form>
-        </details>
+        </div>
 
-        <details class="group rounded-lg border border-slate-200 bg-white shadow-sm" @if(old('apartados')) open @endif>
-            <summary class="cursor-pointer list-none p-5 transition hover:bg-[#EAF2FB] [&::-webkit-details-marker]:hidden"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#005227]">Configuración</p><div class="mt-1 flex items-center justify-between"><h3 class="font-bold text-[#0D376D]">Apartados y materias</h3><span class="text-sm font-bold text-[#15529A]">Abrir formularios <span class="inline-block transition-transform group-open:rotate-180">▾</span></span></div></summary>
-            <div class="space-y-5 border-t border-slate-200 p-5">
+        <div id="configurar-apartados" class="rounded-lg border border-slate-200 bg-white shadow-sm" @if(! $abrirApartados) hidden @endif>
+            <div class="space-y-5 p-5">
                 <form method="POST" action="{{ route('guias.apartados.guardar') }}" data-preview-apartado data-preview-url="{{ route('guias.preview-apartado') }}" class="grid gap-3 rounded-md bg-slate-50 p-4 md:grid-cols-2">
                     @csrf
                     <h4 class="font-bold text-slate-900 md:col-span-2">Crear o actualizar apartado</h4>
                     <p class="text-xs text-slate-500 md:col-span-2">Usar un orden existente actualiza ese apartado. La vista previa no guarda los cambios.</p>
-                    <select name="guia_integradora_id" required aria-label="Guía integradora" class="rounded-md border-slate-300 text-sm">@foreach($guiasEditables as $guia)<option value="{{ $guia->id }}" data-fecha-inicio="{{ $guia->periodo->fecha_inicio }}" data-fecha-fin="{{ ($guia->periodoFin ?? $guia->periodo)->fecha_fin }}">{{ $guia->nombre }} v{{ $guia->version }}</option>@endforeach</select>
+                    <select name="guia_integradora_id" required aria-label="Guía integradora" class="rounded-md border-slate-300 text-sm">@foreach($guiasParaApartados as $guia)<option value="{{ $guia->id }}" data-fecha-inicio="{{ $guia->periodo->fecha_inicio }}" data-fecha-fin="{{ ($guia->periodoFin ?? $guia->periodo)->fecha_fin }}">{{ $guia->asignatura?->carrera?->clave ?? 'Sin carrera' }} · {{ $guia->periodo->nombre }} · {{ $guia->nombre }} v{{ $guia->version }}</option>@endforeach</select>
                     <div class="grid grid-cols-2 gap-2"><label class="text-xs font-semibold text-slate-700">Orden del apartado<input name="orden" type="number" min="1" max="999" step="1" value="1" required class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label><label class="text-xs font-semibold text-slate-700">Ponderación (%)<input name="ponderacion" type="number" min="0" max="100" step="0.01" value="10" required class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label></div>
                     <input name="titulo" maxlength="255" required placeholder="Título del apartado" class="rounded-md border-slate-300 text-sm md:col-span-2">
                     <textarea name="descripcion" rows="3" maxlength="20000" placeholder="Descripción y puntos requeridos" class="rounded-md border-slate-300 text-sm md:col-span-2"></textarea>
@@ -52,10 +58,36 @@
                 <form method="POST" action="{{ route('guias.apartados.lote.guardar') }}" id="batch-apartados" class="space-y-4 rounded-md border border-slate-200 p-4">
                     @csrf
                     <div><h4 class="font-bold text-slate-900">Crear o actualizar varios apartados</h4><p class="mt-1 text-xs text-slate-600">Cada orden existente actualiza su apartado. Revisa las fechas vencidas antes de guardar.</p></div>
+                    @if($guiasParaApartados->isNotEmpty())
+                        <fieldset class="grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 md:grid-cols-3">
+                            <legend class="px-1 text-sm font-semibold text-slate-700">Filtrar guías</legend>
+                            <label class="min-w-0 text-sm font-semibold text-slate-700">Carrera
+                                <select id="batch-carrera-filtro" class="mt-1 block w-full rounded-md border-slate-300 text-sm">
+                                    <option value="">Todas las carreras</option>
+                                    @foreach($guiasParaApartados->pluck('asignatura.carrera')->filter()->unique('id')->sortBy('nombre') as $carrera)
+                                        <option value="{{ $carrera->id }}">{{ $carrera->clave }} · {{ $carrera->nombre }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                            <label class="min-w-0 text-sm font-semibold text-slate-700">Periodo inicial
+                                <select id="batch-periodo-filtro" class="mt-1 block w-full rounded-md border-slate-300 text-sm">
+                                    <option value="">Todos los periodos</option>
+                                    @foreach($guiasParaApartados->pluck('periodo')->unique('id')->sortByDesc('fecha_inicio') as $periodo)
+                                        <option value="{{ $periodo->id }}">{{ $periodo->nombre }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                            <label class="min-w-0 text-sm font-semibold text-slate-700">Buscar guía
+                                <input id="batch-busqueda-filtro" type="search" placeholder="Nombre o versión" class="mt-1 block w-full rounded-md border-slate-300 text-sm">
+                            </label>
+                            <p id="batch-resultado-filtro" role="status" class="text-sm text-slate-600 md:col-span-3"></p>
+                        </fieldset>
+                    @endif
                     <label class="block text-sm font-semibold text-slate-700">Guía
                         <select name="guia_integradora_id" id="batch-guia" required class="mt-1 block w-full rounded-md border-slate-300 text-sm">
-                            @foreach($guiasEditables as $guia)
-                                <option value="{{ $guia->id }}" data-apartados="{{ json_encode($guia->apartados->map(fn ($apartado) => ['orden' => $apartado->orden, 'titulo' => $apartado->titulo, 'descripcion' => $apartado->descripcion, 'fecha_limite' => $apartado->fecha_limite?->format('Y-m-d\TH:i'), 'ponderacion' => $apartado->ponderacion, 'requiere_documento' => $apartado->requiere_documento, 'requiere_codigo' => $apartado->requiere_codigo])->values()->all(), JSON_UNESCAPED_UNICODE) }}" @selected((int) old('guia_integradora_id') === (int) $guia->id)>{{ $guia->nombre }} v{{ $guia->version }}</option>
+                            <option value="" disabled @selected(! $guiasParaApartados->contains('id', old('guia_integradora_id')))>{{ $guiasParaApartados->isEmpty() ? 'No hay guías editables' : 'Selecciona una guía' }}</option>
+                            @foreach($guiasParaApartados as $guia)
+                                <option value="{{ $guia->id }}" data-carrera="{{ $guia->asignatura?->carrera_id }}" data-periodo="{{ $guia->periodo_id }}" data-apartados="{{ json_encode($guia->apartados->map(fn ($apartado) => ['orden' => $apartado->orden, 'titulo' => $apartado->titulo, 'descripcion' => $apartado->descripcion, 'fecha_limite' => $apartado->fecha_limite?->format('Y-m-d\TH:i'), 'ponderacion' => $apartado->ponderacion, 'requiere_documento' => $apartado->requiere_documento, 'requiere_codigo' => $apartado->requiere_codigo])->values()->all(), JSON_UNESCAPED_UNICODE) }}" @selected((int) old('guia_integradora_id') === (int) $guia->id)>{{ $guia->asignatura?->carrera?->clave ?? 'Sin carrera' }} · {{ $guia->periodo->nombre }} · {{ $guia->nombre }} v{{ $guia->version }}</option>
                             @endforeach
                         </select>
                     </label>
@@ -87,7 +119,7 @@
                     </form>
                 </div>
             </div>
-        </details>
+        </div>
     </section>
 
     <article data-async-region="guides-list" class="mt-5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -186,6 +218,45 @@
             const template = document.getElementById('batch-apartado-template');
             const guia = document.getElementById('batch-guia');
             if (!rows || !template || !guia) return;
+
+            const carreraFiltro = document.getElementById('batch-carrera-filtro');
+            const periodoFiltro = document.getElementById('batch-periodo-filtro');
+            const busquedaFiltro = document.getElementById('batch-busqueda-filtro');
+            const resultadoFiltro = document.getElementById('batch-resultado-filtro');
+            if (resultadoFiltro) {
+                const [placeholder, ...opciones] = guia.options;
+                const normalizar = texto => texto.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+                const aplicarFiltros = () => {
+                    const seleccion = guia.selectedOptions[0];
+                    const carrera = carreraFiltro.value;
+                    const periodo = periodoFiltro.value;
+                    const busqueda = normalizar(busquedaFiltro.value.trim());
+                    const coincidencias = opciones.filter(opcion =>
+                        (!carrera || opcion.dataset.carrera === carrera)
+                        && (!periodo || opcion.dataset.periodo === periodo)
+                        && normalizar(opcion.textContent).includes(busqueda)
+                    );
+
+                    guia.replaceChildren(placeholder, ...coincidencias);
+                    if (seleccion?.value && !coincidencias.includes(seleccion)) {
+                        const grupo = document.createElement('optgroup');
+                        grupo.label = 'Guía seleccionada fuera del filtro';
+                        grupo.append(seleccion);
+                        guia.append(grupo);
+                    }
+                    guia.value = seleccion?.value ?? '';
+                    resultadoFiltro.textContent = coincidencias.length
+                        ? `${coincidencias.length} de ${opciones.length} guías disponibles`
+                        : 'No hay guías que coincidan con los filtros.';
+                };
+
+                carreraFiltro.addEventListener('change', aplicarFiltros);
+                periodoFiltro.addEventListener('change', aplicarFiltros);
+                busquedaFiltro.addEventListener('input', aplicarFiltros);
+                guia.addEventListener('change', aplicarFiltros);
+                aplicarFiltros();
+            }
+
             let nextIndex = 0;
             const addRow = (values = {}) => {
                 if (rows.children.length >= 20) return;
@@ -204,6 +275,7 @@
             };
             document.getElementById('add-apartado')?.addEventListener('click', () => addRow({orden: rows.children.length + 1}));
             document.getElementById('load-apartados')?.addEventListener('click', () => {
+                if (!guia.reportValidity()) return;
                 const existing = JSON.parse(guia.selectedOptions[0]?.dataset.apartados || '[]');
                 rows.replaceChildren();
                 if (existing.length) existing.forEach(addRow);

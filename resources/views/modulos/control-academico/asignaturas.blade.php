@@ -13,10 +13,18 @@
         @endforeach
     </section>
 
-    <section class="mt-5 grid gap-4 xl:grid-cols-2">
-        <details class="rounded-lg border border-slate-200 bg-white shadow-sm" @if($errors->any()) open @endif>
-            <summary class="cursor-pointer list-none p-5"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#005227]">Catálogo permanente</p><div class="mt-1 flex justify-between"><h3 class="font-bold text-[#0D376D]">Registrar asignatura</h3><span class="text-sm font-semibold text-[#15529A]">Abrir formulario</span></div></summary>
-            <form method="POST" action="{{ route('asignaturas.guardar') }}" class="grid gap-4 border-t border-slate-200 p-5 md:grid-cols-2">
+    @php
+        $abrirAsignacion = $errors->hasAny(['asignatura_id', 'docente_id', 'periodo_id'])
+            || (! $errors->any() && request()->boolean('asignar_docente'));
+        $abrirRegistro = $errors->any() && ! $abrirAsignacion;
+    @endphp
+    <section class="mt-5 space-y-4">
+        <x-controles-formularios
+            :paneles="['registrar-asignatura' => 'Registrar asignatura', 'asignar-docente' => 'Asignar docente']"
+            :activo="$abrirAsignacion ? 'asignar-docente' : ($abrirRegistro ? 'registrar-asignatura' : null)" />
+
+        <div id="registrar-asignatura" class="rounded-lg border border-slate-200 bg-white shadow-sm" @if(! $abrirRegistro) hidden @endif>
+            <form method="POST" action="{{ route('asignaturas.guardar') }}" class="grid gap-4 p-5 md:grid-cols-2">
                 @csrf
                 <input type="hidden" name="periodo_asignaturas" value="{{ $filtrosAsignaturas['periodo_id'] }}">
                 <div><label class="text-sm font-semibold text-slate-700">Carrera</label><select name="carrera_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}" @selected((string)old('carrera_id',$filtrosAsignaturas['carrera_id']) === (string)$carrera->id)>{{ $carrera->clave }} - {{ $carrera->nombre }}</option>@endforeach</select></div>
@@ -25,18 +33,17 @@
                 <div><label class="text-sm font-semibold text-slate-700">Clave (máximo 30 caracteres)</label><input name="clave" maxlength="30" pattern="[A-Za-z0-9._-]+" title="Usa letras, números, puntos, guiones o guiones bajos" value="{{ old('clave') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm uppercase"></div>
                 <div class="flex items-end"><button class="rounded-md bg-[#15529A] px-5 py-2.5 text-sm font-bold text-white">Guardar asignatura</button></div>
             </form>
-        </details>
+        </div>
 
-        <details class="rounded-lg border border-slate-200 bg-white shadow-sm" @if(request()->boolean('asignar_docente')) open @endif>
-            <summary class="cursor-pointer list-none p-5"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#005227]">Asignación por periodo</p><div class="mt-1 flex justify-between"><h3 class="font-bold text-[#0D376D]">Asignar docente</h3><span class="text-sm font-semibold text-[#15529A]">Abrir formulario</span></div></summary>
-            <form method="POST" action="{{ route('asignaturas.docentes.guardar') }}" class="grid gap-4 border-t border-slate-200 p-5">
+        <div id="asignar-docente" class="rounded-lg border border-slate-200 bg-white shadow-sm" @if(! $abrirAsignacion) hidden @endif>
+            <form method="POST" action="{{ route('asignaturas.docentes.guardar') }}" class="grid gap-4 p-5 md:grid-cols-3">
                 @csrf
-                <div><label class="text-sm font-semibold text-slate-700">Periodo</label><select name="periodo_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($periodos as $periodo)<option value="{{ $periodo->id }}" @selected((string)$filtrosAsignaturas['periodo_id'] === (string)$periodo->id)>{{ $periodo->nombre }}</option>@endforeach</select></div>
-                <div><label class="text-sm font-semibold text-slate-700">Asignatura</label><select name="asignatura_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($asignaturas as $asignatura)<option value="{{ $asignatura->id }}" @selected((int) request()->query('asignatura_id') === (int) $asignatura->id)>{{ $asignatura->clave }} - {{ $asignatura->nombre }}</option>@endforeach</select></div>
-                <div><label class="text-sm font-semibold text-slate-700">Docente de la carrera</label><select name="docente_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($docentes as $docente)<option value="{{ $docente->id }}">{{ $docente->matricula }} - {{ $docente->nombre }} ({{ $docente->role?->nombre_visible }})</option>@endforeach</select></div>
-                <button class="w-fit rounded-md bg-[#15529A] px-5 py-2.5 text-sm font-bold text-white">Asignar en este periodo</button>
+                <label class="min-w-0 text-sm font-semibold text-slate-700">Periodo<select name="periodo_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($periodos as $periodo)<option value="{{ $periodo->id }}" @selected((string) old('periodo_id', $filtrosAsignaturas['periodo_id']) === (string) $periodo->id)>{{ $periodo->nombre }}</option>@endforeach</select></label>
+                <label class="min-w-0 text-sm font-semibold text-slate-700">Asignatura<select name="asignatura_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($asignaturas as $asignatura)<option value="{{ $asignatura->id }}" @selected((int) old('asignatura_id', request()->query('asignatura_id')) === (int) $asignatura->id)>{{ $asignatura->clave }} - {{ $asignatura->nombre }}</option>@endforeach</select></label>
+                <label class="min-w-0 text-sm font-semibold text-slate-700">Docente de la carrera<select name="docente_id" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">@foreach($docentes as $docente)<option value="{{ $docente->id }}" @selected((int) old('docente_id') === (int) $docente->id)>{{ $docente->matricula }} - {{ $docente->nombre }} ({{ $docente->role?->nombre_visible }})</option>@endforeach</select></label>
+                <button class="w-fit rounded-md bg-[#15529A] px-5 py-2.5 text-sm font-bold text-white md:col-span-3">Asignar en este periodo</button>
             </form>
-        </details>
+        </div>
     </section>
 
     <article data-async-region="subjects-list" class="mt-5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
