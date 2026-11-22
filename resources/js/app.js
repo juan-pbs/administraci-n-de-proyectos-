@@ -173,44 +173,54 @@ function iniciarFirmas() {
 }
 
 function iniciarPreviewApartado() {
-    document.querySelectorAll('[data-preview-apartado]').forEach((form) => {
-        const region = form.parentElement;
-        const frame = region.querySelector('[data-preview-frame]');
-        const status = region.querySelector('[data-preview-estado]');
-        const selectorGuia = form.querySelector('select[name="guia_integradora_id"]');
-        const fechaLimite = form.querySelector('input[name="fecha_limite"]');
-        const actualizarRangoFecha = () => {
-            const opcion = selectorGuia.selectedOptions[0];
-            fechaLimite.min = opcion?.dataset.fechaInicio ? `${opcion.dataset.fechaInicio}T00:00` : '';
-            fechaLimite.max = opcion?.dataset.fechaFin ? `${opcion.dataset.fechaFin}T23:59` : '';
-            if (fechaLimite.value && (fechaLimite.value < fechaLimite.min || fechaLimite.value > fechaLimite.max)) fechaLimite.value = '';
-        };
-        selectorGuia.addEventListener('change', actualizarRangoFecha);
-        actualizarRangoFecha();
-        let timer, controller, objectUrl;
-        const update = async () => {
-            if (!form.reportValidity()) return;
-            controller?.abort();
-            controller = new AbortController();
-            const signal = controller.signal;
-            status.textContent = 'Preparando vista previa…';
-            try {
-                const response = await fetch(form.dataset.previewUrl, {method: 'POST', body: new FormData(form), credentials: 'same-origin', headers: {Accept: 'application/pdf, application/json'}, signal});
-                if (!response.ok || !response.headers.get('Content-Type')?.includes('application/pdf')) throw new Error('Revisa los datos del apartado para generar la vista previa.');
-                const blob = await response.blob();
-                if (signal.aborted) return;
-                if (objectUrl) URL.revokeObjectURL(objectUrl);
-                objectUrl = URL.createObjectURL(blob);
-                frame.src = objectUrl;
-                status.textContent = 'Vista previa con cambios sin guardar. Pulsa “Guardar apartado” para aplicarlos.';
-            } catch (error) {
-                if (error.name !== 'AbortError') status.textContent = error.message;
-            }
-        };
-        form.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(update, 800); });
-        form.addEventListener('change', () => { clearTimeout(timer); timer = setTimeout(update, 300); });
-        form.querySelector('[data-actualizar-preview]').addEventListener('click', () => { clearTimeout(timer); update(); });
-        window.addEventListener('pagehide', () => { controller?.abort(); if (objectUrl) URL.revokeObjectURL(objectUrl); });
+    const dialog = document.getElementById('guia-preview-dialog');
+    if (!dialog) return;
+    const frame = dialog.querySelector('[data-preview-frame]');
+    const status = dialog.querySelector('[data-preview-estado]');
+    const title = dialog.querySelector('[data-preview-title]');
+    let controller, objectUrl;
+    const clearPreview = () => {
+        controller?.abort();
+        frame.removeAttribute('src');
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+    };
+    dialog.querySelector('[data-close-preview]').addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', clearPreview);
+    window.addEventListener('pagehide', clearPreview);
+
+    const form = document.querySelector('[data-preview-apartados]');
+    form?.querySelector('[data-open-preview]')?.addEventListener('click', async () => {
+        if (!form.reportValidity()) return;
+        clearPreview();
+        title.textContent = 'Vista previa de la guía';
+        status.textContent = 'Preparando vista previa…';
+        dialog.showModal();
+        controller = new AbortController();
+        const signal = controller.signal;
+        try {
+            const response = await fetch(form.dataset.previewUrl, {method: 'POST', body: new FormData(form), credentials: 'same-origin', headers: {Accept: 'application/pdf, application/json'}, signal});
+            if (!response.ok || !response.headers.get('Content-Type')?.includes('application/pdf')) throw new Error('Revisa los datos de los apartados para generar la vista previa.');
+            const blob = await response.blob();
+            if (signal.aborted) return;
+            objectUrl = URL.createObjectURL(blob);
+            frame.src = objectUrl;
+            status.textContent = 'Vista previa con cambios sin guardar.';
+        } catch (error) {
+            if (error.name !== 'AbortError') status.textContent = error.message;
+        }
+    });
+    document.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-open-saved-preview]');
+        if (!button) return;
+        clearPreview();
+        title.textContent = button.dataset.previewTitle;
+        status.textContent = '';
+        frame.src = button.dataset.previewSrc;
+        dialog.showModal();
     });
 }
 

@@ -89,6 +89,55 @@ test('varios apartados se crean y actualizan juntos sin guardar un lote invalido
     $this->assertDatabaseMissing('apartados_guia', ['titulo' => 'No debe guardarse']);
 });
 
+test('la vista previa incluye varios apartados sin guardar los cambios', function () {
+    $d = datosRecomendaciones();
+    $guia = GuiaIntegradora::query()->create([
+        'periodo_id' => $d['periodo']->id, 'asignatura_id' => $d['asignatura']->id,
+        'creado_por' => $d['usuario']->id, 'nombre' => 'Guía de prueba',
+        'cuatrimestre' => 4, 'version' => '1.0', 'estado' => 'borrador',
+    ]);
+    ApartadoGuia::query()->create([
+        'guia_integradora_id' => $guia->id, 'orden' => 1, 'titulo' => 'Original',
+        'ponderacion' => 50, 'requiere_documento' => true,
+    ]);
+    $apartados = [
+        ['orden' => 1, 'titulo' => 'Editado', 'ponderacion' => 50, 'requiere_documento' => 1],
+        ['orden' => 2, 'titulo' => 'Nuevo', 'ponderacion' => 50, 'requiere_documento' => 1],
+    ];
+
+    $this->actingAs($d['usuario'])->post(route('guias.preview-apartado'), [
+        'guia_integradora_id' => $guia->id, 'apartados' => $apartados,
+    ])->assertOk()->assertHeader('Content-Type', 'application/pdf');
+    $this->assertDatabaseCount('apartados_guia', 1);
+    $this->assertDatabaseHas('apartados_guia', ['guia_integradora_id' => $guia->id, 'orden' => 1, 'titulo' => 'Original']);
+
+    $apartados[1]['orden'] = 1;
+    $this->post(route('guias.preview-apartado'), [
+        'guia_integradora_id' => $guia->id, 'apartados' => $apartados,
+    ])->assertSessionHasErrors('apartados.1.orden');
+});
+
+test('el nombre del periodo debe coincidir con los meses y se puede corregir en borrador', function () {
+    $d = datosRecomendaciones();
+    $this->actingAs($d['usuario']);
+    $inicio = now()->addMonths(4)->startOfMonth();
+    $fin = $inicio->copy()->addMonths(3)->endOfMonth();
+    $nombre = ucfirst($inicio->locale('es')->monthName).' - '.ucfirst($fin->locale('es')->monthName).' '.$inicio->year;
+
+    $this->post(route('periodos.guardar'), [
+        'nombre' => 'Enero - Abril 2099', 'fecha_inicio' => $inicio->toDateString(), 'fecha_fin' => $fin->toDateString(),
+    ])->assertSessionHasErrors('nombre');
+
+    $periodo = Periodo::query()->create([
+        'nombre' => 'Borrador por corregir', 'fecha_inicio' => $inicio->toDateString(),
+        'fecha_fin' => $fin->toDateString(), 'estado' => 'borrador',
+    ]);
+    $this->patch(route('periodos.actualizar', $periodo), [
+        'nombre' => $nombre, 'fecha_inicio' => $inicio->toDateString(), 'fecha_fin' => $fin->toDateString(),
+    ])->assertSessionHasNoErrors();
+    $this->assertDatabaseHas('periodos', ['id' => $periodo->id, 'nombre' => $nombre, 'fecha_inicio' => $inicio->toDateString()]);
+});
+
 test('la interfaz muestra el menu plegable, filtros automaticos y edicion multiple', function () {
     $d = datosRecomendaciones();
     $this->actingAs($d['usuario']);
@@ -99,6 +148,9 @@ test('la interfaz muestra el menu plegable, filtros automaticos y edicion multip
         ->assertSee('name="carrera_grupos" onchange="this.form.requestSubmit()"', false);
 
     $this->get(route('modulos.show', 'guias'))
-        ->assertOk()->assertSee('Crear o actualizar varios apartados')
-        ->assertSee('Cargar apartados existentes');
+        ->assertOk()->assertSee('Crear o actualizar apartados')
+        ->assertSee('Cargar apartados existentes')
+        ->assertSee('id="guia-preview-dialog"', false)
+        ->assertSee('data-open-preview', false)
+        ->assertDontSee('Crear o actualizar apartado</h4>', false);
 });

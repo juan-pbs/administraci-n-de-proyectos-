@@ -12,6 +12,7 @@ use App\Models\Proyecto;
 use App\Models\Revision;
 use App\Models\User;
 use App\Servicios\PlazosProyecto;
+use App\Servicios\ContextoEstudiante;
 use App\Soporte\BusquedaPanel;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
@@ -26,12 +27,20 @@ class DashboardController extends Controller
         $role = $user->role?->nombre ?? 'estudiante';
         $periodo = Periodo::query()->where('estado', 'activo')->latest('fecha_inicio')->first()
             ?? Periodo::query()->latest('fecha_inicio')->first();
+        $proyectoEstudiante = null;
+        $contextoProyectos = collect();
+        if ($role === 'estudiante') {
+            [, , $proyectoEstudiante] = app(ContextoEstudiante::class)->resolver($request);
+            $contextoProyectos = app(ContextoEstudiante::class)->proyectos($user->id)
+                ->with('equipo.grupoAcademico.periodo')->latest('id')->get();
+            $periodo = $proyectoEstudiante?->equipo?->grupoAcademico?->periodo ?? $periodo;
+        }
         $panel = SistemaInterfaz::dashboardPara($role);
         $navegacion = SistemaInterfaz::navegacionPara($role);
         $consultaBusqueda = BusquedaPanel::disponible($role)
             ? ($request->validate(['buscar' => ['nullable', 'string', 'max:160']])['buscar'] ?? '') : '';
 
-        $panel['stats'] = $this->metricas($role, $user->id, $periodo?->id);
+        $panel['stats'] = $this->metricas($role, $user->id, $periodo?->id, $proyectoEstudiante);
         $alertas = $this->alertasOperativas($role, $user->id, $periodo?->id);
         $grupos = GrupoAcademico::query()
             ->with(['carrera:id,clave', 'periodo:id,nombre', 'liderProyecto:id,nombre'])
@@ -56,7 +65,7 @@ class DashboardController extends Controller
                 ->orderBy('apartado_guia_id')->limit(6)->get();
         }
         $resumenEntregasEstudiante = $role === 'estudiante'
-            ? $this->resumenEntregasEstudiante($user->id)
+            ? $this->resumenEntregasEstudiante($proyectoEstudiante)
             : collect();
 
         return view('dashboard', [
@@ -68,6 +77,8 @@ class DashboardController extends Controller
             'gruposResumen' => $grupos,
             'asignacionesDocente' => $asignacionesDocente,
             'resumenEntregasEstudiante' => $resumenEntregasEstudiante,
+            'proyectoEstudiante' => $proyectoEstudiante,
+            'contextoProyectos' => $contextoProyectos,
             'navegacion' => $navegacion,
             'consultaBusqueda' => $consultaBusqueda,
             'resultadosBusqueda' => BusquedaPanel::buscar($role, $consultaBusqueda, $navegacion),
@@ -86,7 +97,7 @@ class DashboardController extends Controller
     /**
      * @return array<int, array{label: string, value: int|string}>
      */
-    private function metricas(string $rol, int $usuarioId, ?int $periodoId): array
+    private function metricas(string $rol, int $usuarioId, ?int $periodoId, ?Proyecto $proyectoEstudiante): array
     {
         $grupos = GrupoAcademico::query()
             ->when($periodoId, fn ($query) => $query->where('periodo_id', $periodoId));
@@ -134,7 +145,7 @@ class DashboardController extends Controller
         }
 
         if ($rol === 'estudiante') {
-            $resumen = $this->resumenEntregasEstudiante($usuarioId);
+            $resumen = $this->resumenEntregasEstudiante($proyectoEstudiante);
 
             return [
                 ['label' => 'Validadas', 'value' => $resumen->where('estado', 'validada')->count()],
@@ -255,12 +266,9 @@ class DashboardController extends Controller
         });
     }
 
-    private function resumenEntregasEstudiante(int $usuarioId)
+    private function resumenEntregasEstudiante(?Proyecto $proyecto)
     {
-        $equipo = Equipo::query()
-            ->whereHas('integrantes', fn ($query) => $query->where('usuarios.id', $usuarioId))
-            ->where('estado', 'activo')->latest('id')->first();
-        $proyecto = $equipo?->proyectos()->with('guiaIntegradora.apartados')->latest('id')->first();
+        $proyecto?->loadMissing('guiaIntegradora.apartados');
 
         if (! $proyecto?->guiaIntegradora) {
             return collect();

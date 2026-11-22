@@ -240,7 +240,8 @@ test('la ayuda nueva muestra el contenido correcto y sus opciones solo al rol co
     $this->actingAs($roles['coordinacion'])
         ->get('/ayuda?seccion=guias')
         ->assertOk()
-        ->assertSee('Actualizar vista previa')
+        ->assertSee('Pulsa Vista previa')
+        ->assertDontSee('Actualizar vista previa')
         ->assertSee('Se cierra al terminar el periodo');
 
     $this->actingAs($roles['docente_lider'])

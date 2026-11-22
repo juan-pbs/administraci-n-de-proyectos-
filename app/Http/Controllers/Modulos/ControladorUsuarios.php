@@ -172,10 +172,19 @@ class ControladorUsuarios extends Controller
                 },
             ],
             'carrera_id' => ['required', 'exists:carreras,id'],
+            'estado' => ['sometimes', 'in:activo,inactivo'],
         ]);
 
-        DB::transaction(function () use ($docente, $datos): void {
+        DB::transaction(function () use ($docente, $datos, $request): void {
+            $estadoAnterior = $docente->estado;
             $docente->update($datos);
+            if ($docente->wasChanged('estado')) {
+                DB::table('auditoria_usuarios')->insert([
+                    'actor_id' => $request->user()->id, 'usuario_id' => $docente->id,
+                    'accion' => 'cambiar_estado_docente', 'valor_anterior' => $estadoAnterior,
+                    'valor_nuevo' => $docente->estado, 'creado_en' => now(),
+                ]);
+            }
             if ($docente->wasChanged('carrera_id')) {
                 $docente->carrerasComoDocente()->newPivotStatement()
                     ->where('docente_id', $docente->id)

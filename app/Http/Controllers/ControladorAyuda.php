@@ -137,7 +137,8 @@ class ControladorAyuda extends Controller
                     descripcion: 'Los periodos controlan las fechas de trabajo, entregas y configuración académica que usarán las demás pantallas.',
                     pasos: [
                         'Usa Nuevo periodo para abrir el formulario de captura.',
-                        'Captura nombre y fechas. El inicio no puede ser anterior al mes actual y el periodo nuevo se guarda como borrador.',
+                        'Captura nombre y fechas. Los meses del nombre deben coincidir con el rango; el inicio no puede ser anterior al mes actual y el periodo nuevo se guarda como borrador.',
+                        'En el historial puedes corregir el nombre de un periodo. Si sigue en borrador, también puedes corregir sus fechas.',
                         'Actívalo cuando no exista otro periodo activo. Para cerrarlo, revisa los pendientes y confirma el cierre; el historial queda disponible para consulta.',
                     ],
                     imagen: 'assets/ayuda/actualizadas/coordinacion-periodos.png',
@@ -169,6 +170,7 @@ class ControladorAyuda extends Controller
                         'Descarga la plantilla, llena una fila por alumno y carga una o varias listas. Solo puedes elegir el periodo activo.',
                         'Selecciona carrera, cuatrimestre y grupo para cada archivo. Revisa matrícula, nombre y correo en la vista previa antes de confirmar.',
                         'En Docentes, registra matrícula, rol, carrera y correo institucional. La contraseña inicial aleatoria se envía a ese correo.',
+                        'Para impedir el acceso de un docente, abre Editar y cambia su estado a Inactivo. Puedes volver a activarlo desde el mismo formulario.',
                     ],
                     imagen: 'assets/ayuda/coordinacion/05-usuarios.png',
                     ruta: $rutas['usuarios'] ?? null,
@@ -180,7 +182,7 @@ class ControladorAyuda extends Controller
                     titulo: 'Asignaturas',
                     descripcion: 'Concentra el catálogo de materias y permite relacionarlas con las personas que las atenderán en el periodo.',
                     pasos: [
-                        'Registra asignaturas con carrera, clave, cuatrimestre y nombre. El nombre y la clave no admiten emojis.',
+                        'Registra asignaturas con carrera, clave, cuatrimestre y nombre. El nombre admite letras, números, espacios y los signos . , : ; ( ) / + & -. La clave admite letras, números, punto, guion y guion bajo.',
                         'Vincula responsables a las asignaturas que participarán en la guía integradora.',
                         'Filtra por carrera y cuatrimestre para validar la carga académica.',
                     ],
@@ -194,8 +196,8 @@ class ControladorAyuda extends Controller
                     titulo: 'Guías integradoras',
                     descripcion: 'Las guías definen apartados, ponderaciones, fechas límite y responsables de revisión.',
                     pasos: [
-                        'Crea la guía como borrador y agrega apartados con orden, ponderación, fecha límite y tipo de evidencia. La fecha límite debe estar dentro de los periodos que abarca la guía.',
-                        'Usa Actualizar vista previa para ver cambios sin guardar y abre el PDF de la guía antes de publicarla.',
+                        'Crea la guía como borrador. En un solo formulario registra uno o varios apartados con orden, ponderación, fecha límite y tipo de evidencia. La fecha límite debe estar dentro de los periodos que abarca la guía.',
+                        'Pulsa Vista previa para revisar los apartados en un modal sin guardarlos. Ciérralo con la X o haciendo clic fuera; después guarda los apartados.',
                         'Asigna evaluadores y publica la guía cuando esté completa. Se cierra al terminar el periodo.',
                     ],
                     imagen: 'assets/ayuda/actualizadas/coordinacion-guias.png',
@@ -267,7 +269,7 @@ class ControladorAyuda extends Controller
                     pasos: [
                         'Selecciona el grupo que deseas revisar.',
                         'Usa Nuevo equipo cuando haya alumnos libres en ese grupo. Una pertenencia a un equipo de otro ciclo no ocupa al alumno en el grupo actual.',
-                        'Agrega o retira integrantes desde el detalle del equipo.',
+                        'En el detalle del equipo marca uno o varios alumnos disponibles y pulsa Agregar seleccionados. También puedes retirar integrantes desde allí.',
                         'Verifica que cada equipo tenga proyecto asignado antes de continuar.',
                     ],
                     imagen: 'assets/ayuda/docente-lider/03-equipos.png',
@@ -507,7 +509,7 @@ class ControladorAyuda extends Controller
             descripcion: 'La pantalla de acceso solicita matrícula y contraseña para abrir el panel asignado a tu cuenta.',
             pasos: [
                 'Captura la matrícula institucional.',
-                'Escribe tu contraseña y presiona Ingresar.',
+                'Escribe tu contraseña y presiona Iniciar sesión.',
                 'Usa la contraseña inicial aleatoria enviada al correo registrado. La matrícula no funciona como contraseña.',
             ],
             imagen: 'assets/ayuda/acceso/01-iniciar-sesion.png',
@@ -750,7 +752,6 @@ class ControladorAyuda extends Controller
             ],
             'assets/ayuda/actualizadas/coordinacion-guias.png' => [
                 $this->capturaContexto('assets/ayuda/actualizadas/coordinacion-guia-nueva.png', 'Crear guía en borrador', 'Formulario actual de alta: la guía inicia como borrador.'),
-                $this->capturaContexto('assets/ayuda/actualizadas/coordinacion-guia-apartados.png', 'Apartados y vista previa', 'Formulario actual para editar un apartado y consultar los cambios antes de guardarlos.'),
             ],
             'assets/ayuda/actualizadas/lider-cierres.png' => [
                 $this->capturaContexto('assets/ayuda/actualizadas/lider-prorroga.png', 'Decidir una prórroga', 'Detalle de un proyecto con pendientes y apartados abiertos por una prórroga.'),
@@ -838,7 +839,7 @@ class ControladorAyuda extends Controller
             'assets/ayuda/coordinacion/03-periodos.png' => [
                 $this->detalle('Nuevo periodo', 'Abre el formulario para registrar un nuevo ciclo de trabajo.'),
                 $this->detalle('Nombre del periodo', 'Usa un nombre claro, por ejemplo Mayo - Agosto 2026.'),
-                $this->detalle('Fechas', 'El inicio debe estar en el mes actual o uno posterior; el cierre debe ser igual o posterior al inicio. Este rango limita las fechas de los apartados.'),
+                $this->detalle('Fechas', 'Los meses del nombre deben coincidir con el inicio y cierre. En borrador puedes corregir las fechas desde el historial; ese rango limita las fechas de los apartados.'),
                 $this->detalle('Estado', 'El periodo nuevo se guarda en borrador. Solo se activa cuando no hay otro activo; al cerrarlo se revisan pendientes y queda para consulta.'),
             ],
             'assets/ayuda/coordinacion/03-periodos-formulario.png' => [
@@ -863,7 +864,7 @@ class ControladorAyuda extends Controller
                 $this->detalle('Guardar docentes', 'Revisa matrícula, rol, carrera y correo institucional. Al guardar, se genera una contraseña aleatoria y se envía a cada correo.'),
             ],
             'assets/ayuda/coordinacion/06-asignaturas.png' => [
-                $this->detalle('Registrar asignatura', 'Captura nombre, clave, carrera y cuatrimestre. El nombre y la clave no admiten emojis.'),
+                $this->detalle('Registrar asignatura', 'Captura nombre, clave, carrera y cuatrimestre. El nombre admite letras, números, espacios y los signos . , : ; ( ) / + & -. La clave admite letras, números, punto, guion y guion bajo.'),
                 $this->detalle('Asignar docente', 'Relaciona una persona con la asignatura y el periodo visible.'),
                 $this->detalle('Cambiar ciclo', 'Actualiza la carga mostrada cuando necesitas consultar otro periodo.'),
                 $this->detalle('Tabla de carga', 'Muestra materias y responsables ya registrados para confirmar que no falte información.'),
@@ -874,13 +875,13 @@ class ControladorAyuda extends Controller
             ],
             'assets/ayuda/coordinacion/07-guias.png' => [
                 $this->detalle('Crear guía', 'Registra la guía base para la carrera y periodo seleccionados.'),
-                $this->detalle('Apartado', 'Captura título, orden, ponderación y tipo de evidencia. La fecha límite debe estar dentro de los periodos de la guía.'),
+                $this->detalle('Apartados', 'Registra uno o varios apartados en el mismo formulario. Cada fecha límite debe estar dentro de los periodos de la guía.'),
                 $this->detalle('Calificadores', 'Asigna quienes revisarán cada apartado antes de publicarlo.'),
-                $this->detalle('Publicación', 'Usa la vista previa y publica la guía cuando los apartados tengan fechas, ponderación y responsables de revisión.'),
+                $this->detalle('Publicación', 'Abre Vista previa en el modal, guarda los apartados y publica la guía cuando tengan fechas, ponderación y responsables de revisión.'),
             ],
             'assets/ayuda/coordinacion/07-guias-formularios.png' => [
                 $this->detalle('Crear nueva guía', 'Completa periodo, asignatura principal, nombre, cuatrimestre, versión, competencias y objetivo. La guía empieza en borrador.'),
-                $this->detalle('Nuevo apartado', 'Agrega cada entrega esperada con orden, porcentaje, fecha límite y si requiere documento o código.'),
+                $this->detalle('Apartados', 'Agrega las entregas esperadas en filas del mismo formulario, con orden, porcentaje, fecha límite y evidencia requerida.'),
             ],
             'assets/ayuda/coordinacion/07-guias-apartados-lista.png' => [
                 $this->detalle('Detalle desplegado', 'Al abrir una guía se muestran sus competencias, objetivo y apartados configurados.'),
@@ -899,7 +900,7 @@ class ControladorAyuda extends Controller
             ],
             'assets/ayuda/docente-lider/03-equipos.png' => [
                 $this->detalle('Nuevo equipo', 'Crea un equipo dentro del grupo seleccionado.'),
-                $this->detalle('Integrantes', 'Agrega alumnos disponibles y evita dejar alumnos duplicados en dos equipos.'),
+                $this->detalle('Integrantes', 'Marca varios alumnos disponibles y pulsa Agregar seleccionados. Un alumno no puede estar en dos equipos activos del mismo grupo.'),
                 $this->detalle('Responsable del equipo', 'Selecciona quién coordinará al equipo cuando la vista lo solicite.'),
                 $this->detalle('Ver información', 'Abre el detalle del equipo para revisar integrantes, asesores y proyecto relacionado.'),
             ],
@@ -908,7 +909,7 @@ class ControladorAyuda extends Controller
                 $this->detalle('Alumnos libres', 'Cuenta alumnos de este grupo sin equipo activo en él. Un equipo de otro periodo no los ocupa aquí.'),
             ],
             'assets/ayuda/docente-lider/03-equipos-integrantes.png' => [
-                $this->detalle('Alumnos del mismo grupo', 'Solo aparecen integrantes del grupo al que pertenece el equipo; no se mezclan alumnos de otros grupos.'),
+                $this->detalle('Alumnos del mismo grupo', 'Marca uno o varios alumnos del grupo y agrégalos en una sola operación.'),
                 $this->detalle('Retirar', 'Quita al alumno del equipo y lo deja disponible para reasignarlo cuando corresponda.'),
                 $this->detalle('Proyecto relacionado', 'El panel también muestra el proyecto vinculado al equipo para confirmar que la información coincide.'),
             ],
@@ -998,7 +999,7 @@ class ControladorAyuda extends Controller
                 $this->marca('Ayuda', 'Abre esta guía sin iniciar sesión.', 76, 17, 71, 17, 65, 16, '0%', '-50%', '8.5rem', 'green'),
                 $this->marca('Matrícula', 'Campo para tu matrícula.', 57, 49, 66, 49, 80, 52, '0%', '-50%', '8.5rem', 'blue'),
                 $this->marca('Contraseña', 'Clave de acceso.', 96, 59, 91, 59, 80, 61, '-100%', '-50%', '8rem', 'amber'),
-                $this->marca('Ingresar', 'Abre tu panel.', 96, 78, 91, 78, 80, 70, '-100%', '-50%', '8rem', 'green'),
+                $this->marca('Iniciar sesión', 'Abre tu panel.', 96, 78, 91, 78, 80, 70, '-100%', '-50%', '8rem', 'green'),
             ],
             'assets/ayuda/acceso/02-recuperar-contrasena.png' => [
                 $this->marca('Ayuda', 'Consulta esta guía sin salir del formulario.', 16, 24, 28, 24, 39, 24, '0%', '-50%', '8.5rem', 'green'),

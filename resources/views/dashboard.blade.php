@@ -115,6 +115,13 @@
     @endif
 
     @if($role === 'estudiante')
+        @if($proyectoEstudiante)
+            @php
+                $proyecto = $proyectoEstudiante;
+            @endphp
+            @include('modulos.estudiante.selector-proyecto')
+            <p class="mt-3 text-sm text-slate-600">Resumen de {{ $proyecto->titulo }} · {{ $proyecto->equipo->grupoAcademico->periodo->nombre }} ({{ ucfirst($proyecto->equipo->grupoAcademico->periodo->estado) }})</p>
+        @endif
         @php
             $totalApartados = $resumenEntregasEstudiante->count();
             $validadas = $resumenEntregasEstudiante->where('estado', 'validada')->count();

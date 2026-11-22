@@ -28,25 +28,50 @@ class ControladorDocumentos extends Controller
     public function previewApartado(Request $request, DocumentosGuias $documentos)
     {
         abort_unless($request->user()->hasRole('coordinacion'), 403);
-        $datos = $request->validate([
-            'guia_integradora_id' => ['required', 'exists:guias_integradoras,id'],
+        $reglasApartado = [
             'orden' => ['required', 'integer', 'between:1,999'],
-            'titulo' => ['required', 'string', 'max:255'], 'descripcion' => ['nullable', 'string', 'max:20000'],
-            'ponderacion' => ['required', 'numeric', 'decimal:0,2', 'between:0,100'], 'fecha_limite' => ['nullable', 'date'],
-            'requiere_codigo' => ['nullable', 'boolean'], 'requiere_documento' => ['nullable', 'boolean'],
-        ]);
+            'titulo' => ['required', 'string', 'max:255'],
+            'descripcion' => ['nullable', 'string', 'max:20000'],
+            'ponderacion' => ['required', 'numeric', 'decimal:0,2', 'between:0,100'],
+            'fecha_limite' => ['nullable', 'date'],
+            'requiere_codigo' => ['nullable', 'boolean'],
+            'requiere_documento' => ['nullable', 'boolean'],
+        ];
+        $varios = $request->has('apartados');
+        $reglas = ['guia_integradora_id' => ['required', 'exists:guias_integradoras,id']];
+        if ($varios) {
+            $reglas['apartados'] = ['required', 'array', 'min:1', 'max:20'];
+            foreach ($reglasApartado as $campo => $regla) {
+                $reglas["apartados.*.{$campo}"] = $campo === 'orden' ? [...$regla, 'distinct'] : $regla;
+            }
+        } else {
+            $reglas = [...$reglas, ...$reglasApartado];
+        }
+        $datos = $request->validate($reglas);
         $guia = GuiaIntegradora::findOrFail($datos['guia_integradora_id']);
-        if (! empty($datos['fecha_limite']) && ! $guia->admiteFechaLimite($datos['fecha_limite'])) {
-            throw ValidationException::withMessages([
-                'fecha_limite' => 'La fecha límite debe estar dentro de los periodos de la guía.',
-            ]);
+        $apartados = $varios ? $datos['apartados'] : [$datos];
+        foreach ($apartados as $indice => $datosApartado) {
+            if (! empty($datosApartado['fecha_limite']) && ! $guia->admiteFechaLimite($datosApartado['fecha_limite'])) {
+                throw ValidationException::withMessages([
+                    $varios ? "apartados.{$indice}.fecha_limite" : 'fecha_limite' => 'La fecha límite debe estar dentro de los periodos de la guía.',
+                ]);
+            }
         }
         $guia = $documentos->cargarGuia($guia);
-        $apartado = $guia->apartados->firstWhere('orden', (int) $datos['orden']);
-        $apartado = $apartado ? clone $apartado : new ApartadoGuia;
-        $apartado->fill([...$datos, 'requiere_codigo' => $request->boolean('requiere_codigo'), 'requiere_documento' => $request->boolean('requiere_documento')]);
-        $apartado->loadMissing(['firmas.docente', 'asignaturasContribuyentes']);
-        $guia->setRelation('apartados', $guia->apartados->reject(fn ($a) => $a->orden === (int) $datos['orden'])->push($apartado));
+        $vistaApartados = $guia->apartados;
+        foreach ($apartados as $indice => $datosApartado) {
+            $apartado = $vistaApartados->firstWhere('orden', (int) $datosApartado['orden']);
+            $apartado = $apartado ? clone $apartado : new ApartadoGuia;
+            $ruta = $varios ? "apartados.{$indice}" : '';
+            $apartado->fill([
+                ...$datosApartado,
+                'requiere_codigo' => $request->boolean($ruta ? "{$ruta}.requiere_codigo" : 'requiere_codigo'),
+                'requiere_documento' => $request->boolean($ruta ? "{$ruta}.requiere_documento" : 'requiere_documento'),
+            ]);
+            $apartado->loadMissing(['firmas.docente', 'asignaturasContribuyentes']);
+            $vistaApartados = $vistaApartados->reject(fn ($a) => (int) $a->orden === (int) $datosApartado['orden'])->push($apartado);
+        }
+        $guia->setRelation('apartados', $vistaApartados);
 
         return $this->pdf($documentos->pdf(['guia' => $guia, 'proyecto' => null, 'filas' => [], 'pendientes' => []], 'CAMBIOS SIN GUARDAR'), 'preview.pdf');
     }

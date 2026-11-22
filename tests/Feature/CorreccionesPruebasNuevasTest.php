@@ -45,6 +45,16 @@ test('coordinacion puede corregir datos de un docente existente', function () {
 
     $this->patch(route('usuarios.docentes.actualizar', $d['profesor']), [
         'nombre' => 'Docente corregido', 'matricula' => 'DOC-MEC-99',
+        'correo' => 'docente@utvm.edu.mx', 'carrera_id' => $d['carrera']->id,
+        'estado' => 'inactivo',
+    ])->assertSessionHasNoErrors()->assertRedirect(route('modulos.show', [
+        'modulo' => 'usuarios', 'seccion' => 'docentes', 'carrera_docentes' => $d['carrera']->id,
+    ]));
+    $this->assertDatabaseHas('usuarios', ['id' => $d['profesor']->id, 'estado' => 'inactivo']);
+    $this->assertDatabaseHas('auditoria_usuarios', ['actor_id' => $d['usuario']->id, 'usuario_id' => $d['profesor']->id, 'accion' => 'cambiar_estado_docente']);
+
+    $this->patch(route('usuarios.docentes.actualizar', $d['profesor']), [
+        'nombre' => 'Docente corregido', 'matricula' => 'DOC-MEC-99',
         'correo' => 'docente@example.com', 'carrera_id' => $d['carrera']->id,
     ])->assertSessionHasErrors('correo');
 });

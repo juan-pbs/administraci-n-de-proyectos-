@@ -63,6 +63,18 @@
                             <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $estiloEstado }}">{{ ucfirst($periodo->estado) }}</span>
                         </div>
                         <p class="mt-1 text-sm text-slate-500">{{ \Illuminate\Support\Carbon::parse($periodo->fecha_inicio)->format('d/m/Y') }} — {{ \Illuminate\Support\Carbon::parse($periodo->fecha_fin)->format('d/m/Y') }}</p>
+                        <details class="mt-3 rounded-md border border-slate-200 bg-white p-3"><summary class="cursor-pointer text-sm font-bold text-[#15529A]">Corregir datos del periodo</summary>
+                            <form method="POST" action="{{ route('periodos.actualizar', $periodo) }}" class="mt-3 grid gap-3 sm:grid-cols-2">@csrf @method('PATCH')
+                                <label class="text-xs font-semibold text-slate-700 sm:col-span-2">Nombre<input name="nombre" maxlength="255" required value="{{ $periodo->nombre }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
+                                @if($periodo->estado === 'borrador')
+                                    <label class="text-xs font-semibold text-slate-700">Inicio<input name="fecha_inicio" type="date" required value="{{ $periodo->fecha_inicio }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
+                                    <label class="text-xs font-semibold text-slate-700">Cierre<input name="fecha_fin" type="date" required value="{{ $periodo->fecha_fin }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
+                                @else
+                                    <p class="text-xs text-slate-500 sm:col-span-2">Las fechas de un periodo activo o cerrado permanecen fijas por sus grupos, guías y entregas.</p>
+                                @endif
+                                <button class="w-fit rounded-md bg-[#15529A] px-3 py-2 text-sm font-bold text-white">Guardar corrección</button>
+                            </form>
+                        </details>
                     </div>
                     <div class="rounded-md bg-slate-50 px-4 py-2 text-center">
                         <p class="text-xs font-semibold uppercase text-slate-500">Grupos</p>

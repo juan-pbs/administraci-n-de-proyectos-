@@ -95,6 +95,9 @@ test('asignaturas y equipos rechazan emojis en sus nombres', function () {
     $this->post(route('asignaturas.guardar'), [
         'carrera_id' => $carrera->id, 'nombre' => 'Programación C++', 'clave' => 'MEC-PROG', 'grado' => 4,
     ])->assertSessionHasNoErrors();
+    $this->post(route('asignaturas.guardar'), [
+        'carrera_id' => $carrera->id, 'nombre' => 'Álgebra 2.0, A: B; (C)/D+E & F-G', 'clave' => 'MEC-ALG', 'grado' => 4,
+    ])->assertSessionHasNoErrors();
 
     $rolLider = Role::query()->firstOrCreate(['nombre' => 'docente_lider'], ['nombre_visible' => 'Docente líder']);
     $lider = User::factory()->create(['rol_id' => $rolLider->id]);

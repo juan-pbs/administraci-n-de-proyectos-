@@ -66,6 +66,20 @@ test('una membresía de un ciclo cerrado no ocupa al alumno en su grupo actual',
     expect(DB::table('integrantes_equipo')->where('equipo_id', $equipoAnterior->id)->where('activo', true)->exists())->toBeTrue();
 });
 
+test('el docente líder agrega varios alumnos al equipo en una sola operación', function () {
+    $d = datosIncidencias();
+    $d['lider']->asignaturasComoDocente()->attach($d['materia']->id, ['periodo_id' => $d['actual']->id, 'activo' => true]);
+    $d['grupoActual']->update(['lider_proyecto_id' => $d['lider']->id, 'asignatura_lider_id' => $d['materia']->id]);
+    $otroAlumno = User::factory()->create(['rol_id' => $d['alumno']->rol_id, 'carrera_id' => $d['carrera']->id, 'grupo_academico_id' => $d['grupoActual']->id]);
+    $equipo = Equipo::query()->create(['grupo_academico_id' => $d['grupoActual']->id, 'numero' => 1, 'nombre' => 'Equipo de prueba', 'estado' => 'activo']);
+
+    $this->actingAs($d['lider'])->post(route('equipos.alumnos.guardar'), [
+        'equipo_id' => $equipo->id, 'estudiante_ids' => [$d['alumno']->id, $otroAlumno->id],
+    ])->assertSessionHasNoErrors();
+    $this->assertDatabaseHas('integrantes_equipo', ['equipo_id' => $equipo->id, 'estudiante_id' => $d['alumno']->id, 'activo' => true]);
+    $this->assertDatabaseHas('integrantes_equipo', ['equipo_id' => $equipo->id, 'estudiante_id' => $otroAlumno->id, 'activo' => true]);
+});
+
 test('la vista inicial del alumno muestra el proyecto del grupo y periodo actuales', function () {
     $d = datosIncidencias();
     $equipoAnterior = Equipo::query()->create(['grupo_academico_id' => $d['grupoAnterior']->id, 'numero' => 1, 'nombre' => 'Equipo anterior', 'estado' => 'activo']);
@@ -79,6 +93,9 @@ test('la vista inicial del alumno muestra el proyecto del grupo y periodo actual
     }
     $this->actingAs($d['alumno'])->get(route('estudiante.entregas'))
         ->assertOk()->assertSee('Apartado Enero - Abril 2027')->assertDontSee('Apartado Mayo - Agosto 2026');
+    $this->get(route('dashboard'))
+        ->assertOk()->assertSee('Proyecto Enero - Abril 2027 · Enero - Abril 2027')
+        ->assertSee('Apartado Enero - Abril 2027')->assertDontSee('Apartado Mayo - Agosto 2026');
 });
 
 test('el registro de docentes rechaza correos ajenos al dominio institucional', function () {

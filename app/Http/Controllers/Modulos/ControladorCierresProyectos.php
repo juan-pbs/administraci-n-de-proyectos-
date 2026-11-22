@@ -17,7 +17,7 @@ class ControladorCierresProyectos extends Controller
     {
         $usuario = $request->user()->loadMissing('role');
         abort_unless($usuario->hasRole('docente_lider') && $usuario->estado === 'activo', 403);
-        $cierres = CierreProyecto::with('proyecto.equipo.grupoAcademico', 'prorrogas')
+        $cierres = CierreProyecto::with('proyecto.equipo.grupoAcademico.periodo', 'prorrogas')
             ->whereHas('proyecto.equipo.grupoAcademico', fn ($q) => $q->conMateriaLiderDelDocente($usuario->id))
             ->orderByRaw("CASE WHEN estado = 'pendiente' THEN 0 WHEN estado = 'prorroga' THEN 1 ELSE 2 END")
             ->latest('id')->paginate(20);

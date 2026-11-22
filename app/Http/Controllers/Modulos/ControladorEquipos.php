@@ -40,7 +40,7 @@ class ControladorEquipos extends Controller
             'nombre' => ['required', 'string', 'max:80', 'regex:/\A[\pL\pM\pN .,:;()\/+&-]+\z/u'],
             'contexto_proyecto' => ['nullable', 'string', 'max:3000'],
         ], [
-            'nombre.regex' => 'El nombre del equipo solo admite letras, números y signos comunes; no admite emojis.',
+            'nombre.regex' => 'El nombre del equipo admite letras, números, espacios y estos signos: . , : ; ( ) / + & -',
         ]);
 
         $grupo = GrupoAcademico::query()->findOrFail($datos['grupo_academico_id']);
@@ -79,30 +79,36 @@ class ControladorEquipos extends Controller
 
         $datos = $request->validate([
             'equipo_id' => ['required', 'exists:equipos,id'],
-            'estudiante_id' => ['required', 'exists:usuarios,id'],
+            'estudiante_id' => ['required_without:estudiante_ids', 'exists:usuarios,id'],
+            'estudiante_ids' => ['required_without:estudiante_id', 'array', 'min:1', 'max:100'],
+            'estudiante_ids.*' => ['required', 'integer', 'distinct', 'exists:usuarios,id'],
         ]);
 
         $equipo = Equipo::query()->with('grupoAcademico')->findOrFail($datos['equipo_id']);
         $this->autorizarGrupo($request, $equipo->grupoAcademico);
-        $estudiante = User::query()->findOrFail($datos['estudiante_id']);
-        abort_unless($estudiante->hasRole('estudiante'), 422);
-        abort_unless((int) $estudiante->grupo_academico_id === (int) $equipo->grupo_academico_id, 422);
+        $ids = $datos['estudiante_ids'] ?? [$datos['estudiante_id']];
+        DB::transaction(function () use ($equipo, $ids): void {
+            $estudiantes = User::query()->with('role')->whereKey($ids)->lockForUpdate()->get();
+            foreach ($estudiantes as $estudiante) {
+                abort_unless($estudiante->hasRole('estudiante'), 422);
+                abort_unless((int) $estudiante->grupo_academico_id === (int) $equipo->grupo_academico_id, 422);
+            }
+            $yaTieneEquipo = DB::table('integrantes_equipo')
+                ->join('equipos', 'equipos.id', '=', 'integrantes_equipo.equipo_id')
+                ->whereIn('estudiante_id', $ids)
+                ->where('equipos.grupo_academico_id', $equipo->grupo_academico_id)
+                ->where('equipos.estado', 'activo')
+                ->where('activo', true)
+                ->where('equipo_id', '!=', $equipo->id)
+                ->exists();
+            abort_unless(! $yaTieneEquipo, 422, 'Uno de los alumnos ya pertenece a otro equipo.');
 
-        $yaTieneEquipo = DB::table('integrantes_equipo')
-            ->join('equipos', 'equipos.id', '=', 'integrantes_equipo.equipo_id')
-            ->where('estudiante_id', $estudiante->id)
-            ->where('equipos.grupo_academico_id', $equipo->grupo_academico_id)
-            ->where('equipos.estado', 'activo')
-            ->where('activo', true)
-            ->where('equipo_id', '!=', $equipo->id)
-            ->exists();
-        abort_unless(! $yaTieneEquipo, 422, 'El alumno ya pertenece a otro equipo.');
+            $equipo->integrantes()->syncWithoutDetaching(collect($ids)->mapWithKeys(fn ($id) => [
+                $id => ['activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
+            ])->all());
+        });
 
-        $equipo->integrantes()->syncWithoutDetaching([
-            $estudiante->id => ['activo' => true, 'creado_en' => now(), 'actualizado_en' => now()],
-        ]);
-
-        return $this->volverEquipos($request, 'Alumno asignado al equipo correctamente.');
+        return $this->volverEquipos($request, count($ids) === 1 ? 'Alumno asignado al equipo correctamente.' : count($ids).' alumnos asignados al equipo correctamente.');
     }
 
     public function asignarAsesor(Request $request): RedirectResponse

@@ -14,6 +14,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ControladorPeriodos extends Controller
 {
@@ -46,10 +49,45 @@ class ControladorPeriodos extends Controller
             'fecha_fin' => ['required', 'date', 'after_or_equal:fecha_inicio', 'before_or_equal:2100-12-31'],
             'estado' => ['sometimes', 'in:borrador'],
         ]);
+        $this->validarNombreFechas($datos['nombre'], $datos['fecha_inicio'], $datos['fecha_fin']);
 
         Periodo::query()->create([...$datos, 'estado' => 'borrador']);
 
         return redirect()->route('modulos.show', 'periodos')->with('estado', 'Periodo guardado correctamente.');
+    }
+
+    public function actualizar(Request $request, Periodo $periodo): RedirectResponse
+    {
+        $this->autorizarDireccion($request);
+        $reglas = ['nombre' => ['required', 'string', 'max:255', Rule::unique('periodos', 'nombre')->ignore($periodo->id)]];
+        if ($periodo->estado === 'borrador') {
+            $reglas['fecha_inicio'] = ['required', 'date', 'before_or_equal:fecha_fin'];
+            $reglas['fecha_fin'] = ['required', 'date', 'after_or_equal:fecha_inicio', 'before_or_equal:2100-12-31'];
+        }
+        $datos = $request->validate($reglas);
+        $this->validarNombreFechas(
+            $datos['nombre'], $datos['fecha_inicio'] ?? $periodo->fecha_inicio, $datos['fecha_fin'] ?? $periodo->fecha_fin,
+        );
+        $periodo->update($datos);
+
+        return back()->with('estado', 'Datos del periodo actualizados correctamente.');
+    }
+
+    private function validarNombreFechas(string $nombre, string $inicio, string $fin): void
+    {
+        $meses = ['enero' => 1, 'febrero' => 2, 'marzo' => 3, 'abril' => 4, 'mayo' => 5, 'junio' => 6,
+            'julio' => 7, 'agosto' => 8, 'septiembre' => 9, 'octubre' => 10, 'noviembre' => 11, 'diciembre' => 12];
+        if (! preg_match('/\A\s*([\pL]+)\s*[-–]\s*([\pL]+)\s+(\d{4})\s*\z/u', $nombre, $coincidencia)) {
+            return;
+        }
+        $mesInicio = $meses[mb_strtolower($coincidencia[1])] ?? null;
+        $mesFin = $meses[mb_strtolower($coincidencia[2])] ?? null;
+        if (! $mesInicio || ! $mesFin) return;
+        $fechaInicio = Carbon::parse($inicio);
+        $fechaFin = Carbon::parse($fin);
+        if ($fechaInicio->month !== $mesInicio || $fechaFin->month !== $mesFin || $fechaInicio->year !== (int) $coincidencia[3]) {
+            throw ValidationException::withMessages(['nombre' => 'Los meses y el año del nombre deben coincidir con las fechas del periodo.']);
+        }
     }
 
     public function pendientes(Request $request, Periodo $periodo): View

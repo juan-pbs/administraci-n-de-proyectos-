@@ -43,7 +43,7 @@
                 </select>
             </label>
             <label class="text-sm font-semibold text-slate-700">Nombre
-                <input name="nombre" maxlength="80" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm" placeholder="Equipo 1"><span class="mt-1 block text-xs font-normal text-slate-500">Máximo 80 caracteres. Usa letras, números y signos comunes; sin emojis.</span>
+                <input name="nombre" maxlength="80" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm" placeholder="Equipo 1"><span class="mt-1 block text-xs font-normal text-slate-500">Máximo 80 caracteres. Usa letras, números, espacios y estos signos: . , : ; ( ) / + &amp; -</span>
             </label>
             <label class="text-sm font-semibold text-slate-700">Contexto inicial
                 <textarea name="contexto_proyecto" rows="3" maxlength="3000" class="mt-2 block w-full rounded-md border-slate-300 text-sm" placeholder="Problema o necesidad que atenderá">{{ old('contexto_proyecto') }}</textarea>
@@ -180,18 +180,17 @@
                                     <p class="mt-1 text-sm text-slate-500">{{ $equipo->integrantes_count }} {{ (int) $equipo->integrantes_count === 1 ? 'integrante asignado' : 'integrantes asignados' }}</p>
                                 </div>
                                 @if($alumnosDisponibles->isNotEmpty())
-                                    <form method="POST" action="{{ route('equipos.alumnos.guardar') }}" class="flex flex-col gap-2 sm:flex-row" data-async-form data-async-targets="mensajes metricas-equipos listado-equipos">
+                                    <form method="POST" action="{{ route('equipos.alumnos.guardar') }}" class="flex flex-col gap-2" data-async-form data-async-targets="mensajes metricas-equipos listado-equipos">
                                         @csrf
                                         <input type="hidden" name="equipo_id" value="{{ $equipo->id }}">
                                         <input type="hidden" name="periodo_equipos" value="{{ $periodoSeleccionado }}">
                                         <input type="hidden" name="grupo_equipos" value="{{ $grupoSeleccionado }}">
-                                        <select name="estudiante_id" required class="min-w-64 rounded-md border-slate-300 text-sm">
-                                            <option value="">Agregar alumno del grupo</option>
+                                        <fieldset class="max-h-40 space-y-1 overflow-y-auto rounded-md border border-slate-300 bg-white p-2 text-sm"><legend class="px-1 font-semibold text-slate-700">Selecciona alumnos del grupo</legend>
                                             @foreach($alumnosDisponibles as $estudiante)
-                                                <option value="{{ $estudiante->id }}">{{ $estudiante->matricula }} - {{ $estudiante->nombre }}</option>
+                                                <label class="flex items-center gap-2 rounded px-2 py-1 hover:bg-slate-50"><input type="checkbox" name="estudiante_ids[]" value="{{ $estudiante->id }}" class="rounded border-slate-300">{{ $estudiante->matricula }} - {{ $estudiante->nombre }}</label>
                                             @endforeach
-                                        </select>
-                                        <button class="rounded-md bg-[#15529A] px-3 py-2 text-sm font-bold text-white">Agregar</button>
+                                        </fieldset>
+                                        <button class="w-fit rounded-md bg-[#15529A] px-3 py-2 text-sm font-bold text-white">Agregar seleccionados</button>
                                     </form>
                                 @endif
                             </div>
