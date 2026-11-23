@@ -6,10 +6,12 @@
     <div class="mt-5 space-y-3">
         @forelse($cierres as $cierre)
         <article class="rounded-lg border bg-white p-5">
-            <div class="flex flex-wrap justify-between gap-3"><div><h3 class="font-bold">{{ $cierre->proyecto->titulo }}</h3><p class="mt-1 text-sm text-slate-500">{{ $cierre->proyecto->equipo->nombre }} · {{ $cierre->proyecto->equipo->grupoAcademico->grado }}{{ $cierre->proyecto->equipo->grupoAcademico->grupo }}</p><p class="mt-1 text-sm font-semibold text-[#0D376D]">{{ $cierre->proyecto->equipo->grupoAcademico->periodo->nombre }} · {{ ucfirst($cierre->proyecto->equipo->grupoAcademico->periodo->estado) }}</p></div><span class="rounded bg-slate-100 px-3 py-1 text-sm">{{ $cierre->estado === 'prorroga' ? 'Prórroga' : ucfirst($cierre->estado) }}</span></div>
+            <div class="flex flex-wrap justify-between gap-3"><div><h3 class="font-bold">{{ $cierre->proyecto->titulo }}</h3><p class="mt-1 text-sm text-slate-500">{{ $cierre->proyecto->equipo->nombre }} · {{ $cierre->proyecto->equipo->grupoAcademico->grado }}{{ $cierre->proyecto->equipo->grupoAcademico->grupo }}</p><p class="mt-1 text-sm font-semibold text-[#0D376D]">{{ $cierre->proyecto->equipo->grupoAcademico->periodo->nombre }} · {{ ucfirst($cierre->proyecto->equipo->grupoAcademico->periodo->estado) }}</p></div><span class="rounded bg-slate-100 px-3 py-1 text-sm">{{ $cierre->etiquetaEstado() }}</span></div>
             @php($totalPendientes = count($cierre->pendientes ?? []))
             <p class="mt-3 text-sm">{{ $totalPendientes }} {{ $totalPendientes === 1 ? 'pendiente registrado' : 'pendientes registrados' }} al revisar el cierre.</p>
-            @if($cierre->estado === 'prorroga')<p class="mt-2 text-sm text-amber-800">Fecha de prórroga: {{ $cierre->prorrogas->where('ronda', $cierre->ronda)->max('fecha_limite')?->format('d/m/Y H:i') }}</p>@endif
+            @if(in_array($cierre->estado, ['pendiente', 'prorroga'], true) && ($fecha = $cierre->fechaProrrogaActual()))
+                <p class="mt-2 text-sm text-amber-800">Fecha de prórroga: {{ $fecha->format('d/m/Y H:i') }}</p>
+            @endif
             <a href="{{ route('docente-lider.cierres.mostrar', $cierre->proyecto) }}" class="mt-3 inline-block font-bold text-[#155AA3] underline">Ver pendientes y decisión</a>
         </article>
         @empty<p class="rounded-lg border bg-white p-6 text-sm text-slate-500">No hay cierres pendientes registrados para tus equipos.</p>@endforelse

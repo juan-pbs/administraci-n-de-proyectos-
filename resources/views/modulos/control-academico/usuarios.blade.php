@@ -215,11 +215,11 @@
             </div>
             @foreach ($docentes as $docente)
                 @php($editando = (int) old('docente_editando') === (int) $docente->id)
-                <dialog id="editar-docente-{{ $docente->id }}" class="w-full max-w-xl rounded-lg border border-slate-200 p-0 shadow-xl backdrop:bg-slate-950/40">
+                <dialog id="editar-docente-{{ $docente->id }}" aria-labelledby="titulo-editar-docente-{{ $docente->id }}" class="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-lg border border-slate-200 p-0 shadow-xl backdrop:bg-slate-950/40">
                     <form method="POST" action="{{ route('usuarios.docentes.actualizar', ['docente' => $docente, 'seccion' => 'docentes', 'carrera_docentes' => $filtrosDocentes['carrera_id']]) }}" class="space-y-4 p-6">
                         @csrf @method('PATCH')
                         <input type="hidden" name="docente_editando" value="{{ $docente->id }}">
-                        <div><h3 class="text-lg font-bold text-[#0D376D]">Editar docente</h3><p class="text-sm text-slate-600">{{ $docente->role?->nombre_visible }}</p></div>
+                        <div><h3 id="titulo-editar-docente-{{ $docente->id }}" class="text-lg font-bold text-[#0D376D]">Editar docente</h3><p class="text-sm text-slate-600">{{ $docente->role?->nombre_visible }}</p></div>
                         @if($editando && $errors->any())<ul class="list-disc rounded-md bg-red-50 px-6 py-3 text-sm text-red-700">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>@endif
                         <label class="block text-sm font-semibold text-slate-700">Nombre<input name="nombre" required maxlength="120" value="{{ $editando ? old('nombre') : $docente->nombre }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
                         <label class="block text-sm font-semibold text-slate-700">Matrícula / clave<input name="matricula" required maxlength="30" value="{{ $editando ? old('matricula') : $docente->matricula }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>

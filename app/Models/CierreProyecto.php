@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 class CierreProyecto extends Model
 {
@@ -27,5 +28,20 @@ class CierreProyecto extends Model
     public function prorrogas(): HasMany
     {
         return $this->hasMany(ProrrogaApartado::class, 'cierre_proyecto_id');
+    }
+
+    public function fechaProrrogaActual(): ?Carbon
+    {
+        return $this->prorrogas->where('ronda', $this->ronda)->max('fecha_limite');
+    }
+
+    public function etiquetaEstado(): string
+    {
+        $fecha = in_array($this->estado, ['prorroga', 'pendiente'], true) ? $this->fechaProrrogaActual() : null;
+        if ($fecha && ! $fecha->isFuture()) {
+            return 'Prórroga vencida';
+        }
+
+        return $this->estado === 'prorroga' ? 'Prórroga' : ucfirst($this->estado);
     }
 }

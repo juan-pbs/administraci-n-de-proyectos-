@@ -32,11 +32,11 @@ class EscenariosAcademicosSeeder extends Seeder
             }
             $coordinacion = $this->usuario('20260001', 'Patricia Hernández Luna', 'coordinacion');
             $ciclos = [
-                ['Enero - Abril 2025', today()->subMonths(20)->startOfMonth(), today()->subMonths(17)->endOfMonth(), 'cerrado', 'historico'],
-                ['Mayo - Agosto 2025', today()->subMonths(16)->startOfMonth(), today()->subMonths(13)->endOfMonth(), 'cerrado', 'historico'],
-                ['Mayo - Agosto 2026', today()->subMonths(4)->startOfMonth(), today()->subMonth()->endOfMonth(), 'cerrado', 'cierre'],
-                ['Septiembre - Diciembre 2026', today()->startOfMonth(), today()->addMonths(3)->endOfMonth(), 'activo', 'actual'],
-                ['Enero - Abril 2027', today()->addMonths(4)->startOfMonth(), today()->addMonths(7)->endOfMonth(), 'borrador', 'borrador'],
+                [today()->startOfMonth()->subMonths(20), today()->startOfMonth()->subMonths(17)->endOfMonth(), 'cerrado', 'historico'],
+                [today()->startOfMonth()->subMonths(16), today()->startOfMonth()->subMonths(13)->endOfMonth(), 'cerrado', 'historico'],
+                [today()->startOfMonth()->subMonths(4), today()->startOfMonth()->subMonth()->endOfMonth(), 'cerrado', 'cierre'],
+                [today()->startOfMonth(), today()->startOfMonth()->addMonths(3)->endOfMonth(), 'activo', 'actual'],
+                [today()->startOfMonth()->addMonths(4), today()->startOfMonth()->addMonths(7)->endOfMonth(), 'borrador', 'borrador'],
             ];
             $personas = [
                 ['TI', 'Tecnologías de la Información', ['Elena Rivera Soto', 'Carlos Mendoza Ruiz'], ['Tomás Vega López', 'Lucía Montes García', 'Ana Torres Salas']],
@@ -56,8 +56,8 @@ class EscenariosAcademicosSeeder extends Seeder
                 $inactivo->update(['estado' => 'inactivo']);
                 $carrera->docentes()->attach($inactivo->id, ['activo' => false]);
                 $materias = collect(['Integradora', 'Desarrollo de proyectos', 'Comunicación técnica'])->map(fn ($n, $i) => Asignatura::create(['carrera_id' => $carrera->id, 'clave' => "$clave-08-".($i + 1), 'nombre' => $n, 'grado' => 8, 'estado' => 'activo']));
-                foreach ($ciclos as $ciclo => [$nombrePeriodo, $inicio, $fin, $estado, $tipo]) {
-                    $periodo = Periodo::firstOrCreate(['nombre' => $nombrePeriodo], ['fecha_inicio' => $inicio, 'fecha_fin' => $fin, 'estado' => $estado]);
+                foreach ($ciclos as $ciclo => [$inicio, $fin, $estado, $tipo]) {
+                    $periodo = Periodo::firstOrCreate(['nombre' => Periodo::nombreParaFechas($inicio, $fin)], ['fecha_inicio' => $inicio, 'fecha_fin' => $fin, 'estado' => $estado]);
                     foreach ($lideres as $lider) {
                         $materias[0]->docentes()->attach($lider->id, ['periodo_id' => $periodo->id, 'activo' => true]);
                     }
@@ -126,7 +126,9 @@ class EscenariosAcademicosSeeder extends Seeder
             'estado' => $tipo === 'borrador' ? 'borrador' : ($periodo->estado === 'cerrado' ? 'cerrada' : 'publicada'),
             'objetivo_aprendizaje' => 'Diseñar e implementar una solución tecnológica a una necesidad de la comunidad.', 'competencias_evaluar' => 'Análisis, diseño, implementación, pruebas y documentación de proyectos.']);
         foreach ([['Protocolo del proyecto', "Antecedentes\nProblema\nObjetivos\nJustificación\nAlcances y limitaciones", 30], ['Desarrollo y resultados', "Arquitectura\nImplementación\nPruebas\nResultados\nConclusiones", 35], ['Código y liberación', "Código fuente\nManual técnico\nManual de usuario\nCarta de liberación", 35]] as $orden => [$titulo, $descripcion, $peso]) {
-            $fecha = $periodo->estado === 'cerrado' ? Carbon::parse($periodo->fecha_fin)->subDays(3)->endOfDay() : now()->addDays(($orden + 1) * 7)->endOfDay();
+            $fecha = $periodo->estado === 'cerrado'
+                ? Carbon::parse($periodo->fecha_fin)->subDays(3)->endOfDay()
+                : Carbon::parse($periodo->fecha_inicio)->max(today())->addWeeks($orden + 1)->endOfDay();
             $apartado = ApartadoGuia::create(['guia_integradora_id' => $guia->id, 'orden' => $orden + 1, 'titulo' => $titulo, 'descripcion' => $descripcion, 'ponderacion' => $peso, 'requiere_documento' => true, 'requiere_codigo' => $orden === 2, 'fecha_limite' => $fecha]);
             foreach ($orden === 2 ? [$lider] : [$lider, $docente] as $i => $revisor) {
                 FirmaApartadoGuia::create(['apartado_guia_id' => $apartado->id, 'docente_id' => $revisor->id, 'asignatura_id' => $materias[$i]->id, 'orden' => $i + 1, 'etiqueta' => $i === 0 ? 'Docente integrador' : 'Docente asesor', 'requerida' => true]);

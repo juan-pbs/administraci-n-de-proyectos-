@@ -27,7 +27,7 @@
         <form method="POST" action="{{ route('periodos.guardar') }}" class="grid gap-4 border-t border-slate-200 p-5 md:grid-cols-4">
             @csrf
             <label class="text-sm font-semibold text-slate-700 md:col-span-2">Nombre
-                <input name="nombre" maxlength="255" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm" placeholder="Septiembre - Diciembre 2026">
+                <input name="nombre" maxlength="255" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm" placeholder="{{ $ejemploNombrePeriodo }}">
             </label>
             <label class="text-sm font-semibold text-slate-700">Inicio
                 <input name="fecha_inicio" type="date" min="{{ now()->startOfMonth()->toDateString() }}" max="2100-12-31" value="{{ old('fecha_inicio') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">

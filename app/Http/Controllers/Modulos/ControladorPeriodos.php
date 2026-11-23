@@ -77,15 +77,18 @@ class ControladorPeriodos extends Controller
     {
         $meses = ['enero' => 1, 'febrero' => 2, 'marzo' => 3, 'abril' => 4, 'mayo' => 5, 'junio' => 6,
             'julio' => 7, 'agosto' => 8, 'septiembre' => 9, 'octubre' => 10, 'noviembre' => 11, 'diciembre' => 12];
-        if (! preg_match('/\A\s*([\pL]+)\s*[-–]\s*([\pL]+)\s+(\d{4})\s*\z/u', $nombre, $coincidencia)) {
+        if (! preg_match('/\A\s*(?<inicio>[\pL]+)(?:\s+(?<anio_inicio>\d{4}))?\s*[-–]\s*(?<fin>[\pL]+)\s+(?<anio>\d{4})\s*\z/u', $nombre, $coincidencia)) {
             return;
         }
-        $mesInicio = $meses[mb_strtolower($coincidencia[1])] ?? null;
-        $mesFin = $meses[mb_strtolower($coincidencia[2])] ?? null;
+        $mesInicio = $meses[mb_strtolower($coincidencia['inicio'])] ?? null;
+        $mesFin = $meses[mb_strtolower($coincidencia['fin'])] ?? null;
         if (! $mesInicio || ! $mesFin) return;
         $fechaInicio = Carbon::parse($inicio);
         $fechaFin = Carbon::parse($fin);
-        if ($fechaInicio->month !== $mesInicio || $fechaFin->month !== $mesFin || $fechaInicio->year !== (int) $coincidencia[3]) {
+        $anioInicio = (int) ($coincidencia['anio_inicio'] ?: $coincidencia['anio']);
+        $anioFin = $coincidencia['anio_inicio'] ? (int) $coincidencia['anio'] : null;
+        if ($fechaInicio->month !== $mesInicio || $fechaFin->month !== $mesFin
+            || $fechaInicio->year !== $anioInicio || ($anioFin !== null && $fechaFin->year !== $anioFin)) {
             throw ValidationException::withMessages(['nombre' => 'Los meses y el año del nombre deben coincidir con las fechas del periodo.']);
         }
     }
@@ -143,6 +146,7 @@ class ControladorPeriodos extends Controller
 
         return [
             'periodos' => $periodos,
+            'ejemploNombrePeriodo' => Periodo::nombreParaFechas(now()->startOfMonth(), now()->startOfMonth()->addMonths(3)->endOfMonth()),
             'metricasPeriodos' => [
                 ['label' => 'Periodos', 'value' => (string) $periodos->count()],
                 ['label' => 'Activos', 'value' => (string) $periodos->where('estado', 'activo')->count()],

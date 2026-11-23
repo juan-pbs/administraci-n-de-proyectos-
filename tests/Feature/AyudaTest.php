@@ -191,11 +191,17 @@ test('todos los apartados de ayuda por rol y acceso publico muestran una captura
         $rol = Role::query()->firstOrCreate(['nombre' => $nombre], ['nombre_visible' => $nombre, 'descripcion' => 'Rol de prueba']);
         $this->actingAs(User::factory()->create(['rol_id' => $rol->id]));
         foreach (SistemaInterfaz::opcionesAyudaPara($nombre) as $opcion) {
-            $this->get($opcion['ruta'])->assertOk()->assertSee('data-help-annotated-figure', false);
+            $this->get($opcion['ruta'])
+                ->assertOk()
+                ->assertSee('data-help-annotated-figure', false)
+                ->assertSee('Campos y botones clave');
         }
     }
     foreach (['iniciar-sesion', 'recuperar-contrasena', 'actualizar-contrasena'] as $seccion) {
-        $this->get(route('ayuda.acceso', ['seccion' => $seccion]))->assertOk()->assertSee('data-help-annotated-figure', false);
+        $this->get(route('ayuda.acceso', ['seccion' => $seccion]))
+            ->assertOk()
+            ->assertSee('data-help-annotated-figure', false)
+            ->assertSee('Campos y botones clave');
     }
 });
 
@@ -226,6 +232,7 @@ test('ayuda de estudiante no muestra apartados administrativos', function () {
         ->get('/ayuda?seccion=mi-proyecto')
         ->assertOk()
         ->assertSee('Mi proyecto')
+        ->assertSee('Si tienes acceso a más de un proyecto')
         ->assertDontSee('Periodos académicos')
         ->assertDontSee('Guías integradoras');
 });

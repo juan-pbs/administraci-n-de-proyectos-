@@ -197,7 +197,7 @@
         </div>
         <div class="border-t border-slate-200 px-5 py-3 text-sm text-slate-500">Lista completa: <strong class="text-slate-800">{{ $guias->count() }} guías</strong></div>
     </article>
-    <dialog id="guia-preview-dialog" aria-labelledby="guia-preview-title" class="w-[min(96vw,1100px)] max-w-none rounded-lg border border-slate-200 p-0 shadow-xl backdrop:bg-slate-950/50">
+    <dialog id="guia-preview-dialog" aria-labelledby="guia-preview-title" class="m-auto w-[min(96vw,1100px)] max-w-none rounded-lg border border-slate-200 p-0 shadow-xl backdrop:bg-slate-950/50">
         <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3">
             <h3 id="guia-preview-title" data-preview-title class="font-bold text-[#0D376D]">Vista previa de la guía</h3>
             <button type="button" data-close-preview aria-label="Cerrar vista previa" class="rounded-md px-3 py-1 text-2xl leading-none text-slate-600 hover:bg-slate-100">&times;</button>

@@ -203,6 +203,10 @@ test('plazo nuevo invalida solo firmas del apartado elegido y se conserva despu�
     expect($datos['filas'][$d['apartado']->id]['firmantes'][0]['revision'])->not->toBeNull()->and($datos['filas'][$d['codigo']->id]['firmantes'][0]['revision'])->toBeNull();
     firmarCierre($d['lider'], $codigo);
     $this->travel(4)->days();
+    $this->actingAs($d['lider'])->get(route('docente-lider.cierres'))
+        ->assertOk()->assertSee('Prórroga vencida');
+    $this->get(route('docente-lider.cierres.mostrar', $d['proyecto']))
+        ->assertOk()->assertSee('Estado: Prórroga vencida')->assertSee('Guardar prórroga');
     expect(app(DocumentosGuias::class)->datos($d['proyecto']->fresh(), false)['pendientes'])->toBeEmpty();
 });
 

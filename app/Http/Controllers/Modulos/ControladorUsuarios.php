@@ -165,8 +165,8 @@ class ControladorUsuarios extends Controller
             'nombre' => ['required', 'string', 'max:120'],
             'matricula' => ['required', 'string', 'max:30', Rule::unique('usuarios', 'matricula')->ignore($docente->id)],
             'correo' => ['required', 'email', 'max:254', Rule::unique('usuarios', 'correo')->ignore($docente->id),
-                function (string $attribute, mixed $value, \Closure $fail) use ($dominioDocente): void {
-                    if ($dominioDocente !== '' && ! str_ends_with(strtolower((string) $value), '@'.$dominioDocente)) {
+                function (string $attribute, mixed $value, \Closure $fail) use ($dominioDocente, $docente): void {
+                    if ($value !== $docente->correo && $dominioDocente !== '' && ! str_ends_with(strtolower((string) $value), '@'.$dominioDocente)) {
                         $fail("El correo del docente debe pertenecer a @{$dominioDocente}.");
                     }
                 },

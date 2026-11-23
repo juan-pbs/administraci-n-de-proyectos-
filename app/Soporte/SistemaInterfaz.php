@@ -97,6 +97,8 @@ class SistemaInterfaz
                 ['titulo' => 'Estado de las guías', 'seccion' => 'estado-guias'],
                 ['titulo' => 'Cierres y prórrogas', 'seccion' => 'cierres'],
                 ['titulo' => 'Recordatorios', 'seccion' => 'recordatorios'],
+                ['titulo' => 'Mis asignaciones', 'seccion' => 'mis-asignaciones'],
+                ['titulo' => 'Revisiones de apartados', 'seccion' => 'revisiones'],
                 ['titulo' => 'Mi firma', 'seccion' => 'mi-firma'],
                 ['titulo' => 'Formato y PDF', 'seccion' => 'formato-pdf'],
                 ['titulo' => 'Búsqueda del panel', 'seccion' => 'busqueda-panel'],

@@ -5,6 +5,7 @@ use App\Servicios\{DocumentosGuias, EstadoGuias};
 use Database\Seeders\EscenariosAcademicosSeeder;
 use Database\Seeders\CorreosPruebaSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\{DB, Notification, Queue, Storage};
 
 uses(RefreshDatabase::class);
@@ -20,6 +21,15 @@ test('escenarios académicos cubren estados y relaciones con nombres normales si
     expect(Periodo::count())->toBe(5)->and(Periodo::where('estado', 'activo')->count())->toBe(1)
         ->and(Proyecto::count())->toBe(84)->and(DocumentoFinal::count())->toBe(24)->and(FirmaDocente::count())->toBe(8)
         ->and(User::count())->toBe(325)->and(GuiaIntegradora::count())->toBe(24);
+    foreach (Periodo::all() as $periodo) {
+        expect($periodo->nombre)->toBe(Periodo::nombreParaFechas(Carbon::parse($periodo->fecha_inicio), Carbon::parse($periodo->fecha_fin)));
+    }
+    foreach (GuiaIntegradora::with(['periodo', 'apartados'])->where('estado', 'borrador')->get() as $guia) {
+        foreach ($guia->apartados as $apartado) {
+            expect($apartado->fecha_limite->toDateString())->toBeGreaterThanOrEqual($guia->periodo->fecha_inicio)
+                ->toBeLessThanOrEqual($guia->periodo->fecha_fin);
+        }
+    }
     foreach (['usuarios' => 'nombre', 'periodos' => 'nombre', 'guias_integradoras' => 'nombre', 'proyectos' => 'titulo'] as $tabla => $campo) {
         expect(DB::table($tabla)->where($campo, 'like', '%DEMO%')->exists())->toBeFalse();
     }

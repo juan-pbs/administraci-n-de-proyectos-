@@ -57,6 +57,14 @@ test('coordinacion puede corregir datos de un docente existente', function () {
         'nombre' => 'Docente corregido', 'matricula' => 'DOC-MEC-99',
         'correo' => 'docente@example.com', 'carrera_id' => $d['carrera']->id,
     ])->assertSessionHasErrors('correo');
+
+    $d['profesor']->update(['correo' => 'historico@example.invalid']);
+    $this->patch(route('usuarios.docentes.actualizar', $d['profesor']), [
+        'nombre' => 'Docente corregido', 'matricula' => 'DOC-MEC-99',
+        'correo' => 'historico@example.invalid', 'carrera_id' => $d['carrera']->id,
+        'estado' => 'activo',
+    ])->assertSessionHasNoErrors();
+    $this->assertDatabaseHas('usuarios', ['id' => $d['profesor']->id, 'estado' => 'activo']);
 });
 
 test('la guia exige una version numerica y muestra la nueva guia con sus filtros', function () {
