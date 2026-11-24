@@ -273,16 +273,22 @@ test('la ayuda nueva muestra el contenido correcto y sus opciones solo al rol co
         ->assertDontSee('Cierres y prórrogas');
 });
 
-test('la ayuda de coordinación explica la plantilla de alumnos y la letra del grupo', function () {
+test('la ayuda de coordinación explica los formatos de captura de usuarios, carreras, grupos y periodos', function () {
     $rol = Role::query()->firstOrCreate(['nombre' => 'coordinacion'], ['nombre_visible' => 'Coordinación', 'descripcion' => 'Rol de prueba']);
     $this->actingAs(User::factory()->create(['rol_id' => $rol->id]));
 
     $this->get('/ayuda?seccion=usuarios')
         ->assertOk()
         ->assertSee('Descarga la plantilla, llena una fila por alumno')
-        ->assertSee('Vista previa de alumnos');
+        ->assertSee('Vista previa de alumnos')
+        ->assertSee('DOC-24.01');
 
     $this->get('/ayuda?seccion=carreras-grupos')
         ->assertOk()
-        ->assertSee('una sola letra de la A a la M');
+        ->assertSee('una sola letra de la A a la M')
+        ->assertSee('Se guarda en mayúsculas');
+
+    $this->get('/ayuda?seccion=periodos')
+        ->assertOk()
+        ->assertSee('guiones, diagonales y paréntesis en el nombre');
 });

@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
 
@@ -104,4 +105,80 @@ test('asignaturas y equipos rechazan emojis en sus nombres', function () {
     $this->actingAs($lider)->post(route('equipos.guardar'), [
         'grupo_academico_id' => 1, 'nombre' => 'Equipo 😀',
     ])->assertSessionHasErrors('nombre');
+});
+
+test('los registros y la edición de docentes exigen una matrícula con formato válido', function () {
+    Mail::fake();
+    $this->actingAs(coordinacionCapturaAcademica());
+    $rol = Role::query()->firstOrCreate(['nombre' => 'docente_materia'], ['nombre_visible' => 'Docente de materia']);
+    $carrera = Carrera::query()->create(['nombre' => 'Mecatrónica', 'clave' => 'MEC', 'estado' => 'activa']);
+    $datos = [
+        'nombre' => 'Docente de prueba',
+        'correo' => 'docente@'.config('academico.dominio_correo_docente'),
+        'matricula' => '😀🚀',
+        'carrera_id' => $carrera->id,
+    ];
+
+    $this->post(route('usuarios.guardar'), [...$datos, 'rol_id' => $rol->id])
+        ->assertSessionHasErrors('matricula');
+    $this->post(route('usuarios.docentes.guardar'), ['docentes' => [[...$datos, 'rol' => $rol->nombre]]])
+        ->assertSessionHasErrors('docentes.0.matricula');
+    $this->assertDatabaseMissing('usuarios', ['matricula' => $datos['matricula']]);
+    Mail::assertNothingOutgoing();
+
+    $this->post(route('usuarios.docentes.guardar'), [
+        'docentes' => [[...$datos, 'rol' => $rol->nombre, 'matricula' => 'DOC-24.01']],
+    ])->assertSessionHasNoErrors();
+    $docente = User::query()->where('matricula', 'DOC-24.01')->firstOrFail();
+
+    $this->patch(route('usuarios.docentes.actualizar', $docente), $datos)
+        ->assertSessionHasErrors('matricula');
+    expect($docente->fresh()->matricula)->toBe('DOC-24.01');
+    $this->patch(route('usuarios.docentes.actualizar', $docente), [...$datos, 'matricula' => 'DOC-24.02'])
+        ->assertSessionHasNoErrors();
+    expect($docente->fresh()->matricula)->toBe('DOC-24.02');
+});
+
+test('los nombres de periodo rechazan por separado emojis y etiquetas HTML al crear y corregir', function () {
+    $this->actingAs(coordinacionCapturaAcademica());
+    $fechas = [
+        'fecha_inicio' => now()->startOfMonth()->toDateString(),
+        'fecha_fin' => now()->addMonth()->endOfMonth()->toDateString(),
+    ];
+    $periodo = Periodo::query()->create([...$fechas, 'nombre' => 'Ciclo inicial', 'estado' => 'borrador']);
+
+    foreach (['Ciclo 😀', 'Ciclo <em>especial</em>'] as $nombre) {
+        $this->post(route('periodos.guardar'), [...$fechas, 'nombre' => $nombre])
+            ->assertSessionHasErrors('nombre');
+        $this->patch(route('periodos.actualizar', $periodo), ['nombre' => $nombre])
+            ->assertSessionHasErrors('nombre');
+        $this->assertDatabaseMissing('periodos', ['nombre' => $nombre]);
+    }
+
+    $this->post(route('periodos.guardar'), [...$fechas, 'nombre' => 'Ciclo 1/2 (Edición especial)'])
+        ->assertSessionHasNoErrors();
+    $this->patch(route('periodos.actualizar', $periodo), ['nombre' => 'Ciclo 2/2 (Edición especial)'])
+        ->assertSessionHasNoErrors();
+    expect($periodo->fresh()->nombre)->toBe('Ciclo 2/2 (Edición especial)');
+});
+
+test('las carreras validan nombre y clave al crear y editar y guardan la clave en mayúsculas', function () {
+    $this->actingAs(coordinacionCapturaAcademica());
+    $carrera = Carrera::query()->create(['nombre' => 'Mecatrónica', 'clave' => 'MEC', 'estado' => 'activa']);
+
+    foreach (['Ingeniería 😀', "Ingeniería\u{200B} aplicada", "Ingeniería 1\u{FE0F}\u{20E3}"] as $nombre) {
+        $datos = ['nombre' => $nombre, 'clave' => '😀', 'estado' => 'activa'];
+        $this->post(route('carreras.guardar'), $datos)->assertSessionHasErrors(['nombre', 'clave']);
+        $this->patch(route('carreras.actualizar', $carrera), $datos)->assertSessionHasErrors(['nombre', 'clave']);
+    }
+    $this->assertDatabaseCount('carreras', 1);
+    expect($carrera->fresh()->only(['nombre', 'clave']))->toBe(['nombre' => 'Mecatrónica', 'clave' => 'MEC']);
+
+    $this->post(route('carreras.guardar'), ['nombre' => 'Sistemas (TI)', 'clave' => 'ti_1-a'])
+        ->assertSessionHasNoErrors();
+    $this->assertDatabaseHas('carreras', ['nombre' => 'Sistemas (TI)', 'clave' => 'TI_1-A']);
+    $this->patch(route('carreras.actualizar', $carrera), [
+        'nombre' => 'Mecatrónica aplicada', 'clave' => 'mec-2_b', 'estado' => 'activa',
+    ])->assertSessionHasNoErrors();
+    $this->assertDatabaseHas('carreras', ['id' => $carrera->id, 'nombre' => 'Mecatrónica aplicada', 'clave' => 'MEC-2_B']);
 });

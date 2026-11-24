@@ -11,6 +11,7 @@ use App\Models\GrupoAcademico;
 use App\Models\Periodo;
 use App\Models\Role;
 use App\Models\User;
+use App\Soporte\FormatosCapturaAcademica;
 use App\Soporte\ProtegeHistorial;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
@@ -58,6 +59,10 @@ class ControladorUsuarios extends Controller
         ]);
         $rol = Role::query()->findOrFail($datos['rol_id']);
         if (in_array($rol->nombre, ['docente_lider', 'docente_materia'], true)) {
+            $request->validate([
+                'matricula' => ['max:30', FormatosCapturaAcademica::regla(FormatosCapturaAcademica::MATRICULA_DOCENTE)],
+            ], ['matricula.regex' => FormatosCapturaAcademica::MENSAJE_MATRICULA_DOCENTE]);
+
             $dominioDocente = strtolower(trim((string) config('academico.dominio_correo_docente')));
             if ($dominioDocente !== '' && ! str_ends_with(strtolower($datos['correo']), '@'.$dominioDocente)) {
                 throw ValidationException::withMessages(['correo' => "El correo del docente debe pertenecer a @{$dominioDocente}."]);
@@ -104,7 +109,7 @@ class ControladorUsuarios extends Controller
         $datos = $request->validate([
             'docentes' => ['required', 'array', 'min:1', 'max:30'],
             'docentes.*.nombre' => ['required', 'string', 'max:120'],
-            'docentes.*.matricula' => ['required', 'string', 'max:30', 'distinct', 'unique:usuarios,matricula'],
+            'docentes.*.matricula' => ['required', 'string', 'max:30', FormatosCapturaAcademica::regla(FormatosCapturaAcademica::MATRICULA_DOCENTE), 'distinct', 'unique:usuarios,matricula'],
             'docentes.*.correo' => ['required', 'email', 'max:254', 'distinct', 'unique:usuarios,correo',
                 function (string $attribute, mixed $value, \Closure $fail) use ($dominioDocente): void {
                     if ($dominioDocente !== '' && ! str_ends_with(strtolower((string) $value), '@'.$dominioDocente)) {
@@ -114,7 +119,7 @@ class ControladorUsuarios extends Controller
             ],
             'docentes.*.rol' => ['required', 'in:docente_lider,docente_materia'],
             'docentes.*.carrera_id' => ['required', Rule::exists('carreras', 'id')->where('estado', 'activa')],
-        ]);
+        ], ['docentes.*.matricula.regex' => FormatosCapturaAcademica::MENSAJE_MATRICULA_DOCENTE]);
 
         $roles = Role::query()->whereIn('nombre', ['docente_lider', 'docente_materia'])->pluck('id', 'nombre');
         $correosPendientes = [];
@@ -164,7 +169,7 @@ class ControladorUsuarios extends Controller
         $dominioDocente = strtolower(trim((string) config('academico.dominio_correo_docente')));
         $datos = $request->validate([
             'nombre' => ['required', 'string', 'max:120'],
-            'matricula' => ['required', 'string', 'max:30', Rule::unique('usuarios', 'matricula')->ignore($docente->id)],
+            'matricula' => ['required', 'string', 'max:30', FormatosCapturaAcademica::regla(FormatosCapturaAcademica::MATRICULA_DOCENTE), Rule::unique('usuarios', 'matricula')->ignore($docente->id)],
             'correo' => ['required', 'email', 'max:254', Rule::unique('usuarios', 'correo')->ignore($docente->id),
                 function (string $attribute, mixed $value, \Closure $fail) use ($dominioDocente, $docente): void {
                     if ($value !== $docente->correo && $dominioDocente !== '' && ! str_ends_with(strtolower((string) $value), '@'.$dominioDocente)) {
@@ -175,7 +180,7 @@ class ControladorUsuarios extends Controller
             'carrera_id' => ['required', 'exists:carreras,id'],
             'estado' => ['sometimes', 'in:activo,inactivo'],
             'rol' => ['sometimes', 'required', 'in:docente_lider,docente_materia', 'exists:roles,nombre'],
-        ]);
+        ], ['matricula.regex' => FormatosCapturaAcademica::MENSAJE_MATRICULA_DOCENTE]);
 
         DB::transaction(function () use ($docente, $datos, $request): void {
             $docente = User::whereKey($docente->id)->lockForUpdate()->firstOrFail();

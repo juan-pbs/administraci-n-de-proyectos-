@@ -10,6 +10,7 @@ use App\Models\Periodo;
 use App\Models\Proyecto;
 use App\Servicios\CicloAcademico;
 use App\Soporte\AuditoriaAcademica;
+use App\Soporte\FormatosCapturaAcademica;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\View\View;
@@ -46,11 +47,11 @@ class ControladorPeriodos extends Controller
         $inicioMinimo = now()->startOfMonth()->toDateString();
 
         $datos = $request->validate([
-            'nombre' => ['required', 'string', 'max:255', 'unique:periodos,nombre'],
+            'nombre' => ['required', 'string', 'max:255', FormatosCapturaAcademica::regla(FormatosCapturaAcademica::NOMBRE_PERIODO), 'unique:periodos,nombre'],
             'fecha_inicio' => ['required', 'date', 'after_or_equal:'.$inicioMinimo, 'before_or_equal:2100-12-31'],
             'fecha_fin' => ['required', 'date', 'after_or_equal:fecha_inicio', 'before_or_equal:2100-12-31'],
             'estado' => ['sometimes', 'in:borrador'],
-        ]);
+        ], ['nombre.regex' => FormatosCapturaAcademica::MENSAJE_NOMBRE_PERIODO]);
         $this->validarNombreFechas($datos['nombre'], $datos['fecha_inicio'], $datos['fecha_fin']);
 
         Periodo::query()->create([...$datos, 'estado' => 'borrador']);
@@ -62,11 +63,11 @@ class ControladorPeriodos extends Controller
     {
         $this->autorizarDireccion($request);
         $datos = $request->validate([
-            'nombre' => ['required', 'string', 'max:255', Rule::unique('periodos', 'nombre')->ignore($periodo)],
+            'nombre' => ['required', 'string', 'max:255', FormatosCapturaAcademica::regla(FormatosCapturaAcademica::NOMBRE_PERIODO), Rule::unique('periodos', 'nombre')->ignore($periodo)],
             'fecha_inicio' => ['required_with:fecha_fin', 'date', 'before_or_equal:fecha_fin', 'after_or_equal:2000-01-01'],
             'fecha_fin' => ['required_with:fecha_inicio', 'date', 'after_or_equal:fecha_inicio', 'before_or_equal:2100-12-31'],
             'motivo' => ['nullable', 'string', 'max:2000'],
-        ]);
+        ], ['nombre.regex' => FormatosCapturaAcademica::MENSAJE_NOMBRE_PERIODO]);
         DB::transaction(function () use ($periodo, $datos, $request): void {
             $periodo = Periodo::whereKey($periodo->id)->lockForUpdate()->firstOrFail();
             $inicio = isset($datos['fecha_inicio']) ? Carbon::parse($datos['fecha_inicio'])->toDateString() : $periodo->fecha_inicio;

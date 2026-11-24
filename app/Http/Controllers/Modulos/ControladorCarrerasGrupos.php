@@ -8,6 +8,7 @@ use App\Models\Carrera;
 use App\Models\GrupoAcademico;
 use App\Models\Periodo;
 use App\Models\User;
+use App\Soporte\FormatosCapturaAcademica;
 use App\Soporte\ProtegeHistorial;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
@@ -40,17 +41,20 @@ class ControladorCarrerasGrupos extends Controller
     {
         $this->autorizarDireccion($request);
         if (is_string($request->input('clave'))) {
-            $request->merge(['clave' => mb_strtoupper(trim($request->input('clave')))]);
+            $request->merge(['clave' => strtoupper(trim($request->input('clave')))]);
         }
 
         $datos = $request->validate([
-            'nombre' => ['required', 'string', 'max:120'],
-            'clave' => ['required', 'string', 'max:20', 'unique:carreras,clave'],
+            'nombre' => ['required', 'string', 'max:120', FormatosCapturaAcademica::regla(FormatosCapturaAcademica::NOMBRE_CARRERA)],
+            'clave' => ['required', 'string', 'max:20', FormatosCapturaAcademica::regla(FormatosCapturaAcademica::CLAVE_CARRERA), 'unique:carreras,clave'],
+        ], [
+            'nombre.regex' => FormatosCapturaAcademica::MENSAJE_NOMBRE_CARRERA,
+            'clave.regex' => FormatosCapturaAcademica::MENSAJE_CLAVE_CARRERA,
         ]);
 
         Carrera::query()->create([
             'nombre' => $datos['nombre'],
-            'clave' => mb_strtoupper($datos['clave']),
+            'clave' => $datos['clave'],
             'estado' => 'activa',
         ]);
 
@@ -90,12 +94,15 @@ class ControladorCarrerasGrupos extends Controller
     {
         $this->autorizarDireccion($request);
         if (is_string($request->input('clave'))) {
-            $request->merge(['clave' => mb_strtoupper(trim($request->input('clave')))]);
+            $request->merge(['clave' => strtoupper(trim($request->input('clave')))]);
         }
         $carrera->update($request->validate([
-            'nombre' => ['required', 'string', 'max:120'],
-            'clave' => ['required', 'string', 'max:20', Rule::unique('carreras', 'clave')->ignore($carrera)],
+            'nombre' => ['required', 'string', 'max:120', FormatosCapturaAcademica::regla(FormatosCapturaAcademica::NOMBRE_CARRERA)],
+            'clave' => ['required', 'string', 'max:20', FormatosCapturaAcademica::regla(FormatosCapturaAcademica::CLAVE_CARRERA), Rule::unique('carreras', 'clave')->ignore($carrera)],
             'estado' => ['required', 'in:activa,inactiva'],
+        ], [
+            'nombre.regex' => FormatosCapturaAcademica::MENSAJE_NOMBRE_CARRERA,
+            'clave.regex' => FormatosCapturaAcademica::MENSAJE_CLAVE_CARRERA,
         ]));
 
         return back()->with('estado', 'Carrera actualizada correctamente.');

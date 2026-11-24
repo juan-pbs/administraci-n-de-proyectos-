@@ -1,3 +1,5 @@
+@use('App\Soporte\FormatosCapturaAcademica')
+
 <x-contenedor-aplicacion title="Carreras y grupos | Administración de proyectos" active="carreras-grupos" :navegacion="$navegacion" :role-name="$roleName">
     <section class="border-b border-slate-200 pb-5">
         <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#005227]">Estructura por periodo</p>
@@ -23,8 +25,8 @@
             <div class="border-b border-slate-200 p-5"><p class="text-xs font-bold uppercase tracking-[0.15em] text-[#005227]">Catálogo permanente</p><h3 class="mt-1 font-bold text-slate-900">Nueva carrera</h3></div>
             <form method="POST" action="{{ route('carreras.guardar') }}" class="space-y-4 p-5">
                 @csrf
-                <div><label class="text-sm font-semibold text-slate-700">Nombre de la carrera (máximo 120 caracteres)</label><input name="nombre" maxlength="120" value="{{ old('nombre') }}" required placeholder="Tecnologías de la Información" class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
-                <div><label class="text-sm font-semibold text-slate-700">Clave (máximo 20 caracteres)</label><input name="clave" maxlength="20" value="{{ old('clave') }}" required placeholder="TI" class="mt-2 block w-full rounded-md border-slate-300 text-sm uppercase"></div>
+                <div><label class="text-sm font-semibold text-slate-700">Nombre de la carrera (máximo 120 caracteres)</label><input name="nombre" pattern="{{ FormatosCapturaAcademica::NOMBRE_CARRERA }}" title="{{ FormatosCapturaAcademica::MENSAJE_NOMBRE_CARRERA }}" maxlength="120" value="{{ old('nombre') }}" required placeholder="Tecnologías de la Información" class="mt-2 block w-full rounded-md border-slate-300 text-sm"></div>
+                <div><label class="text-sm font-semibold text-slate-700">Clave (máximo 20 caracteres)</label><input name="clave" pattern="{{ FormatosCapturaAcademica::CLAVE_CARRERA }}" title="{{ FormatosCapturaAcademica::MENSAJE_CLAVE_CARRERA }}" maxlength="20" value="{{ old('clave') }}" required placeholder="TI" class="mt-2 block w-full rounded-md border-slate-300 text-sm uppercase"></div>
                 <button class="rounded-md bg-[#15529A] px-4 py-2.5 text-sm font-bold text-white">Guardar carrera</button>
             </form>
         </article>
@@ -81,8 +83,8 @@
                     <summary class="cursor-pointer text-sm font-bold text-[#15529A]">Editar carrera · {{ $carreraActual->clave }} · {{ ucfirst($carreraActual->estado) }}</summary>
                     <form method="POST" action="{{ route('carreras.actualizar', $carreraActual) }}" class="mt-3 grid gap-3 md:grid-cols-3">
                         @csrf @method('PATCH')
-                        <label class="text-sm font-semibold">Nombre<input name="nombre" required maxlength="120" value="{{ $carreraActual->nombre }}" class="mt-1 block w-full rounded-md border-slate-300"></label>
-                        <label class="text-sm font-semibold">Clave<input name="clave" required maxlength="20" value="{{ $carreraActual->clave }}" class="mt-1 block w-full rounded-md border-slate-300"></label>
+                        <label class="text-sm font-semibold">Nombre<input name="nombre" pattern="{{ FormatosCapturaAcademica::NOMBRE_CARRERA }}" title="{{ FormatosCapturaAcademica::MENSAJE_NOMBRE_CARRERA }}" required maxlength="120" value="{{ $carreraActual->nombre }}" class="mt-1 block w-full rounded-md border-slate-300"></label>
+                        <label class="text-sm font-semibold">Clave<input name="clave" pattern="{{ FormatosCapturaAcademica::CLAVE_CARRERA }}" title="{{ FormatosCapturaAcademica::MENSAJE_CLAVE_CARRERA }}" required maxlength="20" value="{{ $carreraActual->clave }}" class="mt-1 block w-full rounded-md border-slate-300"></label>
                         <label class="text-sm font-semibold">Estado<select name="estado" class="mt-1 block w-full rounded-md border-slate-300"><option value="activa" @selected($carreraActual->estado === 'activa')>Activa</option><option value="inactiva" @selected($carreraActual->estado === 'inactiva')>Inactiva</option></select></label>
                         <button class="w-fit rounded-md bg-[#15529A] px-3 py-2 text-sm font-bold text-white">Guardar carrera</button>
                     </form>

@@ -1,3 +1,5 @@
+@use('App\Soporte\FormatosCapturaAcademica')
+
 <x-contenedor-aplicacion title="Periodos | Administración de proyectos" active="periodos" :navegacion="$navegacion" :role-name="$roleName">
     <section class="border-b border-slate-200 pb-5">
         <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#005227]">Control académico</p>
@@ -27,7 +29,7 @@
         <form method="POST" action="{{ route('periodos.guardar') }}" class="grid gap-4 border-t border-slate-200 p-5 md:grid-cols-4">
             @csrf
             <label class="text-sm font-semibold text-slate-700 md:col-span-2">Nombre
-                <input name="nombre" maxlength="255" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm" placeholder="{{ $ejemploNombrePeriodo }}">
+                <input name="nombre" maxlength="255" pattern="{{ FormatosCapturaAcademica::NOMBRE_PERIODO }}" title="{{ FormatosCapturaAcademica::MENSAJE_NOMBRE_PERIODO }}" value="{{ old('nombre') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm" placeholder="{{ $ejemploNombrePeriodo }}">
             </label>
             <label class="text-sm font-semibold text-slate-700">Inicio
                 <input name="fecha_inicio" type="date" min="{{ now()->startOfMonth()->toDateString() }}" max="2100-12-31" value="{{ old('fecha_inicio') }}" required class="mt-2 block w-full rounded-md border-slate-300 text-sm">
@@ -65,7 +67,7 @@
                         <p class="mt-1 text-sm text-slate-500">{{ \Illuminate\Support\Carbon::parse($periodo->fecha_inicio)->format('d/m/Y') }} — {{ \Illuminate\Support\Carbon::parse($periodo->fecha_fin)->format('d/m/Y') }}</p>
                         <details class="mt-3 rounded-md border border-slate-200 bg-white p-3"><summary class="cursor-pointer text-sm font-bold text-[#15529A]">Corregir datos del periodo</summary>
                             <form method="POST" action="{{ route('periodos.actualizar', $periodo) }}" class="mt-3 grid gap-3 sm:grid-cols-2">@csrf @method('PATCH')
-                                <label class="text-xs font-semibold text-slate-700 sm:col-span-2">Nombre<input name="nombre" maxlength="255" required value="{{ $periodo->nombre }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
+                                <label class="text-xs font-semibold text-slate-700 sm:col-span-2">Nombre<input name="nombre" maxlength="255" pattern="{{ FormatosCapturaAcademica::NOMBRE_PERIODO }}" title="{{ FormatosCapturaAcademica::MENSAJE_NOMBRE_PERIODO }}" required value="{{ $periodo->nombre }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
                                 <label class="text-xs font-semibold text-slate-700">Inicio<input name="fecha_inicio" type="date" required value="{{ $periodo->fecha_inicio }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
                                 <label class="text-xs font-semibold text-slate-700">Cierre<input name="fecha_fin" type="date" required value="{{ $periodo->fecha_fin }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
                                 <p class="text-xs text-slate-500 sm:col-span-2">El rango debe respetar los plazos de los apartados vinculados.</p>

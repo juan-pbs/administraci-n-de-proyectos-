@@ -138,6 +138,7 @@ class ControladorAyuda extends Controller
                     pasos: [
                         'Usa Nuevo periodo para abrir el formulario de captura.',
                         'Captura nombre, inicio y cierre. Usa los meses y años de esas fechas en el nombre. El inicio debe estar en el mes actual o después y el periodo se guarda como borrador.',
+                        'Al crear o corregir un periodo, usa letras, números, espacios, puntos, guiones, diagonales y paréntesis en el nombre.',
                         'En el historial, abre Corregir datos del periodo. Puedes corregir el nombre y las fechas, incluso en un periodo activo o cerrado. El rango debe respetar los plazos de las guías vinculadas.',
                         'Actívalo cuando no exista otro periodo activo. Para cerrarlo, revisa los pendientes y confirma el cierre; el historial queda disponible para consulta.',
                         'En la fila de un periodo cerrado, abre Reabrir periodo, escribe el motivo y confirma. Sus fechas deben abarcar hoy y ningún otro periodo puede estar activo.',
@@ -153,6 +154,7 @@ class ControladorAyuda extends Controller
                     descripcion: 'Esta vista organiza carreras y grupos para que después puedan relacionarse alumnos, docentes, equipos y proyectos.',
                     pasos: [
                         'Crea primero la carrera con su nombre y clave.',
+                        'Al crear o editar una carrera, escribe una clave de hasta 20 caracteres con letras de A a Z, números, guiones o guiones bajos. Se guarda en mayúsculas. El nombre admite acentos, espacios, números y signos como paréntesis, diagonales y guiones.',
                         'Agrega grupos indicando carrera, periodo y cuatrimestre. Elige una sola letra de la A a la M.',
                         'Vincula docentes a la carrera y usa Jerarquía de proyectos para asignar un líder a cada grupo.',
                         'Cambiar Periodo o Carrera actualiza la lista. Para buscar por cuatrimestre, grupo o periodo, escribe el texto y pulsa Buscar grupo.',
@@ -172,6 +174,7 @@ class ControladorAyuda extends Controller
                         'Descarga la plantilla, llena una fila por alumno y carga una o varias listas. Solo puedes elegir el periodo activo.',
                         'Selecciona carrera, cuatrimestre y grupo para cada archivo. En la vista previa revisa la matrícula de 7 dígitos, nombre y correo antes de confirmar.',
                         'En Docentes, registra nombre, matrícula o clave, correo institucional, rol y carrera. La contraseña inicial se envía al correo registrado.',
+                        'Al registrar o editar un docente, usa una matrícula o clave única de hasta 30 caracteres. Se admiten letras de A a Z, números, puntos y guiones, como en DOC-24.01.',
                         'En el catálogo de docentes, pulsa Editar. Revisa nombre, matrícula, correo, carrera, rol y estado. Si el docente lidera un grupo vigente, reasígnalo en Jerarquía antes de cambiar su rol.',
                         'Usa Eliminar docente únicamente cuando no tenga actividad académica vinculada. Para retirar el acceso conservando su historial, selecciona Inactivo (sin acceso).',
                     ],
@@ -903,7 +906,7 @@ class ControladorAyuda extends Controller
             ],
             'assets/ayuda/actualizadas/coordinacion-periodos.png' => [
                 $this->detalle('Nuevo periodo', 'Abre el formulario para registrar un nuevo ciclo de trabajo.'),
-                $this->detalle('Nombre del periodo', 'Usa los meses y años que abarcan las fechas, por ejemplo Noviembre 2026 - Febrero 2027.'),
+                $this->detalle('Nombre del periodo', 'Usa letras, números, espacios, puntos, guiones, diagonales y paréntesis. Si indicas los meses y años, hazlos coincidir con las fechas, por ejemplo Noviembre 2026 - Febrero 2027.'),
                 $this->detalle('Fechas', 'El nombre debe coincidir con inicio y cierre. Puedes corregir las fechas en el historial si se respetan los plazos de las guías.'),
                 $this->detalle('Estado', 'El periodo nuevo se guarda en borrador. Solo se activa cuando no hay otro activo; al cerrarlo se revisan pendientes y queda para consulta.'),
                 $this->detalle('Corregir datos del periodo', 'Abre la fila del historial y pulsa Guardar corrección después de editar los datos. Para corregir fechas en un periodo activo o cerrado necesitas un motivo.'),
@@ -914,7 +917,7 @@ class ControladorAyuda extends Controller
                 $this->detalle('Guardar periodo', 'Valida nombre y fechas y lo agrega al historial como borrador.'),
             ],
             'assets/ayuda/coordinacion/04-carreras-grupos.png' => [
-                $this->detalle('Nueva carrera', 'Captura nombre y clave de la carrera antes de crear grupos.'),
+                $this->detalle('Nueva carrera', 'Captura el nombre y una clave única con letras de A a Z, números, guiones o guiones bajos. La misma regla se aplica al editar.'),
                 $this->detalle('Nuevo grupo', 'Selecciona carrera, periodo, cuatrimestre y una letra de la A a la M.'),
                 $this->detalle('Vincular docente a carrera', 'Este vínculo no asigna al docente como líder de un grupo. Hazlo en Jerarquía de proyectos.'),
                 $this->detalle('Filtros', 'Permiten revisar solo una carrera, un periodo o un grupo específico.'),
@@ -927,7 +930,7 @@ class ControladorAyuda extends Controller
                 $this->detalle('Descargar plantilla de alumnos', 'Llena matrícula, nombre y correo en una fila por alumno. Solo el periodo activo está disponible para la carga; selecciona carrera, cuatrimestre y grupo por archivo antes de confirmar la vista previa.'),
             ],
             'assets/ayuda/actualizadas/coordinacion-editar-docente.png' => [
-                $this->detalle('Nombre y matrícula / clave', 'Revisa el nombre completo y la clave única que usa el docente para entrar.'),
+                $this->detalle('Nombre y matrícula / clave', 'Revisa el nombre completo y la clave única que usa el docente para entrar. La clave admite letras de A a Z, números, puntos y guiones.'),
                 $this->detalle('Correo institucional', 'Debe pertenecer al dominio institucional configurado.'),
                 $this->detalle('Carrera principal', 'Elige la carrera a la que pertenece el docente.'),
                 $this->detalle('Estado y Guardar cambios', 'Selecciona Activo o Inactivo (sin acceso). Pulsa Guardar cambios para aplicar el estado.'),
