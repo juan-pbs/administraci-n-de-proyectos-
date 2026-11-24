@@ -71,6 +71,7 @@ class ControladorJerarquiaProyectos extends Controller
         $lider = User::query()->with('role')->findOrFail($datos['lider_proyecto_id']);
         abort_unless($lider->hasRole('docente_lider'), 422);
         $asignatura = Asignatura::query()->findOrFail($datos['asignatura_lider_id']);
+        abort_unless($asignatura->estado === 'activo', 422, 'La asignatura está inactiva.');
         abort_unless((int) $asignatura->carrera_id === (int) $grupo->carrera_id && (int) $asignatura->grado === (int) $grupo->grado, 422);
         abort_unless($lider->estado === 'activo' && ($lider->carrera_id === $grupo->carrera_id || $lider->carrerasComoDocente()->whereKey($grupo->carrera_id)->exists()), 422);
         DB::transaction(function () use ($grupo, $lider, $asignatura): void {

@@ -13,12 +13,14 @@ use App\Rules\UrlDemostracion;
 use App\Servicios\ContextoEstudiante;
 use App\Servicios\PlazosProyecto;
 use App\Soporte\SistemaInterfaz;
+use App\Soporte\AuditoriaAcademica;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ControladorEstudiante extends Controller
@@ -39,7 +41,8 @@ class ControladorEstudiante extends Controller
             ->with(['firmas.docente:id,nombre'])
             ->orderBy('orden')->get() ?? collect();
         $entregas = $proyecto
-            ? Entrega::query()->with(['archivos', 'entregadoPor:id,nombre,matricula', 'revisiones' => fn ($query) => $query->with('comentarios.autor:id,nombre')->latest('revisado_en')])
+            ? Entrega::withoutGlobalScope('vigentes')->with(['archivos', 'entregadoPor:id,nombre,matricula',
+                'revisiones' => fn ($query) => $query->with(['comentarios' => fn ($q) => $q->where('visible_estudiante', true)->with('autor:id,nombre')])->latest('revisado_en')])
                 ->where('proyecto_id', $proyecto->id)->orderByDesc('version')->get()->groupBy('apartado_guia_id')
             : collect();
         foreach ($apartados as $apartado) {
@@ -62,7 +65,7 @@ class ControladorEstudiante extends Controller
 
         DB::transaction(function () use ($datos, $estudiante, $equipo, $proyecto, $apartado): void {
             Proyecto::query()->whereKey($proyecto->id)->lockForUpdate()->firstOrFail();
-            $version = (int) Entrega::query()->where('proyecto_id', $proyecto->id)->where('apartado_guia_id', $apartado->id)->max('version') + 1;
+            $version = (int) Entrega::withoutGlobalScope('vigentes')->where('proyecto_id', $proyecto->id)->where('apartado_guia_id', $apartado->id)->max('version') + 1;
             $entrega = Entrega::query()->create([
                 'proyecto_id' => $proyecto->id, 'apartado_guia_id' => $apartado->id,
                 'equipo_id' => $equipo->id, 'entregado_por_id' => $estudiante->id,
@@ -81,11 +84,35 @@ class ControladorEstudiante extends Controller
         return back()->with('status', 'El avance se envió correctamente y quedó pendiente de revisión.');
     }
 
+    public function retirarEntrega(Request $request, Entrega $entrega): RedirectResponse
+    {
+        [$estudiante, $equipo, $proyecto] = $this->contexto($request);
+        abort_unless($equipo && $proyecto && $entrega->equipo_id === $equipo->id && $entrega->proyecto_id === $proyecto->id
+            && ($entrega->entregado_por_id === null || (int) $entrega->entregado_por_id === (int) $estudiante->id), 403);
+        $request->validate(['confirmar_eliminacion' => ['accepted']]);
+        $this->validarPlazo($entrega->apartado, $proyecto);
+        $ultima = $proyecto->entregas()->where('apartado_guia_id', $entrega->apartado_guia_id)
+            ->orderByDesc('version')->orderByDesc('id')->first();
+        if ($ultima?->id !== $entrega->id || $proyecto->documentosFinales()->exists()) {
+            throw ValidationException::withMessages(['entrega' => 'Solo puedes retirar la última versión vigente de un proyecto sin PDF final emitido.']);
+        }
+        if ($entrega->revisiones()->exists()) {
+            throw ValidationException::withMessages(['entrega' => 'La versión ya tiene una revisión. En su lugar puedes enviar una nueva versión dentro del plazo.']);
+        }
+        $estado = $entrega->estado;
+        $entrega->update(['estado' => 'retirada']);
+        AuditoriaAcademica::registrar($estudiante->id, 'entregas', $entrega->id, 'retirar',
+            ['estado' => $estado, 'version' => $entrega->version], ['estado' => 'retirada']);
+
+        return back()->with('status', 'Versión retirada. Se conserva en el historial y se vuelve a mostrar la versión vigente anterior, si existe.');
+    }
+
     public function codigo(Request $request): View
     {
         [$estudiante, $equipo, $proyecto] = $this->contexto($request);
         $apartadoCodigo = $proyecto?->guiaIntegradora?->apartados()->where('requiere_codigo', true)->orderBy('orden')->first();
-        $producto = $proyecto ? ProductoCodigo::query()->with(['entrega.archivos', 'entrega.entregadoPor:id,nombre,matricula'])->where('proyecto_id', $proyecto->id)->latest('id')->first() : null;
+        $producto = $proyecto ? ProductoCodigo::query()->with(['entrega.archivos', 'entrega.revisiones', 'entrega.entregadoPor:id,nombre,matricula'])
+            ->where('proyecto_id', $proyecto->id)->where(fn ($q) => $q->whereNull('entrega_id')->orWhereHas('entrega'))->latest('id')->first() : null;
         if ($apartadoCodigo) {
             $apartadoCodigo->habilitado_para_entrega = app(PlazosProyecto::class)->habilitado($proyecto, $apartadoCodigo);
             $apartadoCodigo->fecha_limite = app(PlazosProyecto::class)->fecha($proyecto, $apartadoCodigo);
@@ -111,7 +138,7 @@ class ControladorEstudiante extends Controller
 
         DB::transaction(function () use ($datos, $request, $estudiante, $equipo, $proyecto, $apartado): void {
             Proyecto::query()->whereKey($proyecto->id)->lockForUpdate()->firstOrFail();
-            $versionEntrega = (int) Entrega::query()->where('proyecto_id', $proyecto->id)->where('apartado_guia_id', $apartado->id)->max('version') + 1;
+            $versionEntrega = (int) Entrega::withoutGlobalScope('vigentes')->where('proyecto_id', $proyecto->id)->where('apartado_guia_id', $apartado->id)->max('version') + 1;
             $entrega = Entrega::query()->create([
                 'proyecto_id' => $proyecto->id, 'apartado_guia_id' => $apartado->id,
                 'equipo_id' => $equipo->id, 'entregado_por_id' => $estudiante->id,
@@ -141,7 +168,7 @@ class ControladorEstudiante extends Controller
     {
         [, $equipo] = $this->contexto($request);
         $archivo->loadMissing('entrega');
-        abort_unless($equipo && $archivo->entrega->equipo_id === $equipo->id, 403);
+        abort_unless($equipo && $archivo->entrega?->equipo_id === $equipo->id, 403);
         $ruta = Storage::path($archivo->ruta);
         if (! is_file($ruta)) {
             $ruta = storage_path('app/'.$archivo->ruta);

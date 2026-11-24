@@ -27,8 +27,8 @@ class VerificarCicloAcademico
         return DB::transaction(function () use ($request, $next) {
             $id = fn (string $campo) => is_scalar($request->input($campo)) ? filter_var($request->input($campo), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) : null;
             $periodos = array_filter([$id('periodo_id'), $id('periodo_fin_id')]);
-            $grupo = GrupoAcademico::find($id('grupo_academico_id'));
-            $equipo = Equipo::find($id('equipo_id'));
+            $grupo = $request->route('grupo') ?? GrupoAcademico::find($id('grupo_academico_id'));
+            $equipo = $request->route('equipo') ?? Equipo::find($id('equipo_id'));
             $proyecto = $request->route('proyecto') ?? Proyecto::find($id('proyecto_id'));
             $entrega = $request->route('entrega');
             if ($entrega instanceof Entrega) {
@@ -60,12 +60,26 @@ class VerificarCicloAcademico
                 $periodos[] = $request->session()->get('preview_alumnos.'.$request->input('preview').'.periodo_id');
             }
             $estados = Periodo::query()->whereIn('id', array_unique(array_filter($periodos)))->orderBy('id')->lockForUpdate()->get();
-            $operacion = $request->routeIs('estudiante.entregas.guardar', 'estudiante.codigo.guardar', 'docente-materia.revisiones.guardar', 'docente-materia.comentarios.guardar', 'docente-lider.codigo.revisar', 'docente-lider.codigo.comentar');
+            $operacion = $request->routeIs('estudiante.entregas.guardar', 'estudiante.entregas.retirar', 'estudiante.codigo.guardar',
+                'docente-materia.revisiones.guardar', 'docente-materia.comentarios.*', 'docente-lider.codigo.revisar', 'docente-lider.codigo.comentar', 'docente-lider.codigo.comentarios.*');
+            if ($grupo instanceof GrupoAcademico && ! $request->routeIs('grupos-academicos.actualizar', 'grupos-academicos.eliminar', 'equipos.actualizar', 'equipos.eliminar')) {
+                $grupo = GrupoAcademico::whereKey($grupo->id)->lockForUpdate()->firstOrFail();
+                $this->exigir($grupo->disponible(), 'El grupo o su carrera está inactivo y solo admite consulta.');
+            }
+            if ($equipo instanceof Equipo && ! $request->routeIs('equipos.actualizar', 'equipos.eliminar')) {
+                $equipo = Equipo::whereKey($equipo->id)->lockForUpdate()->firstOrFail();
+                $this->exigir($equipo->estado === 'activo', 'El equipo está inactivo y solo admite consulta.');
+            }
             if ($request->routeIs('estudiante.codigo.guardar') && $proyecto instanceof Proyecto) {
                 $apartado = $proyecto->guiaIntegradora->apartados()->where('requiere_codigo', true)->orderBy('orden')->first();
             }
             if ($operacion && $proyecto instanceof Proyecto && $apartado instanceof ApartadoGuia) {
-                Proyecto::whereKey($proyecto->id)->lockForUpdate()->firstOrFail();
+                $proyecto = Proyecto::whereKey($proyecto->id)->lockForUpdate()->firstOrFail();
+                $this->exigir($proyecto->guia_integradora_id === $apartado->guia_integradora_id && $proyecto->estado === 'en_proceso',
+                    'El apartado o el estado del proyecto cambió. Actualiza la página.');
+                if ($entrega instanceof Entrega) {
+                    $request->route()->setParameter('entrega', Entrega::whereKey($entrega->id)->lockForUpdate()->firstOrFail());
+                }
                 $plazos = app(PlazosProyecto::class);
                 if ($plazos->cierre($proyecto)) {
                     $this->exigir($plazos->permite($proyecto, $apartado), 'Este apartado está cerrado o su prórroga terminó. El docente líder debe autorizar su apertura.');
@@ -76,7 +90,7 @@ class VerificarCicloAcademico
             if ($guia instanceof GuiaIntegradora) {
                 $guia->refresh();
                 $this->exigir($guia->estado !== 'cerrada', 'La guía está cerrada y solo admite consulta.');
-                if ($request->routeIs('proyectos.guardar', 'estudiante.*', 'docente-materia.revisiones.guardar', 'docente-materia.comentarios.guardar', 'docente-lider.codigo.revisar', 'docente-lider.codigo.comentar')) {
+                if ($operacion || $request->routeIs('proyectos.guardar', 'estudiante.*')) {
                     $this->exigir($guia->estado === 'publicada', 'Publica la guía antes de asignarla, enviar entregas o realizar evaluaciones.');
                 }
             }

@@ -24,6 +24,7 @@ class ContextoEstudiante
             ->whereHas('equipo', fn ($q) => $q->where('grupo_academico_id', $estudiante->grupo_academico_id));
         $proyecto = (clone $proyectosDelGrupo)
             ->whereHas('equipo', fn ($q) => $q
+                ->where('estado', 'activo')
                 ->whereHas('grupoAcademico.periodo', fn ($periodo) => $periodo->where('estado', 'activo')))
             ->whereHas('guiaIntegradora.periodo', fn ($periodo) => $periodo->where('estado', 'activo'))
             ->with(['equipo', 'guiaIntegradora'])->latest('id')->first()
@@ -34,7 +35,6 @@ class ContextoEstudiante
 
     public function proyectos(int $estudianteId)
     {
-        return Proyecto::query()->whereHas('equipo', fn ($q) => $q->where('estado', 'activo')
-            ->whereHas('integrantes', fn ($q) => $q->where('usuarios.id', $estudianteId)));
+        return Proyecto::query()->whereHas('equipo.integrantes', fn ($q) => $q->where('usuarios.id', $estudianteId));
     }
 }

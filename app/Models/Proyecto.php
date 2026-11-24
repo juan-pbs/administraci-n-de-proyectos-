@@ -36,6 +36,22 @@ class Proyecto extends Model
         return $this->hasMany(DocumentoFinal::class, 'proyecto_id');
     }
 
+    public function tieneHistorial(): bool
+    {
+        return $this->newQuery()->whereKey($this->id)->conHistorial()->exists();
+    }
+
+    public function scopeConHistorial(\Illuminate\Database\Eloquent\Builder $query): void
+    {
+        $query->where(fn ($q) => $q->whereHas('entregas', fn ($entregas) => $entregas->withoutGlobalScope('vigentes'))
+            ->orWhereHas('cierre')->orWhereHas('documentosFinales')->orWhereHas('productosCodigo'));
+    }
+
+    public function productosCodigo(): HasMany
+    {
+        return $this->hasMany(ProductoCodigo::class, 'proyecto_id');
+    }
+
     /**
      * @return BelongsTo<GuiaIntegradora, $this>
      */
@@ -72,4 +88,5 @@ class Proyecto extends Model
             ->withPivot(['docente_id', 'participa_evaluacion'])
             ->withTimestamps('creado_en', 'actualizado_en');
     }
+
 }

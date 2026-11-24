@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Modulos;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Modulos\Soporte\EditaComentarios;
 use App\Models\ArchivoEntrega;
 use App\Models\ComentarioRevision;
 use App\Models\Entrega;
@@ -19,6 +20,8 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ControladorRevisionCodigo extends Controller
 {
+    use EditaComentarios;
+
     public function mostrar(Request $request): View
     {
         $docente = $this->lider($request);
@@ -28,9 +31,9 @@ class ControladorRevisionCodigo extends Controller
             ->with([
                 'apartado:id,titulo,ponderacion,fecha_limite,requiere_codigo',
                 'proyecto:id,equipo_id,guia_integradora_id,titulo,estado',
-                'equipo:id,grupo_academico_id,numero,nombre',
-                'equipo.grupoAcademico:id,carrera_id,periodo_id,grado,grupo,lider_proyecto_id',
-                'equipo.grupoAcademico.carrera:id,clave,nombre',
+                'equipo:id,grupo_academico_id,numero,nombre,estado',
+                'equipo.grupoAcademico:id,carrera_id,periodo_id,grado,grupo,lider_proyecto_id,estado',
+                'equipo.grupoAcademico.carrera:id,clave,nombre,estado',
                 'entregadoPor:id,nombre,matricula',
                 'archivos:id,entrega_id,nombre_original,ruta,tipo_archivo,tamano,es_aplicacion',
                 'productosCodigo:id,entrega_id,proyecto_id,repositorio_url,demostracion_url,archivo_fuente,version',
@@ -87,6 +90,7 @@ class ControladorRevisionCodigo extends Controller
     {
         $docente = $this->lider($request);
         $archivo->loadMissing('entrega');
+        abort_unless($archivo->entrega, 404);
         $this->autorizar($docente->id, $archivo->entrega);
         $ruta = Storage::path($archivo->ruta);
         if (! is_file($ruta)) {
@@ -95,6 +99,13 @@ class ControladorRevisionCodigo extends Controller
         abort_unless(is_file($ruta), 404);
 
         return response()->download($ruta, $archivo->nombre_original, ['Content-Type' => 'application/octet-stream', 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'no-store, private']);
+    }
+
+    public function modificarComentario(Request $request, Entrega $entrega, ComentarioRevision $comentario): RedirectResponse
+    {
+        $this->autorizar($this->lider($request)->id, $entrega);
+
+        return $this->guardarCambioComentario($request, $entrega, $comentario);
     }
 
     private function lider(Request $request)

@@ -8,10 +8,13 @@ use App\Models\Carrera;
 use App\Models\GrupoAcademico;
 use App\Models\Periodo;
 use App\Models\User;
+use App\Soporte\ProtegeHistorial;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ControladorCarrerasGrupos extends Controller
 {
@@ -36,6 +39,9 @@ class ControladorCarrerasGrupos extends Controller
     public function guardarCarrera(Request $request): RedirectResponse
     {
         $this->autorizarDireccion($request);
+        if (is_string($request->input('clave'))) {
+            $request->merge(['clave' => mb_strtoupper(trim($request->input('clave')))]);
+        }
 
         $datos = $request->validate([
             'nombre' => ['required', 'string', 'max:120'],
@@ -57,7 +63,7 @@ class ControladorCarrerasGrupos extends Controller
 
         $datos = $request->validate([
             'periodo_id' => ['required', 'exists:periodos,id'],
-            'carrera_id' => ['required', 'exists:carreras,id'],
+            'carrera_id' => ['required', Rule::exists('carreras', 'id')->where('estado', 'activa')],
             'grado' => ['required', 'integer', 'min:1', 'max:12'],
             'grupo' => ['required', 'string', 'size:1', 'regex:/\A[A-Ma-m]\z/'],
         ], [
@@ -80,12 +86,85 @@ class ControladorCarrerasGrupos extends Controller
         return redirect()->route('modulos.show', 'carreras-grupos')->with('estado', 'Grupo académico guardado correctamente.');
     }
 
+    public function actualizarCarrera(Request $request, Carrera $carrera): RedirectResponse
+    {
+        $this->autorizarDireccion($request);
+        if (is_string($request->input('clave'))) {
+            $request->merge(['clave' => mb_strtoupper(trim($request->input('clave')))]);
+        }
+        $carrera->update($request->validate([
+            'nombre' => ['required', 'string', 'max:120'],
+            'clave' => ['required', 'string', 'max:20', Rule::unique('carreras', 'clave')->ignore($carrera)],
+            'estado' => ['required', 'in:activa,inactiva'],
+        ]));
+
+        return back()->with('estado', 'Carrera actualizada correctamente.');
+    }
+
+    public function eliminarCarrera(Request $request, Carrera $carrera): RedirectResponse
+    {
+        $this->autorizarDireccion($request);
+        $request->validate(['confirmar_eliminacion' => ['accepted']]);
+        $carrera = Carrera::whereKey($carrera->id)->lockForUpdate()->firstOrFail();
+        ProtegeHistorial::sinReferencias($carrera->id, [
+            'grupos_academicos' => 'carrera_id', 'usuarios' => 'carrera_id',
+            'asignaturas' => 'carrera_id', 'encargos_proyecto' => 'carrera_id', 'docentes_carrera' => 'carrera_id',
+        ], 'La carrera tiene registros vinculados. Puedes desactivarla para conservarlos.');
+        $carrera->delete();
+
+        return redirect()->route('modulos.carreras-grupos')->with('estado', 'Carrera eliminada.');
+    }
+
+    public function actualizarGrupo(Request $request, GrupoAcademico $grupo): RedirectResponse
+    {
+        $this->autorizarDireccion($request);
+        if (is_string($request->input('grupo'))) {
+            $request->merge(['grupo' => mb_strtoupper(trim($request->input('grupo')))]);
+        }
+        $datos = $request->validate([
+            'periodo_id' => ['required', 'exists:periodos,id'],
+            'carrera_id' => ['required', 'exists:carreras,id'],
+            'grado' => ['required', 'integer', 'between:1,12'],
+            'grupo' => ['required', 'string', 'regex:/\A[A-M]\z/'],
+            'estado' => ['required', 'in:activo,inactivo'],
+        ]);
+        $grupo = GrupoAcademico::whereKey($grupo->id)->lockForUpdate()->firstOrFail();
+        $grupo->fill($datos);
+        if ($grupo->isDirty(['periodo_id', 'carrera_id', 'grado']) &&
+            ($grupo->lider_proyecto_id || $grupo->equipos()->exists() || $grupo->alumnos()->exists())) {
+            throw ValidationException::withMessages(['grupo' => 'Con alumnos, equipos o líder asignado solo puedes cambiar la letra y el estado del grupo.']);
+        }
+        $duplicado = GrupoAcademico::whereNot('id', $grupo->id)
+            ->where($grupo->only(['periodo_id', 'carrera_id', 'grado', 'grupo']))->exists();
+        if ($duplicado) {
+            throw ValidationException::withMessages(['grupo' => 'Ya existe ese grupo para la carrera, el periodo y el cuatrimestre seleccionados.']);
+        }
+        $grupo->nombre = $grupo->grado.$grupo->grupo;
+        $grupo->save();
+
+        return redirect()->route('modulos.carreras-grupos', [
+            'periodo_grupos' => $grupo->periodo_id, 'carrera_grupos' => $grupo->carrera_id,
+        ])->with('estado', 'Grupo actualizado correctamente.');
+    }
+
+    public function eliminarGrupo(Request $request, GrupoAcademico $grupo): RedirectResponse
+    {
+        $this->autorizarDireccion($request);
+        $request->validate(['confirmar_eliminacion' => ['accepted']]);
+        $grupo = GrupoAcademico::whereKey($grupo->id)->lockForUpdate()->firstOrFail();
+        ProtegeHistorial::sinReferencias($grupo->id, ['usuarios' => 'grupo_academico_id', 'equipos' => 'grupo_academico_id'],
+            'El grupo tiene alumnos o equipos vinculados. Puedes desactivarlo para conservarlos.');
+        $grupo->delete();
+
+        return back()->with('estado', 'Grupo eliminado.');
+    }
+
     public function asignarDocenteCarrera(Request $request): RedirectResponse
     {
         $this->autorizarDireccion($request);
 
         $datos = $request->validate([
-            'carrera_id' => ['required', 'exists:carreras,id'],
+            'carrera_id' => ['required', Rule::exists('carreras', 'id')->where('estado', 'activa')],
             'docente_id' => ['required', 'exists:usuarios,id'],
         ]);
 
@@ -182,7 +261,7 @@ class ControladorCarrerasGrupos extends Controller
             'periodos' => $periodos,
             'docentes' => User::query()->whereHas('role', fn ($query) => $query->whereIn('nombre', ['docente_lider', 'docente_materia']))->orderBy('nombre')->get(['id', 'nombre', 'matricula', 'carrera_id']),
             'metricasCarreras' => [
-                ['label' => 'Carreras activas', 'value' => (string) $carreras->count()],
+                ['label' => 'Carreras activas', 'value' => (string) $carreras->where('estado', 'activa')->count()],
                 ['label' => 'Grupos en la carrera', 'value' => (string) $gruposTabla->count()],
                 ['label' => 'Alumnos en la carrera', 'value' => (string) $gruposTabla->sum('alumnos_count')],
                 ['label' => 'Docentes por carrera', 'value' => (string) $carreras->sum(fn ($carrera) => $carrera->docentes->count())],

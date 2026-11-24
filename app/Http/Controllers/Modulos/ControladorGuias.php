@@ -12,6 +12,7 @@ use App\Models\GuiaIntegradora;
 use App\Models\Periodo;
 use App\Models\User;
 use App\Servicios\CicloAcademico;
+use App\Soporte\AuditoriaAcademica;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -42,7 +43,116 @@ class ControladorGuias extends Controller
     public function guardar(Request $request): RedirectResponse
     {
         $this->autorizarDireccion($request);
+        $datos = $this->validarDatosGuia($request);
+        $asignatura = $this->validarContextoGuia($datos);
+        GuiaIntegradora::query()->create([...$datos, 'estado' => 'borrador', 'creado_por' => $request->user()->id]);
 
+        return redirect()->route('modulos.show', [
+            'modulo' => 'guias', 'periodo_guias' => $datos['periodo_id'], 'carrera_guias' => $asignatura->carrera_id,
+        ])->with('estado', 'Guía integradora guardada correctamente.');
+    }
+
+    public function actualizar(Request $request, GuiaIntegradora $guia): RedirectResponse
+    {
+        $this->autorizarDireccion($request);
+        $guia = GuiaIntegradora::whereKey($guia->id)->lockForUpdate()->firstOrFail();
+        $datos = $this->validarDatosGuia($request);
+        if ($guia->proyectos()->conHistorial()->exists()) {
+            throw ValidationException::withMessages(['guia' => 'Esta guía tiene historial. Crea una nueva versión para corregirla.']);
+        }
+        $guia->fill($datos);
+        if ($guia->isDirty(['periodo_id', 'periodo_fin_id', 'asignatura_id', 'cuatrimestre'])) {
+            if ($guia->guia_origen_id || $guia->versiones()->exists() || $guia->proyectos()->exists()) {
+                throw ValidationException::withMessages(['guia' => 'El contexto académico de una guía asignada debe conservarse. Puedes editar sus datos generales.']);
+            }
+            $this->validarContextoGuia($datos, $guia);
+            if ($guia->isDirty(['asignatura_id', 'cuatrimestre']) && $guia->apartados()->exists()) {
+                throw ValidationException::withMessages(['guia' => 'La asignatura principal y el cuatrimestre requieren una guía sin apartados configurados.']);
+            }
+            foreach ($guia->apartados()->whereNotNull('fecha_limite')->get() as $apartado) {
+                if (! $guia->admiteFechaLimite($apartado->fecha_limite->toDateTimeString())) {
+                    throw ValidationException::withMessages(['periodo_id' => 'El nuevo rango dejaría apartados fuera de las fechas de la guía.']);
+                }
+            }
+        }
+        if ($guia->isDirty('version')) {
+            $origen = (int) ($guia->guia_origen_id ?? $guia->id);
+            if (GuiaIntegradora::where(fn ($q) => $q->whereKey($origen)->orWhere('guia_origen_id', $origen))
+                ->whereKeyNot($guia->id)->where('version', $guia->version)->exists()) {
+                throw ValidationException::withMessages(['version' => 'Esta versión ya está registrada para la guía.']);
+            }
+        }
+        $guia->save();
+
+        return redirect()->route('modulos.guias', [
+            'periodo_guias' => $guia->periodo_id, 'carrera_guias' => $guia->asignatura?->carrera_id,
+        ])->with('estado', 'Datos de la guía actualizados.');
+    }
+
+    public function nuevaVersion(Request $request, GuiaIntegradora $guia): RedirectResponse
+    {
+        $this->autorizarDireccion($request);
+        $datos = $request->validate([
+            'version' => ['required', 'string', 'max:30', 'regex:/\A[0-9]+(?:\.[0-9]+)*\z/'],
+            'motivo' => ['required', 'string', 'max:2000'],
+        ]);
+        $guia = GuiaIntegradora::whereKey($guia->id)->lockForUpdate()->firstOrFail();
+        $origen = (int) ($guia->guia_origen_id ?? $guia->id);
+        $versiones = GuiaIntegradora::where(fn ($q) => $q->whereKey($origen)->orWhere('guia_origen_id', $origen))->pluck('version');
+        if ($versiones->contains(fn (string $version) => version_compare($datos['version'], $version, '<='))) {
+            throw ValidationException::withMessages(['version' => 'Usa un número mayor que las versiones registradas para esta guía.']);
+        }
+
+        $nueva = $guia->replicate();
+        $nueva->forceFill(['version' => $datos['version'], 'estado' => 'borrador', 'guia_origen_id' => $origen,
+            'creado_por' => $request->user()->id])->save();
+        foreach ($guia->apartados()->with(['firmas', 'asignaturasContribuyentes'])->get() as $apartado) {
+            $copia = $apartado->replicate();
+            $copia->guia_integradora_id = $nueva->id;
+            $copia->save();
+            foreach ($apartado->firmas as $firma) {
+                $copia->firmas()->create($firma->only(['asignatura_id', 'docente_id', 'orden', 'etiqueta', 'requerida']));
+            }
+            $copia->asignaturasContribuyentes()->attach($apartado->asignaturasContribuyentes->mapWithKeys(
+                fn ($asignatura) => [$asignatura->id => $asignatura->pivot->only(['rol_contribucion', 'requiere_firma'])]
+            )->all());
+        }
+        AuditoriaAcademica::registrar($request->user()->id, 'guias', $nueva->id, 'crear_version',
+            ['guia_id' => $guia->id, 'version' => $guia->version], ['version' => $nueva->version], $datos['motivo']);
+
+        return redirect()->route('modulos.guias', ['periodo_guias' => $nueva->periodo_id,
+            'carrera_guias' => $nueva->asignatura?->carrera_id, 'estado_guias' => 'borrador'])
+            ->with('estado', 'Versión creada en borrador. Los proyectos existentes conservan la guía original.');
+    }
+
+    public function volverABorrador(Request $request, GuiaIntegradora $guia): RedirectResponse
+    {
+        $this->autorizarDireccion($request);
+        $request->validate(['confirmar_borrador' => ['accepted']]);
+        $guia = GuiaIntegradora::whereKey($guia->id)->lockForUpdate()->firstOrFail();
+        if ($guia->estado !== 'publicada' || $guia->proyectos()->conHistorial()->exists()) {
+            throw ValidationException::withMessages(['guia' => 'Solo se puede regresar a borrador una guía publicada sin historial de entregas, cierre o documentos.']);
+        }
+        $guia->update(['estado' => 'borrador']);
+
+        return back()->with('estado', 'La guía regresó a borrador.');
+    }
+
+    public function eliminar(Request $request, GuiaIntegradora $guia): RedirectResponse
+    {
+        $this->autorizarDireccion($request);
+        $request->validate(['confirmar_eliminacion' => ['accepted']]);
+        $guia = GuiaIntegradora::whereKey($guia->id)->lockForUpdate()->firstOrFail();
+        if ($guia->proyectos()->exists() || $guia->versiones()->exists()) {
+            throw ValidationException::withMessages(['eliminar' => 'La guía está vinculada a proyectos u otras versiones y se conserva para su consulta.']);
+        }
+        $guia->delete();
+
+        return back()->with('estado', 'Guía eliminada.');
+    }
+
+    private function validarDatosGuia(Request $request): array
+    {
         $datos = $request->validate([
             'periodo_id' => ['required', 'exists:periodos,id'],
             'periodo_fin_id' => ['nullable', 'exists:periodos,id'],
@@ -56,14 +166,25 @@ class ControladorGuias extends Controller
         ], [
             'version.regex' => 'La versión debe contener números separados por puntos, por ejemplo 1.0.',
         ]);
+        unset($datos['estado']);
+        $datos['periodo_fin_id'] ??= null;
 
+        return $datos;
+    }
+
+    private function validarContextoGuia(array $datos, ?GuiaIntegradora $guia = null): Asignatura
+    {
         $asignatura = Asignatura::query()->findOrFail($datos['asignatura_id']);
+        if ($asignatura->estado !== 'activo' || $asignatura->carrera?->estado !== 'activa') {
+            throw ValidationException::withMessages(['asignatura_id' => 'Selecciona una asignatura activa de una carrera activa.']);
+        }
         $inicio = Periodo::findOrFail($datos['periodo_id']);
         $fin = isset($datos['periodo_fin_id']) ? Periodo::findOrFail($datos['periodo_fin_id']) : $inicio;
         if ($inicio->estado === 'cerrado' || $fin->estado === 'cerrado' || $fin->fecha_fin < $inicio->fecha_fin) {
             throw ValidationException::withMessages(['periodo_id' => 'Selecciona periodos abiertos y un periodo final igual o posterior al inicial.']);
         }
         $guiaDuplicada = GuiaIntegradora::query()
+            ->when($guia, fn ($q) => $q->whereKeyNot($guia->id))
             ->where('periodo_id', $datos['periodo_id'])
             ->where('cuatrimestre', $datos['cuatrimestre'])
             ->whereHas('asignatura', fn ($query) => $query->where('carrera_id', $asignatura->carrera_id))
@@ -75,11 +196,7 @@ class ControladorGuias extends Controller
             ]);
         }
 
-        GuiaIntegradora::query()->create([...$datos, 'estado' => 'borrador', 'creado_por' => $request->user()->id]);
-
-        return redirect()->route('modulos.show', [
-            'modulo' => 'guias', 'periodo_guias' => $inicio->id, 'carrera_guias' => $asignatura->carrera_id,
-        ])->with('estado', 'Guía integradora guardada correctamente.');
+        return $asignatura;
     }
 
     public function publicar(Request $request, GuiaIntegradora $guia, CicloAcademico $ciclo): RedirectResponse
@@ -313,11 +430,13 @@ class ControladorGuias extends Controller
                 'periodo:id,nombre,estado,fecha_inicio,fecha_fin',
                 'periodoFin:id,nombre,estado,fecha_inicio,fecha_fin',
                 'asignatura:id,carrera_id,nombre,clave',
+                'guiaOrigen:id,nombre,version',
                 'apartados.asignaturasContribuyentes:id,nombre,clave',
                 'apartados.firmas.asignatura:id,nombre,clave',
                 'apartados.firmas.docente:id,nombre,matricula',
             ])
             ->withCount(['apartados as apartados_count'])
+            ->withExists(['proyectos as tiene_historial' => fn ($q) => $q->conHistorial()])
             ->when($filtros['periodo_id'], fn ($query) => $query->where('periodo_id', $filtros['periodo_id']))
             ->when($filtros['carrera_id'], fn ($query) => $query->whereHas('asignatura', fn ($asignatura) => $asignatura->where('carrera_id', $filtros['carrera_id'])))
             ->when($filtros['estado'], fn ($query) => $query->where('estado', $filtros['estado']))

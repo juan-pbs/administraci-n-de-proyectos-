@@ -92,6 +92,48 @@ function datosProrroga(array $d, array $apartados): array
     return ['decision' => 'prorroga', 'ronda' => $d['proyecto']->cierre()->firstOrFail()->ronda, 'apartados' => $apartados, 'fecha_limite' => now()->addDays(3)->format('Y-m-d H:i:s'), 'motivo' => 'Dar tiempo para atender los pendientes'];
 }
 
+test('coordinación corrige fechas y reabre un periodo con motivo y sin perder sus entregas', function () {
+    $d = escenarioCierre();
+    $entrega = entregaCierre($d, $d['apartado']);
+    $periodo = $d['periodo'];
+    $this->actingAs($d['coordinacion'])->patch(route('periodos.cerrar', $periodo), ['confirmar_cierre' => 1])->assertSessionHasNoErrors();
+    $reabrir = ['confirmar_reapertura' => 1, 'motivo' => 'Ampliación de plazo acordada'];
+    $this->get(route('modulos.periodos'))->assertOk()->assertSee('Reabrir periodo');
+    $this->patch(route('periodos.reabrir', $periodo), $reabrir)->assertSessionHasErrors('ciclo');
+    $cambio = ['nombre' => $periodo->nombre, 'fecha_inicio' => $periodo->fecha_inicio, 'fecha_fin' => today()->addWeek()->toDateString()];
+    $this->patch(route('periodos.actualizar', $periodo), $cambio)->assertSessionHasErrors('motivo');
+    $this->patch(route('periodos.actualizar', $periodo), [...$cambio, 'motivo' => 'Se amplía el ciclo'])
+        ->assertSessionHasNoErrors();
+    $this->actingAs($d['lider'])->patch(route('periodos.reabrir', $periodo), $reabrir)->assertForbidden();
+    $this->actingAs($d['coordinacion'])->patch(route('periodos.reabrir', $periodo), $reabrir)->assertSessionHasNoErrors();
+    expect($periodo->fresh()->estado)->toBe('activo')->and($d['guia']->fresh()->estado)->toBe('publicada');
+    $this->assertModelExists($entrega);
+    $this->assertDatabaseHas('cierres_proyectos', ['proyecto_id' => $d['proyecto']->id, 'estado' => 'reabierto']);
+    $this->assertDatabaseHas('auditoria_academica', ['actor_id' => $d['coordinacion']->id, 'registro_id' => $periodo->id,
+        'accion' => 'reabrir', 'motivo' => 'Ampliación de plazo acordada']);
+});
+
+test('el líder reabre un cierre con prórroga y una cancelación deja la decisión en el historial', function () {
+    $d = escenarioCierre();
+    app(CicloAcademico::class)->cerrar($d['periodo']);
+    $ruta = route('docente-lider.cierres.decidir', $d['proyecto']);
+    $anterior = datosProrroga($d, [$d['apartado']->id]);
+    $this->actingAs($d['lider'])->post($ruta, [
+        'decision' => 'cerrar', 'ronda' => $anterior['ronda'], 'motivo' => 'Cierre por pendientes', 'confirmar_cierre' => 1,
+    ])->assertSessionHasNoErrors();
+    $this->post($ruta, $anterior)->assertSessionHasErrors('cierre');
+    $this->get(route('docente-lider.cierres.mostrar', $d['proyecto']))
+        ->assertOk()->assertSee('Reabrir con prórroga')->assertSee('Cancelar cierre');
+    $this->post($ruta, datosProrroga($d, [$d['apartado']->id]))->assertSessionHasNoErrors();
+    expect($d['proyecto']->fresh()->estado)->toBe('en_proceso');
+    $this->post($ruta, [
+        'decision' => 'reabrir', 'ronda' => $d['proyecto']->cierre()->firstOrFail()->ronda,
+        'motivo' => 'Se revisará el plazo', 'confirmar_reapertura' => 1,
+    ])->assertSessionHasNoErrors();
+    $this->assertDatabaseHas('cierres_proyectos', ['proyecto_id' => $d['proyecto']->id, 'estado' => 'pendiente']);
+    expect(DB::table('decisiones_cierre')->orderBy('id')->pluck('decision')->all())->toBe(['cerrar', 'prorroga', 'reabrir']);
+});
+
 test('cierre distingue entregas y firmas, avisa solo al líder y deduplica los avisos', function () {
     Queue::fake();
     Notification::fake();

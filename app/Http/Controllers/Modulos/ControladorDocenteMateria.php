@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Modulos;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Modulos\Soporte\EditaComentarios;
 use App\Models\ArchivoEntrega;
 use App\Models\ComentarioRevision;
 use App\Models\Entrega;
@@ -21,6 +22,8 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ControladorDocenteMateria extends Controller
 {
+    use EditaComentarios;
+
     public function asignaciones(Request $request): View
     {
         $usuario = $this->docente($request);
@@ -55,9 +58,9 @@ class ControladorDocenteMateria extends Controller
                 'apartado:id,guia_integradora_id,titulo,ponderacion,fecha_limite',
                 'apartado.guiaIntegradora:id,nombre',
                 'proyecto:id,equipo_id,guia_integradora_id,titulo,estado',
-                'equipo:id,grupo_academico_id,numero,nombre',
-                'equipo.grupoAcademico:id,carrera_id,periodo_id,grado,grupo',
-                'equipo.grupoAcademico.carrera:id,clave,nombre',
+                'equipo:id,grupo_academico_id,numero,nombre,estado',
+                'equipo.grupoAcademico:id,carrera_id,periodo_id,grado,grupo,estado',
+                'equipo.grupoAcademico.carrera:id,clave,nombre,estado',
                 'entregadoPor:id,nombre,matricula',
                 'archivos:id,entrega_id,nombre_original,ruta,tipo_archivo,tamano',
                 'revisiones' => fn ($query) => $query->where('revisor_id', $usuario->id)->with('comentarios.autor:id,nombre')->latest('revisado_en'),
@@ -119,6 +122,7 @@ class ControladorDocenteMateria extends Controller
     {
         $usuario = $this->docente($request);
         $archivo->loadMissing('entrega');
+        abort_unless($archivo->entrega, 404);
         $this->autorizarApartado($usuario->id, $archivo->entrega);
         $ruta = Storage::path($archivo->ruta);
         if (! is_file($ruta)) {
@@ -127,6 +131,13 @@ class ControladorDocenteMateria extends Controller
         abort_unless(is_file($ruta), 404, 'El archivo ya no está disponible.');
 
         return response()->download($ruta, $archivo->nombre_original);
+    }
+
+    public function modificarComentario(Request $request, Entrega $entrega, ComentarioRevision $comentario): RedirectResponse
+    {
+        $this->autorizarApartado($this->docente($request)->id, $entrega);
+
+        return $this->guardarCambioComentario($request, $entrega, $comentario);
     }
 
     private function autorizarApartado(int $usuarioId, Entrega $entrega): void

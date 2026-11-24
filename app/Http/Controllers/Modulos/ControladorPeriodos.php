@@ -9,12 +9,14 @@ use App\Models\GuiaIntegradora;
 use App\Models\Periodo;
 use App\Models\Proyecto;
 use App\Servicios\CicloAcademico;
+use App\Soporte\AuditoriaAcademica;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -59,16 +61,46 @@ class ControladorPeriodos extends Controller
     public function actualizar(Request $request, Periodo $periodo): RedirectResponse
     {
         $this->autorizarDireccion($request);
-        $reglas = ['nombre' => ['required', 'string', 'max:255', Rule::unique('periodos', 'nombre')->ignore($periodo->id)]];
-        if ($periodo->estado === 'borrador') {
-            $reglas['fecha_inicio'] = ['required', 'date', 'before_or_equal:fecha_fin'];
-            $reglas['fecha_fin'] = ['required', 'date', 'after_or_equal:fecha_inicio', 'before_or_equal:2100-12-31'];
-        }
-        $datos = $request->validate($reglas);
-        $this->validarNombreFechas(
-            $datos['nombre'], $datos['fecha_inicio'] ?? $periodo->fecha_inicio, $datos['fecha_fin'] ?? $periodo->fecha_fin,
-        );
-        $periodo->update($datos);
+        $datos = $request->validate([
+            'nombre' => ['required', 'string', 'max:255', Rule::unique('periodos', 'nombre')->ignore($periodo)],
+            'fecha_inicio' => ['required_with:fecha_fin', 'date', 'before_or_equal:fecha_fin', 'after_or_equal:2000-01-01'],
+            'fecha_fin' => ['required_with:fecha_inicio', 'date', 'after_or_equal:fecha_inicio', 'before_or_equal:2100-12-31'],
+            'motivo' => ['nullable', 'string', 'max:2000'],
+        ]);
+        DB::transaction(function () use ($periodo, $datos, $request): void {
+            $periodo = Periodo::whereKey($periodo->id)->lockForUpdate()->firstOrFail();
+            $inicio = isset($datos['fecha_inicio']) ? Carbon::parse($datos['fecha_inicio'])->toDateString() : $periodo->fecha_inicio;
+            $fin = isset($datos['fecha_fin']) ? Carbon::parse($datos['fecha_fin'])->toDateString() : $periodo->fecha_fin;
+            $this->validarNombreFechas($datos['nombre'], $inicio, $fin);
+            if ($inicio !== $periodo->fecha_inicio || $fin !== $periodo->fecha_fin) {
+                if ($periodo->estado !== 'borrador' && empty($datos['motivo'])) {
+                    throw ValidationException::withMessages(['motivo' => 'Indica por qué cambian las fechas de este periodo.']);
+                }
+                $hayPlazosFuera = DB::table('apartados_guia as apartado')
+                    ->join('guias_integradoras as guia', 'guia.id', '=', 'apartado.guia_integradora_id')
+                    ->where(fn ($q) => $q
+                        ->where(fn ($q) => $q->where('guia.periodo_id', $periodo->id)->whereDate('apartado.fecha_limite', '<', $inicio))
+                        ->orWhere(fn ($q) => $q->whereRaw('COALESCE(guia.periodo_fin_id, guia.periodo_id) = ?', [$periodo->id])
+                            ->whereDate('apartado.fecha_limite', '>', $fin)))
+                    ->exists();
+                $hayGuiaInvertida = GuiaIntegradora::query()
+                    ->where(fn ($q) => $q->where('periodo_id', $periodo->id)->where('periodo_fin_id', '!=', $periodo->id)
+                        ->whereHas('periodoFin', fn ($q) => $q->where('fecha_fin', '<', $fin)))
+                    ->orWhere(fn ($q) => $q->where('periodo_fin_id', $periodo->id)->where('periodo_id', '!=', $periodo->id)
+                        ->whereHas('periodo', fn ($q) => $q->where('fecha_fin', '>', $fin)))->exists();
+                if ($hayPlazosFuera || $hayGuiaInvertida) {
+                    throw ValidationException::withMessages(['fecha_fin' => 'El nuevo rango debe respetar los plazos de los apartados y el orden de los periodos de sus guías.']);
+                }
+            }
+            $campos = ['nombre', 'fecha_inicio', 'fecha_fin', 'estado'];
+            $antes = $periodo->only($campos);
+            $periodo->update(['nombre' => $datos['nombre'], 'fecha_inicio' => $inicio, 'fecha_fin' => $fin]);
+            if ($periodo->wasChanged($campos)) {
+                $impacto = $this->impacto($periodo);
+                AuditoriaAcademica::registrar($request->user()->id, 'periodos', $periodo->id, 'corregir',
+                    $antes, [...$periodo->only($campos), ...$impacto], $datos['motivo'] ?? null);
+            }
+        }, 3);
 
         return back()->with('estado', 'Datos del periodo actualizados correctamente.');
     }
@@ -127,6 +159,26 @@ class ControladorPeriodos extends Controller
         $ciclo->cerrar($periodo);
 
         return back()->with('estado', 'Periodo cerrado. Sus guías publicadas que terminan en este ciclo quedaron cerradas para consulta.');
+    }
+
+    public function reabrir(Request $request, Periodo $periodo, CicloAcademico $ciclo): RedirectResponse
+    {
+        $this->autorizarDireccion($request);
+        $datos = $request->validate(['confirmar_reapertura' => ['accepted'], 'motivo' => ['required', 'string', 'max:2000']]);
+        $ciclo->reabrir($periodo, $request->user()->id, $datos['motivo']);
+
+        return back()->with('estado', 'Periodo reabierto. Se conservaron las decisiones de los proyectos.');
+    }
+
+    private function impacto(Periodo $periodo): array
+    {
+        $guias = GuiaIntegradora::where('periodo_id', $periodo->id)->orWhere('periodo_fin_id', $periodo->id)->pluck('id');
+
+        return [
+            'grupos' => $periodo->gruposAcademicos()->count(), 'guias' => $guias->count(),
+            'entregas' => DB::table('entregas')->whereIn('apartado_guia_id', DB::table('apartados_guia')
+                ->select('id')->whereIn('guia_integradora_id', $guias))->count(),
+        ];
     }
 
     /**

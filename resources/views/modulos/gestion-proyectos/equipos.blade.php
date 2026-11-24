@@ -113,6 +113,7 @@
                         </div>
                         <div>
                             <p class="break-all font-bold text-slate-900">{{ $equipo->nombre }}</p>
+                            @if($equipo->estado === 'inactivo')<span class="text-xs font-semibold text-amber-800">Inactivo</span>@endif
                             <p class="mt-1 text-sm text-slate-500">{{ $equipo->grupoAcademico->carrera->clave }} · {{ $equipo->grupoAcademico->grado }}{{ $equipo->grupoAcademico->grupo }}</p>
                         </div>
                         <div>
@@ -130,6 +131,25 @@
                     </summary>
 
                     <div class="border-t border-slate-200 bg-slate-50/60 p-5">
+                        @if($equipo->grupoAcademico->periodo->estado !== 'cerrado')
+                            <div class="mb-4 grid gap-2">
+                                <details class="rounded-md border border-slate-200 bg-white p-3">
+                                    <summary class="cursor-pointer text-sm font-bold text-[#15529A]">Editar equipo</summary>
+                                    <form method="POST" action="{{ route('equipos.actualizar', $equipo) }}" class="mt-3 grid gap-3 md:grid-cols-2">
+                                        @csrf @method('PATCH')
+                                        <input type="hidden" name="periodo_equipos" value="{{ $periodoSeleccionado }}"><input type="hidden" name="grupo_equipos" value="{{ $grupoSeleccionado }}">
+                                        <label class="text-sm font-semibold">Nombre<input name="nombre" maxlength="80" required value="{{ $equipo->nombre }}" class="mt-1 block w-full rounded-md border-slate-300"></label>
+                                        <label class="text-sm font-semibold">Estado<select name="estado" class="mt-1 block w-full rounded-md border-slate-300"><option value="activo" @selected($equipo->estado === 'activo')>Activo</option><option value="inactivo" @selected($equipo->estado === 'inactivo')>Inactivo</option></select></label>
+                                        <label class="text-sm font-semibold md:col-span-2">Contexto del proyecto<textarea name="contexto_proyecto" maxlength="3000" rows="2" class="mt-1 block w-full rounded-md border-slate-300">{{ $equipo->contexto_proyecto }}</textarea></label>
+                                        <button class="w-fit rounded-md bg-[#15529A] px-3 py-2 text-sm font-bold text-white">Guardar equipo</button>
+                                    </form>
+                                </details>
+                                <x-confirmar-accion :accion="route('equipos.eliminar', $equipo)" etiqueta="Eliminar equipo"
+                                    mensaje="Confirmo que quiero eliminar este equipo y liberar a sus integrantes si el equipo no tiene proyectos.">
+                                    <input type="hidden" name="periodo_equipos" value="{{ $periodoSeleccionado }}"><input type="hidden" name="grupo_equipos" value="{{ $grupoSeleccionado }}">
+                                </x-confirmar-accion>
+                            </div>
+                        @endif
                         <div class="grid gap-5 xl:grid-cols-3">
                             <article class="rounded-lg border border-slate-200 bg-white p-4">
                                 <p class="text-xs font-bold uppercase tracking-[0.15em] text-[#005227]">Docente líder</p>

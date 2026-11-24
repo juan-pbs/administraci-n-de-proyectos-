@@ -6,7 +6,7 @@
         @include('modulos.estudiante.selector-proyecto')
         @forelse($apartados as $apartado)
             @php($historial = $entregas->get($apartado->id, collect()))
-            @php($ultima = $historial->first())
+            @php($ultima = $historial->first(fn ($entrega) => $entrega->estado !== 'retirada'))
             @php($revision = $ultima?->revisiones?->first())
             @php($enPlazo = $apartado->habilitado_para_entrega && (!$apartado->fecha_limite || $apartado->fecha_limite->isFuture()))
             <article class="overflow-hidden rounded-lg border border-slate-300 border-l-4 border-l-[#155AA3] bg-white shadow-sm">
@@ -20,7 +20,13 @@
                     @else
                         <p class="text-sm font-semibold {{ $apartado->requiere_codigo ? 'text-violet-700' : 'text-red-700' }}">{{ $apartado->requiere_codigo ? 'Este apartado se entrega desde “Código y repositorio”.' : 'El plazo terminó. La entrega queda disponible para consulta, pero ningún integrante puede reemplazarla.' }}</p>
                     @endif
-                    @if($historial->isNotEmpty())<div class="mt-4 border-t border-slate-200 pt-4"><p class="text-xs font-bold uppercase text-slate-500">Historial del equipo</p>@foreach($historial as $entrega)<div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm"><span class="font-semibold">Versión {{ $entrega->version }} · {{ $entrega->entregado_en?->format('d/m/Y H:i') }}</span><span class="text-slate-500">Subida por {{ $entrega->entregadoPor?->nombre ?? 'Integrante del equipo' }} · {{ $entrega->archivos->count() }} {{ $entrega->archivos->count() === 1 ? 'archivo' : 'archivos' }}</span></div>@endforeach</div>@endif
+                    @if($enPlazo && $ultima && !$revision && ($ultima->entregado_por_id === null || (int) $ultima->entregado_por_id === (int) auth()->id()))
+                        <x-confirmar-accion class="mt-4" :accion="route('estudiante.entregas.retirar', $ultima)" etiqueta="Retirar última versión"
+                            mensaje="Confirmo que quiero retirar esta versión. La versión anterior volverá a estar vigente si existe.">
+                            <input type="hidden" name="proyecto_contexto" value="{{ $proyecto->id }}">
+                        </x-confirmar-accion>
+                    @endif
+                    @if($historial->isNotEmpty())<div class="mt-4 border-t border-slate-200 pt-4"><p class="text-xs font-bold uppercase text-slate-500">Historial del equipo</p>@foreach($historial as $entrega)<div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm"><span class="font-semibold">Versión {{ $entrega->version }} · {{ $entrega->entregado_en?->format('d/m/Y H:i') }} @if($entrega->estado === 'retirada')<span class="text-amber-800">· Retirada</span>@endif</span><span class="text-slate-500">Subida por {{ $entrega->entregadoPor?->nombre ?? 'Integrante del equipo' }} · {{ $entrega->archivos->count() }} {{ $entrega->archivos->count() === 1 ? 'archivo' : 'archivos' }}</span></div>@endforeach</div>@endif
                 </div>
             </article>
         @empty

@@ -61,8 +61,9 @@ class CierresProyectos
             if ($cierre?->estado === 'prorroga' && $cierre->prorrogas()->where('ronda', $cierre->ronda)->where('fecha_limite', '>', now())->exists()) {
                 return $cierre;
             }
-            if (! $cierre && ($proyecto->guiaIntegradora->estado === 'borrador' || ($periodo->estado !== 'cerrado' && ! Carbon::parse($periodo->fecha_fin)->endOfDay()->isPast()))) {
-                return null;
+            if ((! $cierre || $cierre->estado === 'reabierto') &&
+                ($proyecto->guiaIntegradora->estado === 'borrador' || ($periodo->estado !== 'cerrado' && ! Carbon::parse($periodo->fecha_fin)->endOfDay()->isPast()))) {
+                return $cierre;
             }
             $pendientes = $this->resumen($proyecto);
             if (! $pendientes) {
@@ -99,28 +100,49 @@ class CierresProyectos
             $proyecto = Proyecto::whereKey($proyecto->id)->lockForUpdate()->firstOrFail();
             $this->autorizar($docente, $proyecto);
             $cierre = CierreProyecto::where('proyecto_id', $proyecto->id)->lockForUpdate()->first();
-            $this->exigir($cierre && in_array($cierre->estado, ['pendiente', 'prorroga'], true), 'Este proyecto no tiene un cierre pendiente que puedas resolver.');
+            $decision = $datos['decision'];
+            $estados = match ($decision) {
+                'reabrir' => ['cerrado', 'prorroga'],
+                'prorroga' => ['pendiente', 'prorroga', 'cerrado'],
+                default => ['pendiente', 'prorroga'],
+            };
+            $this->exigir($cierre && in_array($cierre->estado, $estados, true), 'La decisión no está disponible para el estado actual del proyecto.');
             $this->exigir((int) $datos['ronda'] === (int) $cierre->ronda, 'La situación cambió. Actualiza la página antes de decidir.');
+            $this->exigir($decision === 'cerrar' || ! $proyecto->documentosFinales()->exists(), 'El proyecto tiene un PDF final emitido y se conserva como historial.');
+            $this->exigir($decision === 'cerrar' || ($proyecto->equipo->estado === 'activo' && $proyecto->equipo->grupoAcademico->disponible()),
+                'Activa el equipo y su grupo antes de reabrir entregas.');
             $pendientes = $this->resumen($proyecto);
             $apartados = array_map('intval', $datos['apartados'] ?? []);
             $fecha = isset($datos['fecha_limite']) ? Carbon::parse($datos['fecha_limite']) : null;
-            if ($datos['decision'] === 'prorroga') {
+            $ronda = $cierre->ronda + 1;
+            $estado = 'cerrado';
+            if ($decision === 'prorroga') {
                 $validos = $proyecto->guiaIntegradora->apartados()->pluck('id')->all();
                 $this->exigir($apartados && ! array_diff($apartados, $validos), 'Selecciona únicamente apartados de la guía de este proyecto.');
                 $this->exigir($fecha && $fecha->isFuture(), 'La prórroga debe terminar en una fecha futura.');
-                $ronda = $cierre->ronda + 1;
                 foreach ($apartados as $apartado) {
                     $cierre->prorrogas()->create(['apartado_guia_id' => $apartado, 'ronda' => $ronda, 'docente_id' => $docente->id, 'fecha_limite' => $fecha]);
                 }
-                $cierre->update(['estado' => 'prorroga', 'ronda' => $ronda, 'pendientes' => $pendientes, 'decidido_por' => $docente->id, 'decidido_en' => now(), 'motivo' => $datos['motivo']]);
-            } else {
-                $cierre->update(['estado' => 'cerrado', 'pendientes' => $pendientes, 'decidido_por' => $docente->id, 'decidido_en' => now(), 'motivo' => $datos['motivo']]);
+                $estado = 'prorroga';
+            } elseif ($decision === 'reabrir') {
+                $guia = $proyecto->guiaIntegradora;
+                $fin = $guia->periodoFin ?? $guia->periodo;
+                $periodoEquipo = $proyecto->equipo->grupoAcademico->periodo;
+                $abierto = $guia->estado === 'publicada' && $guia->periodo->estado !== 'cerrado' && $fin->estado !== 'cerrado'
+                    && $periodoEquipo->estado !== 'cerrado' && $fin->fecha_fin >= today()->toDateString();
+                $estado = $abierto ? 'reabierto' : 'pendiente';
+            }
+            $cierre->update(['estado' => $estado, 'ronda' => $ronda, 'pendientes' => $pendientes,
+                'decidido_por' => $docente->id, 'decidido_en' => now(), 'motivo' => $datos['motivo']]);
+            if ($estado === 'cerrado') {
                 $proyecto->update(['estado' => $pendientes ? 'cerrado_con_pendientes' : 'finalizado']);
+            } else {
+                $proyecto->update(['estado' => 'en_proceso']);
             }
             DB::table('decisiones_cierre')->insert([
                 'cierre_proyecto_id' => $cierre->id, 'docente_id' => $docente->id, 'ronda' => $cierre->ronda,
                 'decision' => $datos['decision'], 'motivo' => $datos['motivo'], 'pendientes' => json_encode($pendientes, JSON_THROW_ON_ERROR),
-                'apartados' => json_encode($apartados, JSON_THROW_ON_ERROR), 'fecha_limite' => $datos['decision'] === 'prorroga' ? $fecha : null,
+                'apartados' => json_encode($apartados, JSON_THROW_ON_ERROR), 'fecha_limite' => $decision === 'prorroga' ? $fecha : null,
                 'created_at' => now(), 'updated_at' => now(),
             ]);
             AvisoCierre::where('cierre_proyecto_id', $cierre->id)->where('estado', 'pendiente')->update(['estado' => 'cancelado']);

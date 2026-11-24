@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -13,6 +14,11 @@ class Entrega extends Model
     protected $table = 'entregas';
     public const CREATED_AT = 'creado_en';
     public const UPDATED_AT = 'actualizado_en';
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('vigentes', fn (Builder $query) => $query->where('entregas.estado', '!=', 'retirada'));
+    }
 
     public function proyecto(): BelongsTo { return $this->belongsTo(Proyecto::class, 'proyecto_id'); }
     public function apartado(): BelongsTo { return $this->belongsTo(ApartadoGuia::class, 'apartado_guia_id'); }

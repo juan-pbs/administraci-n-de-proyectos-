@@ -46,20 +46,26 @@ Route::patch('/periodos/{periodo}', [ControladorPeriodos::class, 'actualizar'])-
 Route::get('/periodos/{periodo}/pendientes', [ControladorPeriodos::class, 'pendientes'])->name('periodos.pendientes');
 Route::patch('/periodos/{periodo}/activar', [ControladorPeriodos::class, 'activar'])->name('periodos.activar');
 Route::patch('/periodos/{periodo}/cerrar', [ControladorPeriodos::class, 'cerrar'])->name('periodos.cerrar');
+Route::patch('/periodos/{periodo}/reabrir', [ControladorPeriodos::class, 'reabrir'])->name('periodos.reabrir');
 
 Route::get('/modulos/carreras-grupos', [ControladorCarrerasGrupos::class, 'mostrar'])->name('modulos.carreras-grupos');
 Route::post('/carreras', [ControladorCarrerasGrupos::class, 'guardarCarrera'])->name('carreras.guardar');
+Route::patch('/carreras/{carrera}', [ControladorCarrerasGrupos::class, 'actualizarCarrera'])->name('carreras.actualizar');
+Route::delete('/carreras/{carrera}', [ControladorCarrerasGrupos::class, 'eliminarCarrera'])->name('carreras.eliminar');
 Route::post('/grupos-academicos', [ControladorCarrerasGrupos::class, 'guardarGrupo'])->name('grupos-academicos.guardar');
+Route::patch('/grupos-academicos/{grupo}', [ControladorCarrerasGrupos::class, 'actualizarGrupo'])->name('grupos-academicos.actualizar');
+Route::delete('/grupos-academicos/{grupo}', [ControladorCarrerasGrupos::class, 'eliminarGrupo'])->name('grupos-academicos.eliminar');
 Route::post('/docentes-carrera', [ControladorCarrerasGrupos::class, 'asignarDocenteCarrera'])->name('docentes-carrera.guardar');
 
 Route::get('/modulos/usuarios', [ControladorUsuarios::class, 'mostrar'])->name('modulos.usuarios');
 Route::post('/usuarios', [ControladorUsuarios::class, 'guardar'])->name('usuarios.guardar');
 Route::post('/usuarios/docentes', [ControladorUsuarios::class, 'guardarDocentes'])->name('usuarios.docentes.guardar');
+Route::patch('/usuarios/docentes/carrera', [ControladorUsuarios::class, 'actualizarCarreraDocente'])->name('usuarios.docentes.carrera.actualizar');
 Route::patch('/usuarios/docentes/{docente}', [ControladorUsuarios::class, 'actualizarDocente'])->name('usuarios.docentes.actualizar');
+Route::delete('/usuarios/docentes/{docente}', [ControladorUsuarios::class, 'eliminarDocente'])->name('usuarios.docentes.eliminar');
 Route::post('/usuarios/alumnos/previsualizar', [ControladorUsuarios::class, 'previsualizarAlumnos'])->name('usuarios.alumnos.previsualizar');
 Route::post('/usuarios/alumnos/confirmar', [ControladorUsuarios::class, 'confirmarAlumnos'])->name('usuarios.alumnos.confirmar');
 Route::post('/usuarios/alumnos/importar', [ControladorUsuarios::class, 'importarAlumnos'])->name('usuarios.alumnos.importar');
-Route::patch('/usuarios/docentes/carrera', [ControladorUsuarios::class, 'actualizarCarreraDocente'])->name('usuarios.docentes.carrera.actualizar');
 
 Route::get('/modulos/jerarquia-proyectos', [ControladorJerarquiaProyectos::class, 'mostrar'])->name('modulos.jerarquia');
 Route::post('/jerarquia/lideres', [ControladorJerarquiaProyectos::class, 'asignarLider'])->name('jerarquia.lideres.guardar');
@@ -68,6 +74,8 @@ Route::get('/modulos/asignaturas', [ControladorAsignaturas::class, 'mostrar'])->
 Route::post('/asignaturas', [ControladorAsignaturas::class, 'guardar'])->name('asignaturas.guardar');
 Route::post('/asignaturas/docentes', [ControladorAsignaturas::class, 'asignarDocente'])->name('asignaturas.docentes.guardar');
 Route::delete('/asignaturas/docentes', [ControladorAsignaturas::class, 'quitarDocente'])->name('asignaturas.docentes.quitar');
+Route::patch('/asignaturas/{asignatura}', [ControladorAsignaturas::class, 'actualizar'])->name('asignaturas.actualizar');
+Route::delete('/asignaturas/{asignatura}', [ControladorAsignaturas::class, 'eliminar'])->name('asignaturas.eliminar');
 
 Route::get('/modulos/guias', [ControladorGuias::class, 'mostrar'])->name('modulos.guias');
 Route::post('/guias', [ControladorGuias::class, 'guardar'])->name('guias.guardar');
@@ -78,6 +86,10 @@ Route::post('/guias/apartados/asignaturas', [ControladorGuias::class, 'asignarAs
 Route::post('/guias/apartados/firmas', [ControladorGuias::class, 'guardarFirmaApartado'])->name('guias.apartados.firmas.guardar');
 Route::post('/guias/apartados/calificadores', [ControladorGuias::class, 'asignarDocenteCalificador'])->name('guias.apartados.calificadores.guardar');
 Route::delete('/guias/apartados/calificadores', [ControladorGuias::class, 'quitarDocenteCalificador'])->name('guias.apartados.calificadores.quitar');
+Route::patch('/guias/{guia}', [ControladorGuias::class, 'actualizar'])->name('guias.actualizar');
+Route::patch('/guias/{guia}/borrador', [ControladorGuias::class, 'volverABorrador'])->name('guias.borrador');
+Route::post('/guias/{guia}/versiones', [ControladorGuias::class, 'nuevaVersion'])->name('guias.versiones.guardar');
+Route::delete('/guias/{guia}', [ControladorGuias::class, 'eliminar'])->name('guias.eliminar');
 
 Route::get('/modulos/equipos', [ControladorEquipos::class, 'mostrar'])->name('modulos.equipos');
 Route::post('/equipos', [ControladorEquipos::class, 'guardar'])->name('equipos.guardar');
@@ -85,25 +97,33 @@ Route::post('/equipos/alumnos', [ControladorEquipos::class, 'asignarAlumno'])->n
 Route::delete('/equipos/alumnos', [ControladorEquipos::class, 'quitarAlumno'])->name('equipos.alumnos.quitar');
 Route::post('/equipos/asesores', [ControladorEquipos::class, 'asignarAsesor'])->name('equipos.asesores.guardar');
 Route::delete('/equipos/asesores', [ControladorEquipos::class, 'quitarAsesor'])->name('equipos.asesores.quitar');
+Route::patch('/equipos/{equipo}', [ControladorEquipos::class, 'actualizar'])->name('equipos.actualizar');
+Route::delete('/equipos/{equipo}', [ControladorEquipos::class, 'eliminar'])->name('equipos.eliminar');
 
 Route::get('/modulos/proyectos', [ControladorProyectos::class, 'mostrar'])->name('modulos.proyectos');
 Route::post('/proyectos', [ControladorProyectos::class, 'guardar'])->name('proyectos.guardar');
 Route::post('/proyectos/docentes', [ControladorProyectos::class, 'asignarDocente'])->name('proyectos.docentes.guardar');
 Route::delete('/proyectos/docentes', [ControladorProyectos::class, 'quitarDocente'])->name('proyectos.docentes.quitar');
 Route::post('/proyectos/asignaturas', [ControladorProyectos::class, 'asignarAsignatura'])->name('proyectos.asignaturas.guardar');
+Route::delete('/proyectos/asignaturas', [ControladorProyectos::class, 'quitarAsignatura'])->name('proyectos.asignaturas.quitar');
+Route::patch('/proyectos/{proyecto}', [ControladorProyectos::class, 'actualizar'])->name('proyectos.actualizar');
+Route::delete('/proyectos/{proyecto}', [ControladorProyectos::class, 'eliminar'])->name('proyectos.eliminar');
 
 Route::get('/docente-materia/asignaciones', [ControladorDocenteMateria::class, 'asignaciones'])->name('docente-materia.asignaciones');
 Route::get('/docente-materia/revisiones', [ControladorDocenteMateria::class, 'revisiones'])->name('docente-materia.revisiones');
 Route::put('/docente-materia/revisiones/{entrega}', [ControladorDocenteMateria::class, 'guardarRevision'])->name('docente-materia.revisiones.guardar');
 Route::post('/docente-materia/revisiones/{entrega}/comentarios', [ControladorDocenteMateria::class, 'guardarComentario'])->name('docente-materia.comentarios.guardar');
+Route::match(['patch', 'delete'], '/docente-materia/revisiones/{entrega}/comentarios/{comentario}', [ControladorDocenteMateria::class, 'modificarComentario'])->name('docente-materia.comentarios.modificar');
 Route::get('/docente-materia/archivos/{archivo}', [ControladorDocenteMateria::class, 'descargarArchivo'])->name('docente-materia.archivos.descargar');
 Route::get('/docente-lider/revision-codigo', [ControladorRevisionCodigo::class, 'mostrar'])->name('docente-lider.codigo');
 Route::put('/docente-lider/revision-codigo/{entrega}', [ControladorRevisionCodigo::class, 'guardarRevision'])->name('docente-lider.codigo.revisar');
 Route::post('/docente-lider/revision-codigo/{entrega}/comentarios', [ControladorRevisionCodigo::class, 'guardarComentario'])->name('docente-lider.codigo.comentar');
+Route::match(['patch', 'delete'], '/docente-lider/revision-codigo/{entrega}/comentarios/{comentario}', [ControladorRevisionCodigo::class, 'modificarComentario'])->name('docente-lider.codigo.comentarios.modificar');
 Route::get('/docente-lider/revision-codigo/archivos/{archivo}', [ControladorRevisionCodigo::class, 'descargar'])->name('docente-lider.codigo.archivo');
 Route::get('/estudiante/proyecto', [ControladorEstudiante::class, 'proyecto'])->name('estudiante.proyecto');
 Route::get('/estudiante/entregas', [ControladorEstudiante::class, 'entregas'])->name('estudiante.entregas');
 Route::post('/estudiante/entregas/{apartado}', [ControladorEstudiante::class, 'guardarEntrega'])->name('estudiante.entregas.guardar');
+Route::delete('/estudiante/entregas/{entrega}', [ControladorEstudiante::class, 'retirarEntrega'])->name('estudiante.entregas.retirar');
 Route::get('/estudiante/codigo', [ControladorEstudiante::class, 'codigo'])->name('estudiante.codigo');
 Route::post('/estudiante/codigo', [ControladorEstudiante::class, 'guardarCodigo'])->name('estudiante.codigo.guardar');
 Route::get('/estudiante/archivos/{archivo}', [ControladorEstudiante::class, 'descargar'])->name('estudiante.archivos.descargar');

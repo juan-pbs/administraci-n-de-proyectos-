@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
 
-#[Fillable(['periodo_id', 'carrera_id', 'lider_proyecto_id', 'asignatura_lider_id', 'nombre', 'grado', 'grupo'])]
+#[Fillable(['periodo_id', 'carrera_id', 'lider_proyecto_id', 'asignatura_lider_id', 'nombre', 'grado', 'grupo', 'estado'])]
 class GrupoAcademico extends Model
 {
     use HasFactory;
@@ -60,6 +60,11 @@ class GrupoAcademico extends Model
     public function equipos(): HasMany
     {
         return $this->hasMany(Equipo::class, 'grupo_academico_id');
+    }
+
+    public function disponible(): bool
+    {
+        return $this->estado === 'activo' && $this->carrera->estado === 'activa';
     }
 
     public function scopeConMateriaLiderDelDocente(Builder $query, int $docenteId): Builder

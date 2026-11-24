@@ -52,6 +52,21 @@ class GuiaIntegradora extends Model
         return $this->hasMany(ApartadoGuia::class, 'guia_integradora_id');
     }
 
+    public function proyectos(): HasMany
+    {
+        return $this->hasMany(Proyecto::class, 'guia_integradora_id');
+    }
+
+    public function versiones(): HasMany
+    {
+        return $this->hasMany(self::class, 'guia_origen_id');
+    }
+
+    public function guiaOrigen(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'guia_origen_id');
+    }
+
     public function admiteFechaLimite(string $fecha): bool
     {
         $this->loadMissing(['periodo', 'periodoFin']);

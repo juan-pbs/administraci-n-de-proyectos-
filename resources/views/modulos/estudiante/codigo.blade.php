@@ -12,6 +12,13 @@
             <p class="mt-2 break-all text-sm">Demostración: {{ $producto->demostracion_url ?: 'Sin URL de demostración' }}</p>
             <p class="mt-2 text-xs text-slate-500">Subida por {{ $producto->entrega?->entregadoPor?->nombre ?? 'Integrante del equipo' }}</p>
             @foreach($producto->entrega?->archivos ?? [] as $archivo)<a href="{{ route('estudiante.archivos.descargar', ['archivo' => $archivo, 'proyecto_contexto' => $proyecto->id]) }}" class="mt-2 block text-sm font-bold text-[#155AA3] underline">{{ $archivo->nombre_original }}</a>@endforeach
+            @if($producto->entrega && $producto->entrega->revisiones->isEmpty() && $apartadoCodigo->habilitado_para_entrega && (!$apartadoCodigo->fecha_limite || $apartadoCodigo->fecha_limite->isFuture())
+                && ($producto->entrega->entregado_por_id === null || (int) $producto->entrega->entregado_por_id === (int) auth()->id()))
+                <x-confirmar-accion class="mt-4" :accion="route('estudiante.entregas.retirar', $producto->entrega)" etiqueta="Retirar última versión"
+                    mensaje="Confirmo que deseo retirar esta versión de código, sus enlaces y archivos de la revisión.">
+                    <input type="hidden" name="proyecto_contexto" value="{{ $proyecto->id }}">
+                </x-confirmar-accion>
+            @endif
         </section>
         @endif
         <section class="mt-5 rounded-lg border bg-white p-5"><h3 class="font-bold">{{ $apartadoCodigo->titulo }}</h3>

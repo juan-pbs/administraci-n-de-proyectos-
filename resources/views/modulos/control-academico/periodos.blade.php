@@ -66,12 +66,10 @@
                         <details class="mt-3 rounded-md border border-slate-200 bg-white p-3"><summary class="cursor-pointer text-sm font-bold text-[#15529A]">Corregir datos del periodo</summary>
                             <form method="POST" action="{{ route('periodos.actualizar', $periodo) }}" class="mt-3 grid gap-3 sm:grid-cols-2">@csrf @method('PATCH')
                                 <label class="text-xs font-semibold text-slate-700 sm:col-span-2">Nombre<input name="nombre" maxlength="255" required value="{{ $periodo->nombre }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
-                                @if($periodo->estado === 'borrador')
-                                    <label class="text-xs font-semibold text-slate-700">Inicio<input name="fecha_inicio" type="date" required value="{{ $periodo->fecha_inicio }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
-                                    <label class="text-xs font-semibold text-slate-700">Cierre<input name="fecha_fin" type="date" required value="{{ $periodo->fecha_fin }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
-                                @else
-                                    <p class="text-xs text-slate-500 sm:col-span-2">Las fechas de un periodo activo o cerrado permanecen fijas por sus grupos, guías y entregas.</p>
-                                @endif
+                                <label class="text-xs font-semibold text-slate-700">Inicio<input name="fecha_inicio" type="date" required value="{{ $periodo->fecha_inicio }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
+                                <label class="text-xs font-semibold text-slate-700">Cierre<input name="fecha_fin" type="date" required value="{{ $periodo->fecha_fin }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
+                                <p class="text-xs text-slate-500 sm:col-span-2">El rango debe respetar los plazos de los apartados vinculados.</p>
+                                <label class="text-xs font-semibold text-slate-700 sm:col-span-2">Motivo de la corrección<textarea name="motivo" maxlength="2000" rows="2" class="mt-1 block w-full rounded-md border-slate-300" placeholder="Obligatorio si cambias fechas de un periodo activo o cerrado"></textarea></label>
                                 <button class="w-fit rounded-md bg-[#15529A] px-3 py-2 text-sm font-bold text-white">Guardar corrección</button>
                             </form>
                         </details>
@@ -81,12 +79,19 @@
                         <p class="font-bold text-slate-900">{{ $periodo->grupos_count }}</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-3">
-                        <a href="{{ route('modulos.show', 'carreras-grupos') }}?periodo_id={{ $periodo->id }}" class="text-sm font-bold text-[#15529A] hover:underline">Abrir estructura →</a>
+                        <a href="{{ route('modulos.carreras-grupos', ['periodo_grupos' => $periodo->id]) }}" class="text-sm font-bold text-[#15529A] hover:underline">Abrir estructura →</a>
                         @if($periodo->estado === 'borrador')
                             <form method="POST" action="{{ route('periodos.activar', $periodo) }}">@csrf @method('PATCH')<button @disabled($periodos->contains('estado', 'activo')) class="rounded-md bg-[#15529A] px-3 py-2 text-sm font-bold text-white disabled:opacity-40">Activar periodo</button></form>
                             @if($periodos->contains('estado', 'activo'))<p class="text-xs text-slate-500">Primero cierra el periodo activo.</p>@endif
                         @endif
                     </div>
+                    @if($periodo->estado === 'cerrado')
+                        <x-confirmar-accion class="sm:col-span-3" :accion="route('periodos.reabrir', $periodo)"
+                            etiqueta="Reabrir periodo" metodo="PATCH" campo="confirmar_reapertura" :peligro="false"
+                            mensaje="Confirmo la reapertura. Debe ser el único periodo activo y sus fechas deben abarcar el día de hoy.">
+                            <label class="block font-semibold">Motivo<textarea name="motivo" maxlength="2000" required rows="2" class="mt-1 block w-full rounded-md border-slate-300"></textarea></label>
+                        </x-confirmar-accion>
+                    @endif
                     @if($periodo->estado === 'activo')
                         <div class="sm:col-span-3">
                             @if(\Illuminate\Support\Carbon::parse($periodo->fecha_fin)->endOfDay()->isPast())<p class="mb-3 rounded-md bg-amber-50 p-3 text-sm font-semibold text-amber-800">La fecha de fin ya pasó. Revisa los pendientes y decide cuándo cerrar este periodo.</p>@endif

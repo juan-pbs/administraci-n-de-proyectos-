@@ -16,7 +16,7 @@ class AvisosRevisiones
         $entrega->loadMissing(['apartado', 'proyecto.equipo.grupoAcademico', 'proyecto.guiaIntegradora.periodo']);
         $proyecto = $entrega->proyecto;
         $apartado = $entrega->apartado;
-        if (! $proyecto || ! $apartado || $docente->estado !== 'activo'
+        if (! $proyecto || ! $apartado || $entrega->estado === 'retirada' || $docente->estado !== 'activo'
             || ! $docente->loadMissing('role')->hasAnyRole('docente_lider', 'docente_materia')
             || ! app(PlazosProyecto::class)->habilitado($proyecto, $apartado)
             || (int) $proyecto->guia_integradora_id !== (int) $apartado->guia_integradora_id

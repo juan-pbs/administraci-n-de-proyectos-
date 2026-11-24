@@ -110,6 +110,9 @@
                                     <div class="rounded-md border border-slate-200 bg-white px-4 py-3">
                                         <div class="flex flex-wrap items-center justify-between gap-2"><p class="text-sm font-bold text-slate-800">{{ $comentario->autor?->nombre }}</p><p class="text-xs text-slate-400">{{ $comentario->creado_en?->format('d/m/Y H:i') }}</p></div>
                                         <p class="mt-2 text-sm leading-5 text-slate-600">{{ $comentario->comentario }}</p>
+                                        @if($entrega->habilitada_para_revision && (int) $comentario->autor_id === (int) auth()->id())
+                                            <x-editar-comentario :accion="route('docente-materia.comentarios.modificar', [$entrega, $comentario])" :comentario="$comentario" />
+                                        @endif
                                     </div>
                                 @empty
                                     <p class="text-sm text-slate-500">Aún no hay comentarios de seguimiento.</p>

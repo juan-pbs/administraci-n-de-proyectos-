@@ -55,6 +55,11 @@
                     $grado = $proyecto->equipo->grupoAcademico->grado;
                     $docentesDisponibles = $docentes->where('carrera_id', $carreraId)->whereNotIn('id', $proyecto->docentes->pluck('id'));
                     $asignaturasDisponibles = $asignaturas->where('carrera_id', $carreraId)->where('grado', $grado)->whereNotIn('id', $proyecto->asignaturas->pluck('id'));
+                    $editable = $proyecto->equipo->estado === 'activo' && $proyecto->equipo->grupoAcademico->disponible()
+                        && $proyecto->equipo->grupoAcademico->periodo->estado !== 'cerrado'
+                        && $proyecto->guiaIntegradora->estado !== 'cerrada' && $proyecto->guiaIntegradora->periodo->estado !== 'cerrado'
+                        && $proyecto->guiaIntegradora->periodoFin?->estado !== 'cerrado' && ! $proyecto->documentos_finales_exists;
+                    $tieneHistorial = $proyecto->tiene_entregas || $proyecto->cierre_exists || $proyecto->productos_codigo_exists;
                 @endphp
                 <details class="group">
                     <summary class="grid cursor-pointer list-none gap-4 px-5 py-4 transition hover:bg-slate-50 lg:grid-cols-[minmax(220px,1fr)_180px_180px_120px_170px] lg:items-center">
@@ -80,6 +85,9 @@
 
                     <div class="border-t border-slate-200 bg-slate-50/60 p-5">
                         <a href="{{ route('documentos.mostrar', ['proyecto' => $proyecto, 'origen' => 'modulos.proyectos', 'contexto' => request()->only('periodo_proyectos', 'grupo_proyectos')]) }}" class="mb-4 inline-block text-sm font-bold text-[#155AA3] underline">Formato final y firmas</a>
+                        @if($editable)
+                            @include('modulos.gestion-proyectos.editar-proyecto')
+                        @endif
                         <div class="grid gap-5 xl:grid-cols-2">
                             <article class="rounded-lg border border-slate-200 bg-white">
                                 <div class="border-b border-slate-200 px-4 py-3">
@@ -119,7 +127,18 @@
                                 <div class="divide-y divide-slate-100">
                                     @forelse($proyecto->asignaturas as $asignatura)
                                         @php($responsable = $docentes->firstWhere('id', $asignatura->pivot->docente_id))
-                                        <div class="px-4 py-3"><p class="text-sm font-semibold text-slate-900">{{ $asignatura->clave }} · {{ $asignatura->nombre }}</p><p class="mt-1 text-xs text-slate-500">{{ $responsable?->nombre ?? 'Sin docente responsable' }}</p></div>
+                                        <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                                            <div><p class="text-sm font-semibold text-slate-900">{{ $asignatura->clave }} · {{ $asignatura->nombre }}</p><p class="mt-1 text-xs text-slate-500">{{ $responsable?->nombre ?? 'Sin docente responsable' }}</p></div>
+                                            @if($editable)
+                                                <form method="POST" action="{{ route('proyectos.asignaturas.quitar') }}">
+                                                    @csrf @method('DELETE')
+                                                    <input type="hidden" name="proyecto_id" value="{{ $proyecto->id }}"><input type="hidden" name="asignatura_id" value="{{ $asignatura->id }}">
+                                                    <input type="hidden" name="periodo_proyectos" value="{{ $periodoSeleccionado }}"><input type="hidden" name="grupo_proyectos" value="{{ $grupoSeleccionado }}">
+                                                    @if($tieneHistorial)<label class="mb-2 block text-xs font-semibold">Motivo del retiro<input name="motivo" required maxlength="2000" class="mt-1 block w-full rounded-md border-slate-300 text-xs"></label>@endif
+                                                    <button class="rounded-md border border-red-200 px-3 py-1.5 text-xs font-bold text-red-700">Retirar asignatura</button>
+                                                </form>
+                                            @endif
+                                        </div>
                                     @empty
                                         <p class="px-4 py-4 text-sm text-slate-500">Sin asignaturas adicionales.</p>
                                     @endforelse

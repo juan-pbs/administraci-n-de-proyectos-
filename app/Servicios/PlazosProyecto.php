@@ -10,6 +10,9 @@ class PlazosProyecto
 {
     public function habilitado(Proyecto $proyecto, ApartadoGuia $apartado): bool
     {
+        if ($proyecto->equipo->estado !== 'activo' || ! $proyecto->equipo->grupoAcademico->disponible()) {
+            return false;
+        }
         if ($this->cierre($proyecto)) {
             return $this->permite($proyecto, $apartado);
         }
@@ -35,7 +38,7 @@ class PlazosProyecto
     {
         $proyecto->loadMissing('cierre.prorrogas');
 
-        return $proyecto->cierre;
+        return $proyecto->cierre?->estado === 'reabierto' ? null : $proyecto->cierre;
     }
 
     public function oProrroga($query, string $tabla = 'entregas'): void

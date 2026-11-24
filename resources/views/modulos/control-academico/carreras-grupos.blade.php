@@ -75,6 +75,22 @@
                 </a>
             @endforeach
         </nav>
+        @if($carreraActual = $carreras->firstWhere('id', (int) $filtrosGrupos['carrera_id']))
+            <div class="space-y-2 border-b border-slate-200 p-5">
+                <details class="rounded-md border border-slate-200 p-3">
+                    <summary class="cursor-pointer text-sm font-bold text-[#15529A]">Editar carrera · {{ $carreraActual->clave }} · {{ ucfirst($carreraActual->estado) }}</summary>
+                    <form method="POST" action="{{ route('carreras.actualizar', $carreraActual) }}" class="mt-3 grid gap-3 md:grid-cols-3">
+                        @csrf @method('PATCH')
+                        <label class="text-sm font-semibold">Nombre<input name="nombre" required maxlength="120" value="{{ $carreraActual->nombre }}" class="mt-1 block w-full rounded-md border-slate-300"></label>
+                        <label class="text-sm font-semibold">Clave<input name="clave" required maxlength="20" value="{{ $carreraActual->clave }}" class="mt-1 block w-full rounded-md border-slate-300"></label>
+                        <label class="text-sm font-semibold">Estado<select name="estado" class="mt-1 block w-full rounded-md border-slate-300"><option value="activa" @selected($carreraActual->estado === 'activa')>Activa</option><option value="inactiva" @selected($carreraActual->estado === 'inactiva')>Inactiva</option></select></label>
+                        <button class="w-fit rounded-md bg-[#15529A] px-3 py-2 text-sm font-bold text-white">Guardar carrera</button>
+                    </form>
+                </details>
+                <x-confirmar-accion :accion="route('carreras.eliminar', $carreraActual)" etiqueta="Eliminar carrera"
+                    mensaje="Confirmo que deseo eliminar la carrera seleccionada si no tiene vínculos académicos." />
+            </div>
+        @endif
 
         <div class="hidden grid-cols-[110px_minmax(180px,1fr)_100px_100px_minmax(220px,1fr)_100px_170px] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-xs font-bold uppercase tracking-wide text-slate-500 lg:grid">
             <span>Grupo</span>
@@ -110,14 +126,32 @@
                     </div>
                     <div>
                         <p class="text-xs font-semibold uppercase text-slate-400 lg:hidden">Estado</p>
-                        <span class="mt-1 inline-flex rounded-full bg-[#EAF2FB] px-3 py-1 text-xs font-bold text-[#15529A] lg:mt-0">{{ ucfirst($grupoAcademico->periodo->estado) }}</span>
+                        <span class="mt-1 inline-flex rounded-full bg-[#EAF2FB] px-3 py-1 text-xs font-bold text-[#15529A] lg:mt-0">{{ ucfirst($grupoAcademico->estado) }}</span>
                     </div>
                     <div class="flex flex-wrap gap-2 lg:justify-end">
-                        @if($grupoAcademico->periodo->estado !== 'cerrado')
+                        @if($grupoAcademico->periodo->estado !== 'cerrado' && $grupoAcademico->estado === 'activo' && $carreraActual?->estado === 'activa')
                             <a href="{{ route('modulos.jerarquia', ['periodo_id' => $grupoAcademico->periodo_id, 'carrera_id' => $grupoAcademico->carrera_id, 'origen' => 'carreras-grupos']) }}#grupo-{{ $grupoAcademico->id }}" class="inline-flex rounded-md bg-[#15529A] px-3 py-2 text-sm font-bold text-white transition hover:bg-[#0D376D]">Asignar líder</a>
                         @endif
                         <a href="{{ route('modulos.show', ['modulo' => 'usuarios', 'seccion' => 'alumnos', 'periodo_alumnos' => $grupoAcademico->periodo_id, 'carrera_alumnos' => $grupoAcademico->carrera_id, 'grupo_alumnos' => $grupoAcademico->id, 'origen' => 'carreras-grupos']) }}" class="inline-flex rounded-md border border-[#15529A] px-3 py-2 text-sm font-bold text-[#15529A] transition hover:bg-[#EAF2FB]">Ver alumnos</a>
                     </div>
+                    @if($grupoAcademico->periodo->estado !== 'cerrado')
+                        <div class="space-y-2 lg:col-span-full">
+                            <details class="rounded-md border border-slate-200 p-3">
+                                <summary class="cursor-pointer text-sm font-bold text-[#15529A]">Editar grupo</summary>
+                                <form method="POST" action="{{ route('grupos-academicos.actualizar', $grupoAcademico) }}" class="mt-3 grid gap-3 md:grid-cols-5">
+                                    @csrf @method('PATCH')
+                                    <label class="text-sm font-semibold">Periodo<select name="periodo_id" class="mt-1 block w-full rounded-md border-slate-300">@foreach($periodos->where('estado', '!=', 'cerrado') as $opcion)<option value="{{ $opcion->id }}" @selected($opcion->id === $grupoAcademico->periodo_id)>{{ $opcion->nombre }}</option>@endforeach</select></label>
+                                    <label class="text-sm font-semibold">Carrera<select name="carrera_id" class="mt-1 block w-full rounded-md border-slate-300">@foreach($carreras as $opcion)<option value="{{ $opcion->id }}" @selected($opcion->id === $grupoAcademico->carrera_id)>{{ $opcion->clave }}</option>@endforeach</select></label>
+                                    <label class="text-sm font-semibold">Cuatrimestre<input name="grado" type="number" min="1" max="12" required value="{{ $grupoAcademico->grado }}" class="mt-1 block w-full rounded-md border-slate-300"></label>
+                                    <label class="text-sm font-semibold">Grupo<select name="grupo" class="mt-1 block w-full rounded-md border-slate-300">@foreach(range('A', 'M') as $letra)<option @selected($letra === $grupoAcademico->grupo)>{{ $letra }}</option>@endforeach</select></label>
+                                    <label class="text-sm font-semibold">Estado<select name="estado" class="mt-1 block w-full rounded-md border-slate-300"><option value="activo" @selected($grupoAcademico->estado === 'activo')>Activo</option><option value="inactivo" @selected($grupoAcademico->estado === 'inactivo')>Inactivo</option></select></label>
+                                    <button class="w-fit rounded-md bg-[#15529A] px-3 py-2 text-sm font-bold text-white">Guardar grupo</button>
+                                </form>
+                            </details>
+                            <x-confirmar-accion :accion="route('grupos-academicos.eliminar', $grupoAcademico)" etiqueta="Eliminar grupo"
+                                mensaje="Confirmo la eliminación del grupo si no tiene alumnos ni equipos." />
+                        </div>
+                    @endif
                 </section>
             @empty
                 <div class="px-5 py-10 text-center text-sm text-slate-500">No hay grupos para esta carrera y periodo.</div>

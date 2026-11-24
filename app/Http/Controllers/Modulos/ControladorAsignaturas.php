@@ -8,11 +8,13 @@ use App\Models\Asignatura;
 use App\Models\Carrera;
 use App\Models\Periodo;
 use App\Models\User;
+use App\Soporte\ProtegeHistorial;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class ControladorAsignaturas extends Controller
 {
@@ -38,23 +40,66 @@ class ControladorAsignaturas extends Controller
     {
         abort_unless($request->user()?->hasRole('coordinacion'), 403);
 
-        $datos = $request->validate([
-            'carrera_id' => ['required', 'exists:carreras,id'],
-            'nombre' => ['required', 'string', 'max:120', 'regex:/\A[\pL\pM\pN .,:;()\/+&-]+\z/u'],
-            'clave' => ['nullable', 'string', 'max:30', 'regex:/\A[A-Za-z0-9._-]+\z/', 'unique:asignaturas,clave'],
-            'grado' => ['required', 'integer', 'min:1', 'max:12'],
-        ], [
-            'nombre.regex' => 'El nombre admite letras, números, espacios y estos signos: . , : ; ( ) / + & -',
-            'clave.regex' => 'La clave solo admite letras, números, puntos, guiones y guiones bajos.',
-        ]);
-
-        $asignatura = Asignatura::query()->create([...$datos, 'estado' => 'activo']);
+        $asignatura = Asignatura::query()->create([...$this->validarDatos($request), 'estado' => 'activo']);
 
         return redirect()->route('modulos.show', [
             'modulo' => 'asignaturas', 'periodo_asignaturas' => $request->input('periodo_asignaturas'),
             'carrera_asignaturas' => $asignatura->carrera_id, 'grado_asignaturas' => $asignatura->grado,
             'asignar_docente' => 1, 'asignatura_id' => $asignatura->id,
         ])->with('estado', 'Asignatura guardada. Selecciona un docente en el formulario abierto para asignarlo al periodo.');
+    }
+
+    public function actualizar(Request $request, Asignatura $asignatura): RedirectResponse
+    {
+        $this->autorizarDireccion($request);
+        $asignatura = Asignatura::whereKey($asignatura->id)->lockForUpdate()->firstOrFail();
+        $asignatura->fill($this->validarDatos($request, $asignatura));
+        if ($asignatura->isDirty(['grado', 'carrera_id'])) {
+            $this->exigirSinVinculos($asignatura, 'Para cambiar la carrera o el cuatrimestre usa una asignatura sin vínculos.');
+        }
+        $asignatura->save();
+
+        return redirect()->route('modulos.asignaturas', [
+            'carrera_asignaturas' => $asignatura->carrera_id, 'grado_asignaturas' => $asignatura->grado,
+            'periodo_asignaturas' => $request->input('periodo_asignaturas'),
+        ])->with('estado', 'Asignatura actualizada.');
+    }
+
+    public function eliminar(Request $request, Asignatura $asignatura): RedirectResponse
+    {
+        $this->autorizarDireccion($request);
+        $request->validate(['confirmar_eliminacion' => ['accepted']]);
+        $asignatura = Asignatura::whereKey($asignatura->id)->lockForUpdate()->firstOrFail();
+        $this->exigirSinVinculos($asignatura, 'La asignatura tiene vínculos académicos y no se puede eliminar.');
+        $asignatura->delete();
+
+        return back()->with('estado', 'Asignatura eliminada.');
+    }
+
+    private function validarDatos(Request $request, ?Asignatura $asignatura = null): array
+    {
+        $carrera = Rule::exists('carreras', 'id')->where(fn ($q) => $q->where('estado', 'activa')
+            ->when($asignatura, fn ($q) => $q->orWhere('id', $asignatura->carrera_id)));
+
+        return $request->validate([
+            'carrera_id' => ['required', $carrera],
+            'nombre' => ['required', 'string', 'max:120', 'regex:/\A[\pL\pM\pN .,:;()\/+&-]+\z/u'],
+            'clave' => ['nullable', 'string', 'max:30', 'regex:/\A[A-Za-z0-9._-]+\z/', Rule::unique('asignaturas', 'clave')->ignore($asignatura?->id)],
+            'grado' => ['required', 'integer', 'min:1', 'max:12'],
+            'estado' => ['sometimes', 'in:activo,inactivo'],
+        ], [
+            'nombre.regex' => 'El nombre admite letras, números, espacios y estos signos: . , : ; ( ) / + & -',
+            'clave.regex' => 'La clave solo admite letras, números, puntos, guiones y guiones bajos.',
+        ]);
+    }
+
+    private function exigirSinVinculos(Asignatura $asignatura, string $mensaje): void
+    {
+        ProtegeHistorial::sinReferencias($asignatura->id, [
+            'docentes_asignatura' => 'asignatura_id', 'guias_integradoras' => 'asignatura_id',
+            'grupos_academicos' => 'asignatura_lider_id', 'asignaturas_apartado_guia' => 'asignatura_id',
+            'firmas_apartado_guia' => 'asignatura_id', 'asignaturas_proyecto' => 'asignatura_id',
+        ], $mensaje);
     }
 
     public function asignarDocente(Request $request): RedirectResponse
@@ -73,6 +118,7 @@ class ControladorAsignaturas extends Controller
             ->firstOrFail();
 
         $asignatura = Asignatura::query()->findOrFail($datos['asignatura_id']);
+        abort_unless($asignatura->estado === 'activo' && $asignatura->carrera?->estado === 'activa', 422, 'La asignatura o su carrera está inactiva.');
         abort_unless((int) $docente->carrera_id === (int) $asignatura->carrera_id, 422);
 
         DB::table('docentes_asignatura')->updateOrInsert(

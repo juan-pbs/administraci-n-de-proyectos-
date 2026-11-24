@@ -136,6 +136,12 @@
                         <span class="text-sm font-bold text-[#15529A]">{{ $guia->apartados_count }} apartados <span class="inline-block transition-transform group-open:rotate-180">▾</span></span>
                     </summary>
                     <div class="border-t border-slate-100 bg-slate-50 p-5">
+                        @if($guia->guiaOrigen)
+                            <p class="mb-3 text-sm text-slate-600">Guía de origen: {{ $guia->guiaOrigen->nombre }} · v{{ $guia->guiaOrigen->version }}</p>
+                        @endif
+                        @if($guiasEditables->contains('id', $guia->id) && $guia->periodo->estado !== 'cerrado')
+                            @include('modulos.gestion-proyectos.editar-guia')
+                        @endif
                         @if($guia->estado === 'borrador' && $guiasEditables->contains('id', $guia->id))
                             <form method="POST" action="{{ route('guias.publicar', $guia) }}" class="mb-4">@csrf @method('PATCH')<button class="rounded-md bg-[#21A366] px-4 py-2 text-sm font-bold text-white">Publicar guía</button><p class="mt-2 text-xs text-slate-500">Se comprueba que las ponderaciones sumen 100% y que cada apartado tenga evidencia y evaluadores requeridos.</p></form>
                         @elseif(! $guiasEditables->contains('id', $guia->id))

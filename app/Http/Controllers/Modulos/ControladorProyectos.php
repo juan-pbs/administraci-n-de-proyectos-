@@ -11,10 +11,14 @@ use App\Models\GuiaIntegradora;
 use App\Models\Periodo;
 use App\Models\Proyecto;
 use App\Models\User;
+use App\Soporte\AuditoriaAcademica;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ControladorProyectos extends Controller
 {
@@ -47,19 +51,15 @@ class ControladorProyectos extends Controller
 
         $equipo = Equipo::query()->with('grupoAcademico')->findOrFail($datos['equipo_id']);
         abort_unless(GrupoAcademico::query()->whereKey($equipo->grupo_academico_id)->conMateriaLiderDelDocente((int) $request->user()->id)->exists(), 403);
-        $guia = GuiaIntegradora::query()->with('asignatura')->findOrFail($datos['guia_integradora_id']);
-        abort_unless($guia->estado === 'publicada', 422, 'Publica la guía antes de asignarla a un proyecto.');
-        abort_unless(
-            (int) $guia->periodo_id === (int) $equipo->grupoAcademico->periodo_id
-            && (int) $guia->asignatura?->carrera_id === (int) $equipo->grupoAcademico->carrera_id
-            && (int) $guia->cuatrimestre === (int) $equipo->grupoAcademico->grado,
-            422,
-        );
-
-        Proyecto::query()->updateOrCreate(
-            ['guia_integradora_id' => $datos['guia_integradora_id'], 'equipo_id' => $datos['equipo_id']],
-            ['titulo' => $datos['titulo'], 'descripcion' => $datos['descripcion'] ?? null, 'estado' => 'en_proceso'],
-        );
+        $this->validarGuiaDelEquipo($equipo, $datos['guia_integradora_id']);
+        $registro = Proyecto::firstOrNew(['guia_integradora_id' => $datos['guia_integradora_id'], 'equipo_id' => $equipo->id]);
+        if ($registro->exists && $registro->tieneHistorial()) {
+            throw ValidationException::withMessages(['proyecto' => 'El proyecto ya existe. Usa Editar proyecto para registrar la corrección.']);
+        }
+        if (! $registro->exists) {
+            $registro->estado = 'en_proceso';
+        }
+        $registro->fill(['titulo' => $datos['titulo'], 'descripcion' => $datos['descripcion'] ?? null])->save();
 
         if ($request->string('origen')->toString() === 'equipos') {
             return redirect()->route('modulos.show', array_filter([
@@ -70,6 +70,92 @@ class ControladorProyectos extends Controller
         }
 
         return redirect()->route('modulos.show', 'proyectos')->with('estado', 'Proyecto guardado correctamente.');
+    }
+
+    public function actualizar(Request $request, Proyecto $proyecto): RedirectResponse
+    {
+        $proyecto = Proyecto::whereKey($proyecto->id)->lockForUpdate()->firstOrFail();
+        $this->autorizarProyectoAsignado($request, $proyecto);
+        $datos = $request->validate([
+            'titulo' => ['required', 'string', 'max:255'],
+            'descripcion' => ['nullable', 'string'],
+            'guia_integradora_id' => ['required', 'exists:guias_integradoras,id',
+                Rule::unique('proyectos', 'guia_integradora_id')->where('equipo_id', $proyecto->equipo_id)->ignore($proyecto)],
+            'motivo' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $campos = ['titulo', 'descripcion', 'guia_integradora_id'];
+        $antes = $proyecto->only($campos);
+        $proyecto->fill(array_intersect_key($datos, array_flip($campos)));
+        $historial = $proyecto->isDirty($campos) && $proyecto->tieneHistorial();
+        if ($historial && ($proyecto->documentosFinales()->exists() || empty($datos['motivo']))) {
+            throw ValidationException::withMessages(['motivo' => 'Un proyecto con historial requiere un motivo. Si ya se emitió el PDF final, se conserva para consulta.']);
+        }
+        if ($proyecto->isDirty('guia_integradora_id')) {
+            if ($historial) {
+                throw ValidationException::withMessages(['guia_integradora_id' => 'El proyecto tiene historial. Su guía se conserva para consultar las entregas y decisiones.']);
+            }
+            $this->validarGuiaDelEquipo($proyecto->equipo, $datos['guia_integradora_id']);
+            DB::table('asignaciones_revision')->where('proyecto_id', $proyecto->id)->delete();
+        }
+        $proyecto->save();
+        if ($proyecto->wasChanged($campos)) {
+            $firmas = DB::table('revisiones')->whereNotNull('firmado_en')
+                ->whereIn('entrega_id', $proyecto->entregas()->select('entregas.id')->toBase())->count();
+            AuditoriaAcademica::registrar($request->user()->id, 'proyectos', $proyecto->id, 'editar',
+                $antes, [...$proyecto->only($campos), 'entregas' => $proyecto->entregas()->withoutGlobalScope('vigentes')->count(),
+                    'firmas_por_renovar' => $firmas], $datos['motivo'] ?? null);
+        }
+
+        return $this->volverProyectos($request, 'Proyecto actualizado.');
+    }
+
+    public function eliminar(Request $request, Proyecto $proyecto): RedirectResponse
+    {
+        $proyecto = Proyecto::whereKey($proyecto->id)->lockForUpdate()->firstOrFail();
+        $this->autorizarProyectoAsignado($request, $proyecto);
+        $request->validate(['confirmar_eliminacion' => ['accepted']]);
+        if ($proyecto->tieneHistorial()) {
+            throw ValidationException::withMessages(['eliminar' => 'El proyecto tiene entregas, documentos o decisiones de cierre. Estos registros se conservan como historial.']);
+        }
+        $proyecto->delete();
+
+        return $this->volverProyectos($request, 'Proyecto eliminado.');
+    }
+
+    public function quitarAsignatura(Request $request): RedirectResponse
+    {
+        $datos = $request->validate([
+            'proyecto_id' => ['required', 'exists:proyectos,id'],
+            'asignatura_id' => ['required', 'exists:asignaturas,id'],
+            'motivo' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $proyecto = Proyecto::whereKey($datos['proyecto_id'])->lockForUpdate()->firstOrFail();
+        $this->autorizarProyectoAsignado($request, $proyecto);
+        $asignatura = $proyecto->asignaturas()->whereKey($datos['asignatura_id'])->first();
+        if ($asignatura) {
+            if ($proyecto->documentosFinales()->exists() || ($proyecto->tieneHistorial() && empty($datos['motivo']))) {
+                throw ValidationException::withMessages(['motivo' => 'Indica el motivo para retirar la asignatura de un proyecto con historial. Los PDF emitidos se conservan.']);
+            }
+            $proyecto->asignaturas()->detach($asignatura->id);
+            AuditoriaAcademica::registrar($request->user()->id, 'proyectos', $proyecto->id, 'retirar_asignatura',
+                $asignatura->pivot->only(['asignatura_id', 'docente_id', 'participa_evaluacion']), [], $datos['motivo'] ?? null);
+        }
+
+        return $this->volverProyectos($request, 'Asignatura retirada del proyecto.');
+    }
+
+    private function validarGuiaDelEquipo(Equipo $equipo, int $guiaId): void
+    {
+        $guia = GuiaIntegradora::with('asignatura')->whereKey($guiaId)->lockForUpdate()->firstOrFail();
+        abort_unless($guia->estado === 'publicada', 422, 'Publica la guía antes de asignarla a un proyecto.');
+        abort_unless(
+            (int) $guia->periodo_id === (int) $equipo->grupoAcademico->periodo_id
+            && (int) $guia->asignatura?->carrera_id === (int) $equipo->grupoAcademico->carrera_id
+            && $guia->asignatura?->estado === 'activo'
+            && (int) $guia->cuatrimestre === (int) $equipo->grupoAcademico->grado
+            && ($guia->periodoFin ?? $guia->periodo)->estado !== 'cerrado',
+            422, 'La guía debe corresponder al periodo, carrera y cuatrimestre del equipo.',
+        );
     }
 
     public function asignarDocente(Request $request): RedirectResponse
@@ -137,6 +223,7 @@ class ControladorProyectos extends Controller
         $this->autorizarProyectoAsignado($request, $proyecto);
 
         $asignatura = Asignatura::query()->findOrFail($datos['asignatura_id']);
+        abort_unless($asignatura->estado === 'activo', 422, 'La asignatura está inactiva.');
         abort_unless((int) $asignatura->carrera_id === (int) $proyecto->equipo->grupoAcademico->carrera_id, 422);
 
         $docenteId = null;
@@ -181,13 +268,17 @@ class ControladorProyectos extends Controller
 
         $proyectos = Proyecto::query()
             ->with([
-                'equipo.grupoAcademico.carrera:id,clave,nombre',
+                'equipo.grupoAcademico.carrera:id,clave,nombre,estado',
+                'equipo.grupoAcademico.periodo:id,estado',
                 'equipo.asesores:id,nombre,matricula',
-                'guiaIntegradora:id,nombre,version',
+                'guiaIntegradora:id,nombre,version,estado,periodo_id,periodo_fin_id',
+                'guiaIntegradora.periodo:id,estado',
+                'guiaIntegradora.periodoFin:id,estado',
                 'docentes:id,nombre,matricula',
                 'asignaturas:id,nombre,clave',
             ])
             ->withCount(['docentes as docentes_count', 'asignaturas as asignaturas_count'])
+            ->withExists(['entregas as tiene_entregas' => fn ($q) => $q->withoutGlobalScope('vigentes'), 'documentosFinales', 'cierre', 'productosCodigo'])
             ->when($usuario->hasRole('docente_lider'), fn ($q) => $q->whereHas('equipo.grupoAcademico', fn ($g) => $g->conMateriaLiderDelDocente($usuario->id)))
             ->when($usuario->hasRole('docente_materia'), fn ($q) => $q->where(function ($scope) use ($usuario) {
                 $scope->whereHas('docentes', fn ($d) => $d->where('usuarios.id', $usuario->id))->orWhereHas('asignaturas', fn ($a) => $a->where('asignaturas_proyecto.docente_id', $usuario->id));
@@ -208,7 +299,8 @@ class ControladorProyectos extends Controller
                 ->when($usuario->hasRole('docente_lider'), fn ($q) => $q->whereHas('grupoAcademico', fn ($g) => $g->conMateriaLiderDelDocente($usuario->id)))
                 ->orderBy('nombre')
                 ->get(),
-            'guias' => GuiaIntegradora::query()->where('estado', 'publicada')->whereHas('periodo', fn ($q) => $q->where('estado', '!=', 'cerrado'))->orderBy('nombre')->get(['id', 'nombre', 'version', 'estado']),
+            'guias' => GuiaIntegradora::query()->with('asignatura:id,carrera_id')->where('estado', 'publicada')
+                ->where('periodo_id', $periodoSeleccionado)->orderBy('nombre')->get(),
             'docentes' => User::query()->whereHas('role', fn ($query) => $query->whereIn('nombre', ['docente_lider', 'docente_materia']))->orderBy('nombre')->get(['id', 'nombre', 'matricula', 'carrera_id']),
             'asignaturas' => Asignatura::query()->orderBy('nombre')->get(['id', 'carrera_id', 'grado', 'nombre', 'clave']),
             'apartados' => ApartadoGuia::query()->with('guiaIntegradora:id,nombre')->orderBy('orden')->get(['id', 'guia_integradora_id', 'orden', 'titulo']),

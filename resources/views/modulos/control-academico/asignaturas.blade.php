@@ -90,6 +90,23 @@
                         </div>
                     </div>
                     <span class="w-fit rounded-full bg-[#EAF2FB] px-3 py-1 text-xs font-bold text-[#15529A]">{{ ucfirst($asignatura->estado) }}</span>
+                    <div class="space-y-2 md:col-span-full">
+                        <details class="rounded-md border border-slate-200 p-3">
+                            <summary class="cursor-pointer text-sm font-bold text-[#15529A]">Editar asignatura</summary>
+                            <form method="POST" action="{{ route('asignaturas.actualizar', $asignatura) }}" class="mt-3 grid gap-3 md:grid-cols-4">
+                                @csrf @method('PATCH')
+                                <input type="hidden" name="periodo_asignaturas" value="{{ $filtrosAsignaturas['periodo_id'] }}">
+                                <label class="text-sm font-semibold">Nombre<input name="nombre" maxlength="120" required value="{{ $asignatura->nombre }}" class="mt-1 block w-full rounded-md border-slate-300"></label>
+                                <label class="text-sm font-semibold">Clave<input name="clave" maxlength="30" value="{{ $asignatura->clave }}" class="mt-1 block w-full rounded-md border-slate-300"></label>
+                                <label class="text-sm font-semibold">Carrera<select name="carrera_id" required class="mt-1 block w-full rounded-md border-slate-300">@foreach($carreras as $opcion)<option value="{{ $opcion->id }}" @selected($opcion->id === $asignatura->carrera_id)>{{ $opcion->clave }}</option>@endforeach</select></label>
+                                <label class="text-sm font-semibold">Cuatrimestre<input name="grado" type="number" min="1" max="12" required value="{{ $asignatura->grado }}" class="mt-1 block w-full rounded-md border-slate-300"></label>
+                                <label class="text-sm font-semibold">Estado<select name="estado" class="mt-1 block w-full rounded-md border-slate-300"><option value="activo" @selected($asignatura->estado === 'activo')>Activa</option><option value="inactivo" @selected($asignatura->estado === 'inactivo')>Inactiva</option></select></label>
+                                <button class="w-fit rounded-md bg-[#15529A] px-3 py-2 text-sm font-bold text-white">Guardar cambios</button>
+                            </form>
+                        </details>
+                        <x-confirmar-accion :accion="route('asignaturas.eliminar', $asignatura)" etiqueta="Eliminar asignatura"
+                            mensaje="Confirmo que deseo eliminar la asignatura si no tiene vínculos académicos." />
+                    </div>
                 </section>
             @empty
                 <div class="px-5 py-12 text-center text-sm text-slate-500">No hay asignaturas para esta carrera y cuatrimestre.</div>

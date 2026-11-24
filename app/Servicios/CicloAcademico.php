@@ -3,10 +3,13 @@
 namespace App\Servicios;
 
 use App\Models\GuiaIntegradora;
+use App\Models\AvisoCierre;
+use App\Models\CierreProyecto;
 use App\Models\Periodo;
 use App\Models\Proyecto;
 use App\Models\Role;
 use App\Models\User;
+use App\Soporte\AuditoriaAcademica;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -80,6 +83,38 @@ class CicloAcademico
             }
             $guia->update(['estado' => 'publicada']);
         });
+    }
+
+    public function reabrir(Periodo $periodo, int $actor, string $motivo): void
+    {
+        DB::transaction(function () use ($periodo, $actor, $motivo): void {
+            $this->bloquearTransiciones();
+            $guias = GuiaIntegradora::where(fn ($q) => $q->where('periodo_fin_id', $periodo->id)
+                ->orWhere(fn ($q) => $q->whereNull('periodo_fin_id')->where('periodo_id', $periodo->id)))->get();
+            $periodos = Periodo::whereIn('id', $guias->pluck('periodo_id')->push($periodo->id)->unique())
+                ->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            $periodo = $periodos->get($periodo->id);
+            $this->exigir($periodo?->estado === 'cerrado', 'Solo se puede reabrir un periodo cerrado.');
+            $this->exigir(! Periodo::where('estado', 'activo')->exists(), 'Cierra el periodo activo antes de reabrir otro.');
+            $this->exigir($periodo->fecha_inicio <= today()->toDateString() && $periodo->fecha_fin >= today()->toDateString(),
+                'Corrige las fechas para que el periodo abarque el día de hoy antes de reabrirlo.');
+            $periodo->update(['estado' => 'activo']);
+            $idsGuias = $guias->filter(fn ($guia) => $guia->estado === 'cerrada' && $periodos->get($guia->periodo_id)?->estado !== 'cerrado')->modelKeys();
+            GuiaIntegradora::whereKey($idsGuias)->where('estado', 'cerrada')->update(['estado' => 'publicada']);
+            $cierres = CierreProyecto::where('estado', 'pendiente')->whereNull('decidido_en')
+                ->whereHas('proyecto', fn ($q) => $q->whereIn('guia_integradora_id', $idsGuias)
+                    ->where('estado', 'en_proceso')
+                    ->whereHas('equipo.grupoAcademico.periodo', fn ($q) => $q->where('estado', '!=', 'cerrado')))
+                ->lockForUpdate()->get();
+            foreach ($cierres as $cierre) {
+                $cierre->update(['estado' => 'reabierto', 'ronda' => $cierre->ronda + 1]);
+            }
+            AvisoCierre::whereIn('cierre_proyecto_id', $cierres->modelKeys())->where('estado', 'pendiente')->update(['estado' => 'cancelado']);
+            AuditoriaAcademica::registrar($actor, 'periodos', $periodo->id, 'reabrir', ['estado' => 'cerrado'], [
+                'estado' => 'activo', 'guias_republicadas' => $idsGuias, 'cierres_reabiertos' => $cierres->modelKeys(),
+                'grupos' => $periodo->gruposAcademicos()->count(),
+            ], $motivo);
+        }, 3);
     }
 
     private function bloquearTransiciones(): void

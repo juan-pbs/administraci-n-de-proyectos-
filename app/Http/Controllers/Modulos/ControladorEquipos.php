@@ -12,6 +12,8 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ControladorEquipos extends Controller
 {
@@ -59,6 +61,9 @@ class ControladorEquipos extends Controller
                 'grupo_academico_id' => $grupo->id,
                 'nombre' => $datos['nombre'],
             ]);
+            if ($equipo->exists && $equipo->estado === 'inactivo') {
+                throw ValidationException::withMessages(['nombre' => 'El equipo ya existe. Usa Editar equipo para reactivarlo.']);
+            }
             if (! $equipo->exists) {
                 $equipo->numero = (int) Equipo::query()
                     ->where('grupo_academico_id', $grupo->id)
@@ -71,6 +76,47 @@ class ControladorEquipos extends Controller
         });
 
         return $this->volverEquipos($request, 'Equipo guardado correctamente.');
+    }
+
+    public function actualizar(Request $request, Equipo $equipo): RedirectResponse
+    {
+        $this->autorizarGestionEquipos($request);
+        $grupo = GrupoAcademico::whereKey($equipo->grupo_academico_id)->lockForUpdate()->firstOrFail();
+        $this->autorizarGrupo($request, $grupo);
+        $equipo = Equipo::whereKey($equipo->id)->lockForUpdate()->firstOrFail();
+        $datos = $request->validate([
+            'nombre' => ['required', 'string', 'max:80', 'regex:/\A[\pL\pM\pN .,:;()\/+&-]+\z/u',
+                Rule::unique('equipos')->where('grupo_academico_id', $grupo->id)->ignore($equipo)],
+            'contexto_proyecto' => ['nullable', 'string', 'max:3000'],
+            'estado' => ['required', 'in:activo,inactivo'],
+        ]);
+        if ($equipo->estado === 'inactivo' && $datos['estado'] === 'activo') {
+            if (! $grupo->disponible() || DB::table('integrantes_equipo as integrantes')
+                ->join('equipos', 'equipos.id', '=', 'integrantes.equipo_id')
+                ->where('equipos.grupo_academico_id', $grupo->id)->where('equipos.estado', 'activo')
+                ->where('integrantes.activo', true)
+                ->whereIn('integrantes.estudiante_id', $equipo->integrantes()->select('usuarios.id')->getQuery())
+                ->exists()) {
+                throw ValidationException::withMessages(['estado' => 'Para reactivar el equipo, activa su grupo y comprueba que sus integrantes no estén en otro equipo activo del grupo.']);
+            }
+        }
+        $equipo->update($datos);
+
+        return $this->volverEquipos($request, 'Equipo actualizado.');
+    }
+
+    public function eliminar(Request $request, Equipo $equipo): RedirectResponse
+    {
+        $this->autorizarGestionEquipos($request);
+        $this->autorizarGrupo($request, $equipo->grupoAcademico);
+        $request->validate(['confirmar_eliminacion' => ['accepted']]);
+        $equipo = Equipo::whereKey($equipo->id)->lockForUpdate()->firstOrFail();
+        if ($equipo->proyectos()->exists()) {
+            throw ValidationException::withMessages(['eliminar' => 'El equipo tiene proyectos. Puedes desactivarlo para conservar su historial.']);
+        }
+        $equipo->delete();
+
+        return $this->volverEquipos($request, 'Equipo eliminado.');
     }
 
     public function asignarAlumno(Request $request): RedirectResponse
@@ -222,7 +268,7 @@ class ControladorEquipos extends Controller
         $equipos = Equipo::query()
             ->with([
                 'grupoAcademico.carrera:id,nombre,clave',
-                'grupoAcademico.periodo:id,nombre',
+                'grupoAcademico.periodo:id,nombre,estado',
                 'grupoAcademico.liderProyecto:id,nombre,matricula',
                 'integrantes:id,nombre,matricula,grupo_academico_id',
                 'asesores:id,nombre,matricula',

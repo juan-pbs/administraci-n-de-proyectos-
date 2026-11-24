@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Carrera;
+use App\Models\GrupoAcademico;
 use App\Models\Periodo;
 use App\Models\Role;
 use App\Models\User;
@@ -8,6 +9,34 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 
 uses(RefreshDatabase::class);
+
+test('coordinación edita y desactiva carreras y grupos y protege sus dependencias al eliminar', function () {
+    $coordinacion = usuarioConRol('coordinacion');
+    $periodo = Periodo::create(['nombre' => 'Ciclo de edición', 'fecha_inicio' => today(), 'fecha_fin' => today()->addMonth(), 'estado' => 'activo']);
+    $carrera = Carrera::create(['nombre' => 'Tecnologías', 'clave' => 'TEC', 'estado' => 'activa']);
+    $grupo = GrupoAcademico::create(['periodo_id' => $periodo->id, 'carrera_id' => $carrera->id, 'grado' => 5, 'grupo' => 'A', 'nombre' => '5A']);
+    $this->actingAs(usuarioConRol('docente_lider'))
+        ->delete(route('carreras.eliminar', $carrera), ['confirmar_eliminacion' => 1])->assertForbidden();
+    $this->actingAs($coordinacion)->get(route('modulos.carreras-grupos'))
+        ->assertOk()->assertSee('Editar carrera')->assertSee('Editar grupo');
+    $this->patch(route('carreras.actualizar', $carrera), ['nombre' => 'Tecnología aplicada', 'clave' => 'tec', 'estado' => 'inactiva'])
+        ->assertSessionHasNoErrors();
+    $this->post(route('grupos-academicos.guardar'), ['periodo_id' => $periodo->id, 'carrera_id' => $carrera->id, 'grado' => 5, 'grupo' => 'B'])
+        ->assertSessionHasErrors('carrera_id');
+    $this->delete(route('carreras.eliminar', $carrera), ['confirmar_eliminacion' => 1])->assertSessionHasErrors('eliminar');
+    $this->patch(route('grupos-academicos.actualizar', $grupo), [
+        'periodo_id' => $periodo->id, 'carrera_id' => $carrera->id, 'grado' => 6, 'grupo' => 'c', 'estado' => 'inactivo',
+    ])->assertSessionHasNoErrors();
+    expect($grupo->fresh()->only(['nombre', 'estado']))->toBe(['nombre' => '6C', 'estado' => 'inactivo']);
+    $alumno = usuarioConRol('estudiante');
+    $alumno->update(['grupo_academico_id' => $grupo->id]);
+    $this->delete(route('grupos-academicos.eliminar', $grupo), ['confirmar_eliminacion' => 1])->assertSessionHasErrors('eliminar');
+    $alumno->update(['grupo_academico_id' => null]);
+    $this->delete(route('grupos-academicos.eliminar', $grupo), ['confirmar_eliminacion' => 1])->assertSessionHasNoErrors();
+    $this->delete(route('carreras.eliminar', $carrera))->assertSessionHasErrors('confirmar_eliminacion');
+    $this->delete(route('carreras.eliminar', $carrera), ['confirmar_eliminacion' => 1])->assertSessionHasNoErrors();
+    $this->assertModelMissing($grupo)->assertModelMissing($carrera);
+});
 
 function usuarioConRol(string $rol): User
 {

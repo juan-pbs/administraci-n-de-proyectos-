@@ -73,7 +73,14 @@
                     </fieldset>
                     @if($revision)
                         <div class="mt-4 border-t border-slate-200 pt-4">
-                            @foreach($revision->comentarios as $comentario)<div class="mb-2 rounded-md bg-white px-4 py-3 text-sm"><span class="font-bold">{{ $comentario->autor?->nombre }}:</span> {{ $comentario->comentario }}</div>@endforeach
+                            @foreach($revision->comentarios as $comentario)
+                                <div class="mb-2 rounded-md bg-white px-4 py-3 text-sm">
+                                    <span class="font-bold">{{ $comentario->autor?->nombre }}:</span> {{ $comentario->comentario }}
+                                    @if($entrega->habilitada_para_revision && (int) $comentario->autor_id === (int) auth()->id())
+                                        <x-editar-comentario :accion="route('docente-lider.codigo.comentarios.modificar', [$entrega, $comentario])" :comentario="$comentario" />
+                                    @endif
+                                </div>
+                            @endforeach
                             <fieldset @disabled(!$entrega->habilitada_para_revision)><form method="POST" action="{{ route('docente-lider.codigo.comentar', $entrega) }}" class="flex flex-col gap-2 md:flex-row">@csrf<input required maxlength="1500" name="comentario" placeholder="Agregar comentario técnico" class="min-w-0 flex-1 rounded-md border-slate-300 text-sm"><button class="rounded-md border border-[#155AA3] px-4 py-2 text-sm font-bold text-[#155AA3]">Comentar</button></form></fieldset>
                         </div>
                     @endif

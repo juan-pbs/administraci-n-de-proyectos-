@@ -9,6 +9,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -24,6 +25,62 @@ function datosCorreccionesPruebas(): array
 
     return compact('carrera', 'periodo', 'asignatura', 'usuario', 'profesor');
 }
+
+test('la migración corrige solo los periodos de demostración conocidos y deja evidencia auditable', function () {
+    $corregible = Periodo::create(['nombre' => 'Enero - Abril 2027', 'fecha_inicio' => '2027-03-01',
+        'fecha_fin' => '2027-06-30', 'estado' => 'borrador']);
+    $otro = Periodo::create(['nombre' => 'Mayo - Agosto 2026', 'fecha_inicio' => '2026-05-01',
+        'fecha_fin' => '2026-08-31', 'estado' => 'cerrado']);
+    $migracion = require database_path('migrations/2026_11_23_000003_corrige_periodos_de_demostracion.php');
+    $migracion->up();
+    $migracion->up();
+    expect($corregible->fresh()->nombre)->toBe('Marzo - Junio 2027')
+        ->and($corregible->fresh()->estado)->toBe('borrador')->and($otro->fresh()->nombre)->toBe('Mayo - Agosto 2026');
+    expect(DB::table('auditoria_academica')->where('modulo', 'periodos')->where('accion', 'corregir_nombre')->count())->toBe(1);
+});
+
+test('solo coordinación cambia el rol docente, registra auditoría y elimina cuentas sin actividad', function () {
+    $d = datosCorreccionesPruebas();
+    $lider = Role::firstOrCreate(['nombre' => 'docente_lider'], ['nombre_visible' => 'Docente líder']);
+    $docente = $d['profesor'];
+    $datos = [
+        'nombre' => $docente->nombre, 'matricula' => $docente->matricula, 'correo' => $docente->correo,
+        'carrera_id' => $d['carrera']->id, 'rol' => 'docente_lider',
+    ];
+    $this->actingAs($docente)->patch(route('usuarios.docentes.actualizar', $docente), $datos)->assertForbidden();
+    $this->actingAs($d['usuario'])->patch(route('usuarios.docentes.actualizar', $docente), $datos)->assertSessionHasNoErrors();
+    expect($docente->fresh()->rol_id)->toBe($lider->id);
+    $this->assertDatabaseHas('auditoria_usuarios', ['usuario_id' => $docente->id, 'accion' => 'cambiar_rol_docente', 'valor_nuevo' => 'docente_lider']);
+    $docente->asignaturasComoDocente()->attach($d['asignatura']->id, ['periodo_id' => $d['periodo']->id, 'activo' => true]);
+    $this->delete(route('usuarios.docentes.eliminar', $docente), ['confirmar_eliminacion' => 1])->assertSessionHasErrors('eliminar');
+    $docente->asignaturasComoDocente()->detach();
+    $this->delete(route('usuarios.docentes.eliminar', $docente), ['confirmar_eliminacion' => 1])->assertSessionHasNoErrors();
+    $this->assertModelMissing($docente);
+    $this->assertDatabaseHas('auditoria_usuarios', ['accion' => 'eliminar_docente', 'valor_anterior' => $docente->matricula]);
+});
+
+test('coordinación corrige una guía publicada, la regresa a borrador y protege la asignatura vinculada', function () {
+    $d = datosCorreccionesPruebas();
+    $asignatura = $d['asignatura'];
+    $guia = GuiaIntegradora::create(['nombre' => 'Original', 'version' => '1.0', 'periodo_id' => $d['periodo']->id,
+        'asignatura_id' => $asignatura->id, 'cuatrimestre' => 4, 'estado' => 'publicada']);
+    $this->actingAs($d['usuario'])->get(route('modulos.guias'))
+        ->assertOk()->assertSee('Editar datos de la guía')->assertSee('Regresar a borrador')->assertSee('Eliminar guía');
+    $this->patch(route('asignaturas.actualizar', $asignatura), [
+        'nombre' => 'Integradora revisada', 'clave' => $asignatura->clave, 'carrera_id' => $d['carrera']->id, 'grado' => 4,
+    ])->assertSessionHasNoErrors();
+    $this->delete(route('asignaturas.eliminar', $asignatura), ['confirmar_eliminacion' => 1])->assertSessionHasErrors('eliminar');
+    $this->patch(route('guias.actualizar', $guia), [
+        'nombre' => 'Corregida', 'version' => '1.1', 'periodo_id' => $d['periodo']->id,
+        'asignatura_id' => $asignatura->id, 'cuatrimestre' => 4,
+    ])->assertSessionHasNoErrors();
+    expect($guia->fresh()->only(['nombre', 'estado']))->toBe(['nombre' => 'Corregida', 'estado' => 'publicada']);
+    $this->patch(route('guias.borrador', $guia), ['confirmar_borrador' => 1])->assertSessionHasNoErrors();
+    expect($guia->fresh()->estado)->toBe('borrador');
+    $this->delete(route('guias.eliminar', $guia), ['confirmar_eliminacion' => 1])->assertSessionHasNoErrors();
+    $this->delete(route('asignaturas.eliminar', $asignatura), ['confirmar_eliminacion' => 1])->assertSessionHasNoErrors();
+    $this->assertModelMissing($guia)->assertModelMissing($asignatura);
+});
 
 test('coordinacion puede corregir datos de un docente existente', function () {
     $d = datosCorreccionesPruebas();

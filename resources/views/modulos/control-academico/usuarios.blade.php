@@ -226,8 +226,16 @@
                         <label class="block text-sm font-semibold text-slate-700">Correo institucional<input name="correo" type="email" required maxlength="254" value="{{ $editando ? old('correo') : $docente->correo }}" class="mt-1 block w-full rounded-md border-slate-300 text-sm"></label>
                         <label class="block text-sm font-semibold text-slate-700">Carrera principal<select name="carrera_id" required class="mt-1 block w-full rounded-md border-slate-300 text-sm">@foreach($carreras as $carrera)<option value="{{ $carrera->id }}" @selected((int) ($editando ? old('carrera_id') : $docente->carrera_id) === (int) $carrera->id)>{{ $carrera->clave }} - {{ $carrera->nombre }}</option>@endforeach</select></label>
                         <label class="block text-sm font-semibold text-slate-700">Estado<select name="estado" required class="mt-1 block w-full rounded-md border-slate-300 text-sm"><option value="activo" @selected(($editando ? old('estado') : $docente->estado) === 'activo')>Activo</option><option value="inactivo" @selected(($editando ? old('estado') : $docente->estado) === 'inactivo')>Inactivo (sin acceso)</option></select></label>
+                        <label class="block text-sm font-semibold text-slate-700">Rol
+                            <select name="rol" required class="mt-1 block w-full rounded-md border-slate-300 text-sm">
+                                <option value="docente_lider" @selected(($editando ? old('rol', $docente->role?->nombre) : $docente->role?->nombre) === 'docente_lider')>Docente líder</option>
+                                <option value="docente_materia" @selected(($editando ? old('rol', $docente->role?->nombre) : $docente->role?->nombre) === 'docente_materia')>Docente de materia</option>
+                            </select>
+                        </label>
                         <div class="flex justify-end gap-3"><button type="button" data-close-dialog class="rounded-md border border-slate-300 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50">Cancelar</button><button class="rounded-md bg-[#15529A] px-4 py-2 font-bold text-white hover:bg-[#0D376D]">Guardar cambios</button></div>
                     </form>
+                    <x-confirmar-accion class="mx-6 mb-6" :accion="route('usuarios.docentes.eliminar', $docente)"
+                        etiqueta="Eliminar docente" mensaje="Confirmo que deseo eliminar este docente. Los docentes con historial pueden desactivarse." />
                 </dialog>
             @endforeach
             <div class="border-t border-slate-200 px-5 py-3 text-sm text-slate-500">Lista completa: <strong class="text-slate-800">{{ $docentes->count() }} {{ $docentes->count() === 1 ? 'docente' : 'docentes' }}</strong></div>

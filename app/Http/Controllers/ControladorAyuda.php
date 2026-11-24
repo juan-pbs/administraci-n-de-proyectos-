@@ -138,8 +138,9 @@ class ControladorAyuda extends Controller
                     pasos: [
                         'Usa Nuevo periodo para abrir el formulario de captura.',
                         'Captura nombre, inicio y cierre. Usa los meses y años de esas fechas en el nombre. El inicio debe estar en el mes actual o después y el periodo se guarda como borrador.',
-                        'En el historial, abre Corregir datos del periodo. Puedes cambiar el nombre en cualquier estado y las fechas mientras esté en borrador.',
+                        'En el historial, abre Corregir datos del periodo. Puedes corregir el nombre y las fechas, incluso en un periodo activo o cerrado. El rango debe respetar los plazos de las guías vinculadas.',
                         'Actívalo cuando no exista otro periodo activo. Para cerrarlo, revisa los pendientes y confirma el cierre; el historial queda disponible para consulta.',
+                        'En la fila de un periodo cerrado, abre Reabrir periodo, escribe el motivo y confirma. Sus fechas deben abarcar hoy y ningún otro periodo puede estar activo.',
                     ],
                     imagen: 'assets/ayuda/actualizadas/coordinacion-periodos.png',
                     ruta: $rutas['periodos'] ?? null,
@@ -155,6 +156,7 @@ class ControladorAyuda extends Controller
                         'Agrega grupos indicando carrera, periodo y cuatrimestre. Elige una sola letra de la A a la M.',
                         'Vincula docentes a la carrera y usa Jerarquía de proyectos para asignar un líder a cada grupo.',
                         'Cambiar Periodo o Carrera actualiza la lista. Para buscar por cuatrimestre, grupo o periodo, escribe el texto y pulsa Buscar grupo.',
+                        'Abre Editar carrera o Editar grupo para corregir sus datos y cambiar el estado. Si existen vínculos académicos, desactiva el registro para conservarlos.',
                     ],
                     imagen: 'assets/ayuda/coordinacion/04-carreras-grupos.png',
                     ruta: $rutas['carreras-grupos'] ?? null,
@@ -170,7 +172,8 @@ class ControladorAyuda extends Controller
                         'Descarga la plantilla, llena una fila por alumno y carga una o varias listas. Solo puedes elegir el periodo activo.',
                         'Selecciona carrera, cuatrimestre y grupo para cada archivo. En la vista previa revisa la matrícula de 7 dígitos, nombre y correo antes de confirmar.',
                         'En Docentes, registra nombre, matrícula o clave, correo institucional, rol y carrera. La contraseña inicial se envía al correo registrado.',
-                        'En el catálogo de docentes, pulsa Editar. Puedes cambiar nombre, matrícula, correo, carrera principal y estado. Selecciona Inactivo (sin acceso) o Activo y pulsa Guardar cambios.',
+                        'En el catálogo de docentes, pulsa Editar. Revisa nombre, matrícula, correo, carrera, rol y estado. Si el docente lidera un grupo vigente, reasígnalo en Jerarquía antes de cambiar su rol.',
+                        'Usa Eliminar docente únicamente cuando no tenga actividad académica vinculada. Para retirar el acceso conservando su historial, selecciona Inactivo (sin acceso).',
                     ],
                     imagen: 'assets/ayuda/coordinacion/05-usuarios.png',
                     ruta: $rutas['usuarios'] ?? null,
@@ -185,6 +188,7 @@ class ControladorAyuda extends Controller
                         'Registra asignaturas con carrera, clave, cuatrimestre y nombre. El nombre admite letras, números, espacios y los signos . , : ; ( ) / + & -. La clave admite letras, números, punto, guion y guion bajo.',
                         'Al guardar una asignatura se abre Asignar docente y queda seleccionada. Elige el periodo y el docente de la carrera, y pulsa Asignar en este periodo.',
                         'Filtra la carga por periodo, carrera o cuatrimestre, o busca por nombre o clave. Pulsa Cambiar vista para aplicar los filtros.',
+                        'En la fila usa Editar asignatura para corregir sus datos o dejarla Inactiva. Eliminar asignatura está disponible para registros sin vínculos académicos.',
                     ],
                     imagen: 'assets/ayuda/coordinacion/06-asignaturas.png',
                     ruta: $rutas['asignaturas'] ?? null,
@@ -200,6 +204,8 @@ class ControladorAyuda extends Controller
                         'En Crear o actualizar apartados, elige la guía y usa Añadir apartado o Cargar apartados existentes. Revisa orden, ponderación, fecha límite y evidencia de cada fila.',
                         'Pulsa Vista previa para revisar el contenido antes de guardarlo. Ciérrala con la X o haciendo clic fuera y pulsa Guardar apartados.',
                         'Asigna evaluadores y publica cuando las ponderaciones sumen 100 % y los apartados tengan evidencia y responsables. Se cierra al terminar el periodo final.',
+                        'Despliega una guía para editar sus datos o regresarla a borrador mientras no haya historial. Si ya tiene entregas, abre Crear nueva versión para conservar la guía asignada.',
+                        'Eliminar guía requiere que ningún proyecto ni otra versión dependan de ella.',
                     ],
                     imagen: 'assets/ayuda/actualizadas/coordinacion-guias.png',
                     ruta: $rutas['guias'] ?? null,
@@ -272,6 +278,7 @@ class ControladorAyuda extends Controller
                         'Usa Nuevo equipo cuando haya alumnos libres en ese grupo. Una pertenencia a un equipo de otro ciclo no ocupa al alumno en el grupo actual.',
                         'En el detalle del equipo marca uno o varios alumnos disponibles y pulsa Agregar seleccionados. También puedes retirar integrantes desde allí.',
                         'Verifica que cada equipo tenga proyecto asignado antes de continuar.',
+                        'En Editar equipo puedes cambiar su nombre, contexto o estado. Un equipo inactivo queda para consulta. Eliminar equipo requiere que no tenga proyectos.',
                     ],
                     imagen: 'assets/ayuda/docente-lider/03-equipos.png',
                     ruta: $rutas['equipos'] ?? null,
@@ -285,7 +292,8 @@ class ControladorAyuda extends Controller
                     pasos: [
                         'Elige un periodo y un grupo para ver sus proyectos. Abre Administrar en la fila del proyecto que quieras consultar.',
                         'Revisa asesor principal, docentes vinculados y estado del proyecto.',
-                        'Completa las asignaciones que falten desde las acciones disponibles.',
+                        'En Editar proyecto corrige título y descripción. Para cambiar la guía o eliminar el proyecto, este debe estar libre de historial. Si corriges un proyecto con entregas o retiras una asignatura, indica el motivo.',
+                        'Si cambia el título o la descripción después de una revisión firmada, el docente debe volver a autorizar la firma para emitir el PDF.',
                     ],
                     imagen: 'assets/ayuda/docente-lider/04-proyectos.png',
                     ruta: $rutas['proyectos'] ?? null,
@@ -314,6 +322,7 @@ class ControladorAyuda extends Controller
                         'Si recibes un aviso de revisión pendiente de código, abre el enlace o entra a Revisión de código. Filtra por grupo para ubicar la versión actual.',
                         'Abre el repositorio o la URL de demostración; descarga los archivos o el instalador para revisar el trabajo. Solo los docentes autorizados ven estos recursos.',
                         'Guarda resultado, calificación y comentarios técnicos cuando corresponda.',
+                        'Mientras la revisión esté habilitada, puedes editar u ocultar tus comentarios técnicos. El texto anterior se conserva en la auditoría.',
                     ],
                     imagen: 'assets/ayuda/actualizadas/lider-revision-codigo.png',
                     ruta: $rutas['revision-codigo'] ?? null,
@@ -342,6 +351,7 @@ class ControladorAyuda extends Controller
                         'Revisa si faltan entregas, correcciones, firmas o el PDF y consulta el historial de avisos y decisiones.',
                         'Puedes cerrar con constancia de pendientes o dar una prórroga al equipo con nueva fecha y apartados concretos.',
                         'Consulta el periodo y el estado de cada proyecto. Prórroga vencida indica que terminó el plazo de la última ronda. Si quedan pendientes, abre Ver pendientes y decisión.',
+                        'Puedes cancelar el cierre o la prórroga con un motivo y confirmación. Si el periodo terminó, usa Reabrir con prórroga y elige los apartados y el plazo. El historial y los PDF emitidos se conservan.',
                     ],
                     imagen: 'assets/ayuda/actualizadas/lider-cierres.png',
                     ruta: $rutas['cierres'] ?? null,
@@ -432,6 +442,7 @@ class ControladorAyuda extends Controller
                 'Abre las evidencias. Selecciona el resultado, captura la calificación de 0 a 10 y escribe las observaciones.',
                 'Si apruebas y quieres incluir tu firma, marca la autorización para esa versión. Registra primero tu firma en Mi firma si todavía no la tienes.',
                 'Pulsa Guardar revisión. Para dejar una aclaración después, escribe en Comentarios de seguimiento y pulsa Agregar comentario.',
+                'Mientras la revisión esté habilitada, puedes editar u ocultar tus comentarios. El texto original queda en la auditoría.',
             ],
             imagen: 'assets/ayuda/actualizadas/materia-revisiones.png',
             ruta: $rutas['revisiones-docente'] ?? null,
@@ -488,6 +499,7 @@ class ControladorAyuda extends Controller
                         'Pulsa Ver apartado en la fila que corresponde a tu evidencia.',
                         'Dentro del plazo o de una prórroga, selecciona hasta 10 archivos de evidencia de 150 MB cada uno. Pulsa Enviar avance o Enviar nueva versión.',
                         'Revisa comentarios y calificación cuando el docente concluya la revisión.',
+                        'Durante el plazo, puedes usar Retirar última versión si la enviaste y todavía no fue revisada. El retiro queda en el historial y la versión anterior vuelve a estar vigente, si existe.',
                     ],
                     imagen: 'assets/ayuda/actualizadas/estudiante-entregas.png',
                     ruta: $rutas['mis-entregas'] ?? null,
@@ -503,6 +515,7 @@ class ControladorAyuda extends Controller
                         'La URL de demostración no es obligatoria. Puedes adjuntar APK, EXE, MSI, DMG, AppImage o DEB; el sistema no ejecuta instaladores.',
                         'Indica la versión. La aplicación admite hasta 150 MB y puedes incluir hasta 10 archivos técnicos de 150 MB cada uno. Pulsa Registrar entrega o Enviar nueva versión.',
                         'Al vencer el plazo, puedes consultar tu entrega. Para enviar otra, el docente líder debe abrir una prórroga de Código para tu equipo.',
+                        'Durante el plazo, usa Retirar última versión para retirar el envío de código que hiciste si aún no lo han revisado.',
                     ],
                     imagen: 'assets/ayuda/actualizadas/estudiante-codigo-formulario.png',
                     ruta: $rutas['codigo-estudiante'] ?? null,
@@ -766,16 +779,32 @@ class ControladorAyuda extends Controller
             ],
             'assets/ayuda/actualizadas/coordinacion-periodos.png' => [
                 $this->capturaContexto('assets/ayuda/actualizadas/coordinacion-periodo-nuevo.png', 'Nuevo periodo en borrador', 'Formulario actual: el estado inicial es borrador y la activación se hace después desde el historial.'),
+                $this->capturaContexto('assets/ayuda/actualizadas/coordinacion-reabrir-periodo.png', 'Reabrir periodo', 'El formulario pide un motivo y confirmación.'),
+            ],
+            'assets/ayuda/coordinacion/04-carreras-grupos.png' => [
+                $this->capturaContexto('assets/ayuda/actualizadas/coordinacion-editar-carrera.png', 'Editar carrera', 'Nombre, clave y estado de la carrera seleccionada.'),
+                $this->capturaContexto('assets/ayuda/actualizadas/coordinacion-editar-grupo.png', 'Editar grupo', 'Datos académicos y estado del grupo.'),
             ],
             'assets/ayuda/coordinacion/05-usuarios.png' => [
-                $this->capturaContexto('assets/ayuda/actualizadas/coordinacion-editar-docente.png', 'Editar docente', 'El campo Estado controla si el docente puede acceder al sistema.'),
+                $this->capturaContexto('assets/ayuda/actualizadas/coordinacion-editar-docente.png', 'Editar docente', 'Campos de rol y estado, y confirmación de eliminación.'),
+            ],
+            'assets/ayuda/coordinacion/06-asignaturas.png' => [
+                $this->capturaContexto('assets/ayuda/actualizadas/coordinacion-editar-asignatura.png', 'Editar asignatura', 'Datos del catálogo y estado activo o inactivo.'),
             ],
             'assets/ayuda/actualizadas/coordinacion-guias.png' => [
                 $this->capturaContexto('assets/ayuda/actualizadas/coordinacion-guia-nueva.png', 'Crear guía en borrador', 'Formulario actual de alta: la guía inicia como borrador.'),
                 $this->capturaContexto('assets/ayuda/actualizadas/coordinacion-guia-apartados.png', 'Crear o actualizar apartados', 'Formulario para preparar y guardar varios apartados juntos.'),
+                $this->capturaContexto('assets/ayuda/actualizadas/coordinacion-guia-version.png', 'Crear nueva versión', 'La versión nueva inicia como borrador y conserva el vínculo con la original.'),
+            ],
+            'assets/ayuda/docente-lider/03-equipos.png' => [
+                $this->capturaContexto('assets/ayuda/actualizadas/lider-editar-equipo.png', 'Editar equipo', 'Cambia nombre, estado o contexto desde Ver información.'),
+            ],
+            'assets/ayuda/docente-lider/04-proyectos.png' => [
+                $this->capturaContexto('assets/ayuda/actualizadas/lider-editar-proyecto.png', 'Editar proyecto', 'Formulario de corrección dentro de Administrar.'),
             ],
             'assets/ayuda/actualizadas/lider-cierres.png' => [
                 $this->capturaContexto('assets/ayuda/actualizadas/lider-prorroga.png', 'Decidir después de una prórroga', 'Detalle con los apartados vencidos, los formularios de decisión y el historial.'),
+                $this->capturaContexto('assets/ayuda/actualizadas/lider-cancelar-cierre.png', 'Cancelar cierre', 'Indica el motivo y confirma para registrar la cancelación.'),
             ],
             'assets/ayuda/actualizadas/lider-recordatorios.png' => [
                 $this->capturaContexto('assets/ayuda/actualizadas/lider-recordatorios-formato-72.png', 'Formato de 72 horas', 'Texto editable del recordatorio automático de 72 horas.'),
@@ -785,6 +814,13 @@ class ControladorAyuda extends Controller
             ],
             'assets/ayuda/actualizadas/materia-revisiones.png' => [
                 $this->capturaContexto('assets/ayuda/actualizadas/materia-revision-detalle.png', 'Revisar una versión', 'Detalle de evidencia, resultado y autorización de firma para la versión recibida.'),
+                $this->capturaContexto('assets/ayuda/actualizadas/docente-editar-comentario.png', 'Corregir un comentario', 'Acciones para editar u ocultar una nota propia.'),
+            ],
+            'assets/ayuda/actualizadas/lider-revision-codigo.png' => [
+                $this->capturaContexto('assets/ayuda/actualizadas/docente-editar-comentario.png', 'Corregir un comentario', 'Revisión de código usa el mismo formulario para editar u ocultar notas propias.'),
+            ],
+            'assets/ayuda/actualizadas/estudiante-entregas.png' => [
+                $this->capturaContexto('assets/ayuda/actualizadas/estudiante-retirar-entrega.png', 'Retirar última versión', 'Confirmación del retiro de una versión sin revisar y dentro del plazo.'),
             ],
             'assets/ayuda/actualizadas/estudiante-codigo-formulario.png' => [
                 $this->capturaContexto('assets/ayuda/actualizadas/estudiante-codigo.png', 'Producto registrado', 'Ejemplo de una entrega de código con repositorio y archivos privados para descarga.'),
@@ -868,9 +904,10 @@ class ControladorAyuda extends Controller
             'assets/ayuda/actualizadas/coordinacion-periodos.png' => [
                 $this->detalle('Nuevo periodo', 'Abre el formulario para registrar un nuevo ciclo de trabajo.'),
                 $this->detalle('Nombre del periodo', 'Usa los meses y años que abarcan las fechas, por ejemplo Noviembre 2026 - Febrero 2027.'),
-                $this->detalle('Fechas', 'Los meses del nombre deben coincidir con el inicio y cierre. En borrador puedes corregir las fechas desde el historial; ese rango limita las fechas de los apartados.'),
+                $this->detalle('Fechas', 'El nombre debe coincidir con inicio y cierre. Puedes corregir las fechas en el historial si se respetan los plazos de las guías.'),
                 $this->detalle('Estado', 'El periodo nuevo se guarda en borrador. Solo se activa cuando no hay otro activo; al cerrarlo se revisan pendientes y queda para consulta.'),
-                $this->detalle('Corregir datos del periodo', 'Abre la fila del historial y pulsa Guardar corrección después de editar los datos.'),
+                $this->detalle('Corregir datos del periodo', 'Abre la fila del historial y pulsa Guardar corrección después de editar los datos. Para corregir fechas en un periodo activo o cerrado necesitas un motivo.'),
+                $this->detalle('Reabrir periodo', 'Indica el motivo y confirma. Las fechas vigentes deben abarcar hoy y no puede haber otro periodo activo.'),
             ],
             'assets/ayuda/actualizadas/coordinacion-periodo-nuevo.png' => [
                 $this->detalle('Panel desplegado', 'Se abre al presionar Nuevo periodo y muestra los campos necesarios para crear el ciclo.'),
@@ -881,6 +918,7 @@ class ControladorAyuda extends Controller
                 $this->detalle('Nuevo grupo', 'Selecciona carrera, periodo, cuatrimestre y una letra de la A a la M.'),
                 $this->detalle('Vincular docente a carrera', 'Este vínculo no asigna al docente como líder de un grupo. Hazlo en Jerarquía de proyectos.'),
                 $this->detalle('Filtros', 'Permiten revisar solo una carrera, un periodo o un grupo específico.'),
+                $this->detalle('Editar y eliminar', 'Corrige los datos o el estado de una carrera o grupo. Conserva el historial de los registros vinculados desactivándolos.'),
             ],
             'assets/ayuda/coordinacion/05-usuarios.png' => [
                 $this->detalle('Pestañas', 'Cambia entre consulta de alumnos y registro de personal académico.'),
@@ -893,6 +931,7 @@ class ControladorAyuda extends Controller
                 $this->detalle('Correo institucional', 'Debe pertenecer al dominio institucional configurado.'),
                 $this->detalle('Carrera principal', 'Elige la carrera a la que pertenece el docente.'),
                 $this->detalle('Estado y Guardar cambios', 'Selecciona Activo o Inactivo (sin acceso). Pulsa Guardar cambios para aplicar el estado.'),
+                $this->detalle('Rol y Eliminar docente', 'Cambia entre docente líder y de materia. Para eliminar, confirma en el mismo formulario. Los docentes con actividad vinculada pueden desactivarse.'),
             ],
             'assets/ayuda/coordinacion/05-usuarios-docentes-formulario.png' => [
                 $this->detalle('Registro de docentes', 'Usa esta pestaña para capturar una o varias cuentas académicas en una sola operación.'),
@@ -904,6 +943,7 @@ class ControladorAyuda extends Controller
                 $this->detalle('Asignar docente', 'Relaciona una persona con la asignatura y el periodo visible.'),
                 $this->detalle('Cambiar vista', 'Aplica periodo, carrera, cuatrimestre y búsqueda.'),
                 $this->detalle('Tabla de carga', 'Muestra materias y responsables ya registrados para confirmar que no falte información.'),
+                $this->detalle('Editar o eliminar asignatura', 'Corrige nombre y clave o cambia el estado a Inactiva. Para cambiar carrera o cuatrimestre, o eliminarla, debe carecer de vínculos.'),
             ],
             'assets/ayuda/coordinacion/06-asignaturas-formularios.png' => [
                 $this->detalle('Catálogo permanente', 'El formulario de la izquierda crea la materia base por carrera y cuatrimestre.'),
@@ -914,6 +954,8 @@ class ControladorAyuda extends Controller
                 $this->detalle('Apartados', 'Registra uno o varios apartados en el mismo formulario. Cada fecha límite debe estar dentro de los periodos de la guía.'),
                 $this->detalle('Calificadores', 'Asigna quienes revisarán cada apartado antes de publicarlo.'),
                 $this->detalle('Publicación', 'Abre Vista previa en el modal, guarda los apartados y publica la guía cuando tengan fechas, ponderación y responsables de revisión.'),
+                $this->detalle('Editar datos de la guía', 'Abre la guía en la lista para editar sus datos generales. Ahí también aparecen Regresar a borrador y Eliminar guía.'),
+                $this->detalle('Crear nueva versión', 'Indica un número superior y explica el cambio. El sistema copia los apartados al borrador vinculado y conserva las entregas en la versión original.'),
             ],
             'assets/ayuda/actualizadas/coordinacion-guia-nueva.png' => [
                 $this->detalle('Periodo y periodo final', 'Elige el periodo inicial. Si la guía cubre más de un ciclo, elige también el último.'),
@@ -1001,6 +1043,7 @@ class ControladorAyuda extends Controller
                 $this->detalle('Resultado y calificación', 'Selecciona el resultado, escribe la calificación y guarda la revisión.'),
                 $this->detalle('Autorizar firma', 'Marca la casilla al aprobar si quieres incluir tu firma registrada en esa versión.'),
                 $this->detalle('Comentarios de seguimiento', 'Después de guardar la revisión puedes agregar indicaciones adicionales para el equipo.'),
+                $this->detalle('Editar y eliminar comentario', 'Puedes ajustar u ocultar una nota propia mientras la revisión esté habilitada. La auditoría conserva el texto anterior.'),
             ],
             'assets/ayuda/estudiante/01-panel-principal.png' => [
                 $this->detalle('Progreso validado', 'Muestra el porcentaje de apartados aprobados del equipo.'),
@@ -1020,6 +1063,7 @@ class ControladorAyuda extends Controller
                 $this->detalle('Fecha límite', 'Revisa la fecha antes de cargar archivos para evitar entregas fuera de tiempo.'),
                 $this->detalle('Estado', 'Sin entrega indica que aún falta evidencia. Pendiente de revisión indica que la evidencia ya se envió.'),
                 $this->detalle('Archivos de evidencia', 'Selecciona hasta 10 archivos de 150 MB por archivo y pulsa Enviar avance o Enviar nueva versión.'),
+                $this->detalle('Retirar última versión', 'Confirma el retiro de tu último envío no revisado mientras siga abierto el plazo. El historial indica qué versión se retiró.'),
                 $this->detalle('Comentarios', 'Cuando exista revisión, lee las observaciones antes de enviar una nueva versión.'),
             ],
             'assets/ayuda/estudiante/03-entregas-detalle-apartado.png' => [
@@ -1050,6 +1094,7 @@ class ControladorAyuda extends Controller
             'assets/ayuda/actualizadas/lider-cierres.png' => [
                 $this->detalle('Estado y fecha de prórroga', 'Consulta el periodo del proyecto y distingue la prórroga vigente de la vencida.'),
                 $this->detalle('Ver pendientes y decisión', 'Abre el detalle para revisar pendientes, fechas e historial.'),
+                $this->detalle('Cancelar o reabrir', 'Confirma la cancelación con un motivo. Si terminó el periodo, define una prórroga para habilitar nuevas entregas.'),
             ],
             'assets/ayuda/actualizadas/lider-prorroga.png' => [
                 $this->detalle('Apartados, nueva fecha y motivo', 'Marca los apartados que se abrirán solo para ese equipo, indica el plazo y explica la decisión. Pulsa Guardar prórroga.'),

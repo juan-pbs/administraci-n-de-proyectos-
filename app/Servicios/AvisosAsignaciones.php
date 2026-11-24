@@ -55,6 +55,7 @@ class AvisosAsignaciones
             : ($proyecto->guiaIntegradora->estado === 'publicada' && $proyecto->guiaIntegradora->periodo->estado === 'activo');
 
         return $proyecto->estado === 'en_proceso' && $abierto && $proyecto->equipo->estado === 'activo'
+            && $proyecto->equipo->grupoAcademico->disponible()
             && $estudiante->estado === 'activo' && $estudiante->hasRole('estudiante')
             && $proyecto->equipo->integrantes()->where('usuarios.id', $estudiante->id)->exists();
     }

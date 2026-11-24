@@ -11,6 +11,7 @@ use App\Models\GrupoAcademico;
 use App\Models\Periodo;
 use App\Models\Role;
 use App\Models\User;
+use App\Soporte\ProtegeHistorial;
 use App\Soporte\SistemaInterfaz;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -52,7 +53,7 @@ class ControladorUsuarios extends Controller
             'matricula' => ['required', 'string', 'max:50', 'unique:usuarios,matricula'],
             'correo' => ['required', 'email', 'max:255', 'unique:usuarios,correo'],
             'rol_id' => ['required', 'exists:roles,id'],
-            'carrera_id' => ['nullable', 'exists:carreras,id'],
+            'carrera_id' => ['nullable', Rule::exists('carreras', 'id')->where('estado', 'activa')],
             'grupo_academico_id' => ['nullable', 'exists:grupos_academicos,id'],
         ]);
         $rol = Role::query()->findOrFail($datos['rol_id']);
@@ -112,7 +113,7 @@ class ControladorUsuarios extends Controller
                 },
             ],
             'docentes.*.rol' => ['required', 'in:docente_lider,docente_materia'],
-            'docentes.*.carrera_id' => ['required', 'exists:carreras,id'],
+            'docentes.*.carrera_id' => ['required', Rule::exists('carreras', 'id')->where('estado', 'activa')],
         ]);
 
         $roles = Role::query()->whereIn('nombre', ['docente_lider', 'docente_materia'])->pluck('id', 'nombre');
@@ -173,16 +174,39 @@ class ControladorUsuarios extends Controller
             ],
             'carrera_id' => ['required', 'exists:carreras,id'],
             'estado' => ['sometimes', 'in:activo,inactivo'],
+            'rol' => ['sometimes', 'required', 'in:docente_lider,docente_materia', 'exists:roles,nombre'],
         ]);
 
         DB::transaction(function () use ($docente, $datos, $request): void {
+            $docente = User::whereKey($docente->id)->lockForUpdate()->firstOrFail();
+            abort_unless($docente->hasAnyRole('docente_lider', 'docente_materia'), 404);
             $estadoAnterior = $docente->estado;
+            $rolAnterior = $docente->role->nombre;
+            if (isset($datos['rol']) && $datos['rol'] !== $rolAnterior) {
+                if ($datos['rol'] === 'docente_materia' && GrupoAcademico::where('lider_proyecto_id', $docente->id)
+                    ->whereHas('periodo', fn ($q) => $q->where('estado', '!=', 'cerrado'))->exists()) {
+                    throw ValidationException::withMessages(['rol' => 'Reasigna los grupos vigentes del docente en Jerarquía antes de cambiar su rol.']);
+                }
+                $datos['rol_id'] = Role::where('nombre', $datos['rol'])->value('id');
+            }
+            unset($datos['rol']);
+            if ((int) $datos['carrera_id'] !== (int) $docente->carrera_id
+                && ! Carrera::whereKey($datos['carrera_id'])->where('estado', 'activa')->exists()) {
+                throw ValidationException::withMessages(['carrera_id' => 'Selecciona una carrera activa para cambiar la carrera principal.']);
+            }
             $docente->update($datos);
             if ($docente->wasChanged('estado')) {
                 DB::table('auditoria_usuarios')->insert([
                     'actor_id' => $request->user()->id, 'usuario_id' => $docente->id,
                     'accion' => 'cambiar_estado_docente', 'valor_anterior' => $estadoAnterior,
                     'valor_nuevo' => $docente->estado, 'creado_en' => now(),
+                ]);
+            }
+            if ($docente->wasChanged('rol_id')) {
+                DB::table('auditoria_usuarios')->insert([
+                    'actor_id' => $request->user()->id, 'usuario_id' => $docente->id,
+                    'accion' => 'cambiar_rol_docente', 'valor_anterior' => $rolAnterior,
+                    'valor_nuevo' => $request->input('rol'), 'creado_en' => now(),
                 ]);
             }
             if ($docente->wasChanged('carrera_id')) {
@@ -198,6 +222,29 @@ class ControladorUsuarios extends Controller
         return redirect()->route('modulos.show', [
             'modulo' => 'usuarios', 'seccion' => 'docentes', 'carrera_docentes' => $datos['carrera_id'],
         ])->with('estado', 'Datos del docente actualizados correctamente.');
+    }
+
+    public function eliminarDocente(Request $request, User $docente): RedirectResponse
+    {
+        $this->autorizarDireccion($request);
+        $request->validate(['confirmar_eliminacion' => ['accepted']]);
+        $docente = User::whereKey($docente->id)->lockForUpdate()->firstOrFail();
+        abort_unless($docente->hasAnyRole('docente_lider', 'docente_materia'), 404);
+        ProtegeHistorial::sinReferencias($docente->id, [
+            'grupos_academicos' => 'lider_proyecto_id', 'firmas_apartado_guia' => 'docente_id',
+            'docentes_asignatura' => 'docente_id', 'asesores_equipo' => 'asesor_id',
+            'docentes_proyecto' => 'docente_id', 'asignaturas_proyecto' => 'docente_id',
+            'asignaciones_revision' => 'revisor_id', 'revisiones' => 'revisor_id',
+            'comentarios_revision' => 'autor_id', 'decisiones_cierre' => 'docente_id',
+            'prorrogas_apartados' => 'docente_id', 'documentos_finales' => 'generado_por',
+        ], 'El docente tiene actividad académica vinculada. Puedes desactivarlo para conservar el historial.');
+        DB::table('auditoria_usuarios')->insert([
+            'actor_id' => $request->user()->id, 'usuario_id' => $docente->id,
+            'accion' => 'eliminar_docente', 'valor_anterior' => $docente->matricula, 'creado_en' => now(),
+        ]);
+        $docente->delete();
+
+        return redirect()->route('modulos.usuarios', ['seccion' => 'docentes'])->with('estado', 'Docente eliminado.');
     }
 
     public function previsualizarAlumnos(Request $request): RedirectResponse
@@ -292,6 +339,9 @@ class ControladorUsuarios extends Controller
                     'grado' => $lista['grado'],
                     'grupo' => $lista['grupo'],
                 ], ['nombre' => $lista['grado'].$lista['grupo']]);
+                if (! $grupo->disponible()) {
+                    throw ValidationException::withMessages(['listas' => 'Activa la carrera y el grupo antes de cargar alumnos.']);
+                }
 
                 if ($request->user()->hasRole('docente_lider')) {
                     abort_unless(GrupoAcademico::query()->whereKey($grupo->id)->conMateriaLiderDelDocente((int) $request->user()->id)->exists(), 403);
@@ -431,8 +481,8 @@ class ControladorUsuarios extends Controller
                 $claveCarrera = mb_strtoupper((string) ($datosFila['clave_carrera'] ?? ''));
                 $carrera = Carrera::query()->where('clave', $claveCarrera)->first();
 
-                if (! $carrera) {
-                    $errores[] = "Fila {$numeroFila}: la carrera {$claveCarrera} no existe.";
+                if (! $carrera || $carrera->estado !== 'activa') {
+                    $errores[] = "Fila {$numeroFila}: verifica que la carrera {$claveCarrera} exista y esté activa.";
 
                     continue;
                 }
@@ -476,8 +526,8 @@ class ControladorUsuarios extends Controller
                     ? GrupoAcademico::query()->where($claveGrupo)->conMateriaLiderDelDocente((int) $request->user()->id)->first()
                     : GrupoAcademico::query()->firstOrCreate($claveGrupo, ['nombre' => $grado.$grupoLetra]);
 
-                if (! $grupoAcademico) {
-                    $errores[] = "Fila {$numeroFila}: el grupo {$grado}{$grupoLetra} no está asignado a este líder.";
+                if (! $grupoAcademico || ! $grupoAcademico->disponible()) {
+                    $errores[] = "Fila {$numeroFila}: el grupo {$grado}{$grupoLetra} no está disponible.";
 
                     continue;
                 }
