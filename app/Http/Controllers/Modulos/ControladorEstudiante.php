@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Modulos;
 
 use App\Http\Controllers\Controller;
 use App\Models\ApartadoGuia;
+use App\Models\Equipo;
 use App\Models\ArchivoEntrega;
 use App\Models\Entrega;
 use App\Models\ProductoCodigo;
 use App\Models\Proyecto;
+use App\Models\User;
+use App\Notifications\EntregaDelEquipo;
 use App\Rules\ArchivoAplicacion;
 use App\Rules\UrlDemostracion;
 use App\Servicios\ContextoEstudiante;
@@ -18,6 +21,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\ValidationException;
@@ -43,7 +47,8 @@ class ControladorEstudiante extends Controller
         $entregas = $proyecto
             ? Entrega::withoutGlobalScope('vigentes')->with(['archivos', 'entregadoPor:id,nombre,matricula',
                 'revisiones' => fn ($query) => $query->with(['comentarios' => fn ($q) => $q->where('visible_estudiante', true)->with('autor:id,nombre')])->latest('revisado_en')])
-                ->where('proyecto_id', $proyecto->id)->orderByDesc('version')->get()->groupBy('apartado_guia_id')
+                ->where('proyecto_id', $proyecto->id)->where('equipo_id', $equipo->id)
+                ->orderByDesc('version')->get()->groupBy('apartado_guia_id')
             : collect();
         foreach ($apartados as $apartado) {
             $apartado->habilitado_para_entrega = app(PlazosProyecto::class)->habilitado($proyecto, $apartado);
@@ -61,9 +66,14 @@ class ControladorEstudiante extends Controller
         $datos = $request->validate([
             'archivos' => ['required', 'array', 'min:1', 'max:10'],
             'archivos.*' => ['required', File::types(['pdf', 'doc', 'docx', 'xlsx', 'png', 'jpg', 'jpeg', 'zip', 'rar', '7z', 'tar', 'gz', 'sql', 'txt', 'md'])->max('150mb')],
+        ], [
+            'archivos.required' => 'Selecciona al menos un archivo de evidencia.',
+            'archivos.max' => 'Puedes subir hasta 10 archivos de evidencia por entrega.',
+            'archivos.*.mimes' => 'El archivo :position tiene un formato no permitido. Usa PDF, Word, Excel, PNG, JPG, un comprimido, SQL, TXT o MD.',
+            'archivos.*.max' => 'El archivo :position supera el límite de 150 MB.',
         ]);
 
-        DB::transaction(function () use ($datos, $estudiante, $equipo, $proyecto, $apartado): void {
+        $entrega = DB::transaction(function () use ($datos, $estudiante, $equipo, $proyecto, $apartado): Entrega {
             Proyecto::query()->whereKey($proyecto->id)->lockForUpdate()->firstOrFail();
             $version = (int) Entrega::withoutGlobalScope('vigentes')->where('proyecto_id', $proyecto->id)->where('apartado_guia_id', $apartado->id)->max('version') + 1;
             $entrega = Entrega::query()->create([
@@ -79,7 +89,10 @@ class ControladorEstudiante extends Controller
                     'tipo_archivo' => $archivo->getMimeType(), 'tamano' => $archivo->getSize(),
                 ]);
             }
+
+            return $entrega;
         });
+        $this->notificarEquipo($entrega, $equipo, $estudiante);
 
         return back()->with('status', 'El avance se envió correctamente y quedó pendiente de revisión.');
     }
@@ -132,11 +145,17 @@ class ControladorEstudiante extends Controller
             'demostracion_url' => ['nullable', 'string', 'max:1000', new UrlDemostracion],
             'aplicacion' => ['nullable', 'file', new ArchivoAplicacion],
             'version' => ['required', 'string', 'max:40'],
-            'archivos' => ['nullable', 'array', 'max:10', 'required_without_all:repositorio_url,demostracion_url,aplicacion'],
+            'archivos' => ['nullable', 'array', 'max:10'],
             'archivos.*' => ['required', File::types(['zip', 'rar', '7z', 'tar', 'gz', 'sql', 'md', 'txt'])->max('150mb')],
+        ], [
+            'repositorio_url.required_without_all' => 'Agrega un repositorio, una URL de demostración, una aplicación o un archivo para enviar la entrega.',
+            'repositorio_url.url' => 'La URL del repositorio debe comenzar con http:// o https://.',
+            'archivos.max' => 'Puedes subir hasta 10 archivos técnicos por entrega.',
+            'archivos.*.mimes' => 'El archivo técnico :position debe ser un comprimido, SQL, MD o TXT.',
+            'archivos.*.max' => 'El archivo técnico :position supera el límite de 150 MB.',
         ]);
 
-        DB::transaction(function () use ($datos, $request, $estudiante, $equipo, $proyecto, $apartado): void {
+        $entrega = DB::transaction(function () use ($datos, $request, $estudiante, $equipo, $proyecto, $apartado): Entrega {
             Proyecto::query()->whereKey($proyecto->id)->lockForUpdate()->firstOrFail();
             $versionEntrega = (int) Entrega::withoutGlobalScope('vigentes')->where('proyecto_id', $proyecto->id)->where('apartado_guia_id', $apartado->id)->max('version') + 1;
             $entrega = Entrega::query()->create([
@@ -159,23 +178,35 @@ class ControladorEstudiante extends Controller
                 'proyecto_id' => $proyecto->id, 'entrega_id' => $entrega->id,
                 'repositorio_url' => $datos['repositorio_url'] ?? null, 'demostracion_url' => $datos['demostracion_url'] ?? null, 'archivo_fuente' => $primeraRuta, 'version' => $datos['version'],
             ]);
+
+            return $entrega;
         });
+        $this->notificarEquipo($entrega, $equipo, $estudiante);
 
         return back()->with('status', 'La entrega de código se registró correctamente.');
     }
 
     public function descargar(Request $request, ArchivoEntrega $archivo): BinaryFileResponse
     {
-        [, $equipo] = $this->contexto($request);
+        [, $equipo, $proyecto] = $this->contexto($request);
         $archivo->loadMissing('entrega');
-        abort_unless($equipo && $archivo->entrega?->equipo_id === $equipo->id, 403);
-        $ruta = Storage::path($archivo->ruta);
+        abort_unless($equipo && $proyecto && $archivo->entrega?->equipo_id === $equipo->id
+            && $archivo->entrega->proyecto_id === $proyecto->id, 403);
+        $ruta = Storage::disk('local')->path($archivo->ruta);
         if (! is_file($ruta)) {
             $ruta = storage_path('app/'.$archivo->ruta);
         }
         abort_unless(is_file($ruta), 404);
 
         return response()->download($ruta, $archivo->nombre_original, ['Content-Type' => 'application/octet-stream', 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'no-store, private']);
+    }
+
+    private function notificarEquipo(Entrega $entrega, Equipo $equipo, User $autor): void
+    {
+        $destinatarios = $equipo->integrantes()->where('usuarios.id', '!=', $autor->id)
+            ->where('usuarios.estado', 'activo')->where('usuarios.rol_id', $autor->rol_id)->get();
+
+        Notification::send($destinatarios, new EntregaDelEquipo($entrega->id, $autor->nombre));
     }
 
     private function contexto(Request $request): array

@@ -225,29 +225,13 @@ function iniciarPreviewApartado() {
 }
 
 function iniciarRestriccionesCampos() {
-    document.querySelectorAll('input[type="number"][min], input[type="number"][max]').forEach((input) => {
-        let ultimoValorValido = input.value;
-        input.addEventListener('input', () => {
-            if (input.value === '') { ultimoValorValido = ''; return; }
-            if (input.validity.badInput || !Number.isFinite(input.valueAsNumber)) return;
-            const minimo = input.min === '' ? -Infinity : Number(input.min);
-            const maximo = input.max === '' ? Infinity : Number(input.max);
-            if (input.valueAsNumber < minimo || input.valueAsNumber > maximo) input.value = ultimoValorValido;
-            else ultimoValorValido = input.value;
-        });
+    document.addEventListener('input', ({target}) => {
+        if (!target.matches?.('input[name="fecha_inicio"][type="date"]')) return;
+        const fechaFin = target.form?.querySelector('input[name="fecha_fin"][type="date"]');
+        if (!fechaFin) return;
+        fechaFin.dataset.fechaMinima ??= fechaFin.min;
+        fechaFin.min = [target.value, fechaFin.dataset.fechaMinima].sort().pop();
     });
-
-    const fechaInicio = document.querySelector('input[name="fecha_inicio"][type="date"]');
-    const fechaFin = document.querySelector('input[name="fecha_fin"][type="date"]');
-    if (fechaInicio && fechaFin) {
-        const fechaMinimaBase = fechaFin.min;
-        const actualizarFechaMinima = () => {
-            fechaFin.min = fechaInicio.value || fechaMinimaBase;
-            if (fechaFin.value && fechaInicio.value && fechaFin.value < fechaInicio.value) fechaFin.value = '';
-        };
-        fechaInicio.addEventListener('change', actualizarFechaMinima);
-        actualizarFechaMinima();
-    }
 
     document.addEventListener('change', (event) => {
         const input = event.target;
@@ -264,6 +248,104 @@ function iniciarRestriccionesCampos() {
         if (error) input.reportValidity();
     });
 }
+
+const claveFormulario = 'formulario-enviado';
+
+function origenFormulario(form) {
+    const contenedores = [];
+    for (let panel = form.parentElement; panel && panel.tagName !== 'MAIN'; panel = panel.parentElement) {
+        if (panel.id) contenedores.push(['id', panel.id]);
+        else if (panel.dataset.asyncRegion) contenedores.push(['region', panel.dataset.asyncRegion]);
+    }
+    return {
+        pagina: location.pathname,
+        accion: new URL(form.action).pathname,
+        id: form.id,
+        contenedores,
+        contexto: [...form.querySelectorAll('input[type="hidden"]')]
+            .filter(({name}) => name === '_method' || name === 'tipo' || name === 'proyecto_contexto' || name.endsWith('_id'))
+            .map(({name, value}) => [name, value]),
+    };
+}
+
+function mostrarMensajesDelFormulario(origen, formulario) {
+    const region = document.querySelector(asyncRegionSelector('mensajes'));
+    if (!region) return;
+    document.querySelector('[data-mensajes-junto-formulario]')?.remove();
+    if (!region.firstElementChild) return;
+
+    const mismoFormulario = (form) => {
+        const actual = origenFormulario(form);
+        return actual.accion === origen.accion && JSON.stringify(actual.contexto) === JSON.stringify(origen.contexto);
+    };
+    const form = formulario?.isConnected ? formulario : [...document.forms].find((candidato) =>
+        origen.id ? candidato.id === origen.id : mismoFormulario(candidato));
+    const contenedor = origen.pagina === location.pathname && origen.contenedores?.map(([tipo, valor]) =>
+        tipo === 'id' ? document.getElementById(valor) : document.querySelector(asyncRegionSelector(valor))).find(Boolean);
+    const destino = form || contenedor;
+    if (!destino) return;
+
+    const paneles = [];
+    for (let panel = destino; panel; panel = panel.parentElement) paneles.unshift(panel);
+    for (const panel of paneles) {
+        if (panel.matches('details')) panel.open = true;
+        if (panel.hidden && panel.id) {
+            document.querySelector(`button[aria-controls="${CSS.escape(panel.id)}"]`)?.click();
+        }
+        if (panel.matches('.hidden[data-abrir-con]')) {
+            document.querySelector(panel.dataset.abrirCon)?.click();
+        }
+    }
+
+    const mensajes = document.createElement('div');
+    mensajes.dataset.mensajesJuntoFormulario = '';
+    mensajes.append(...region.children);
+    if (form) form.after(mensajes);
+    else contenedor.append(mensajes);
+
+    if (form) {
+        const erroresPorControl = new Map();
+        mensajes.querySelectorAll('[data-campo-error]').forEach((mensaje, indice) => {
+            const campo = mensaje.dataset.campoError;
+            const nombre = campo.replace(/\.([^.]+)/g, '[$1]');
+            const controles = [...form.elements].filter((control) => control.type !== 'hidden' &&
+                [nombre, `${nombre}[]`, `${campo.split('.')[0]}[]`].includes(control.name));
+            mensaje.id = `error-formulario-${indice}`;
+            controles.forEach((control) => {
+                const errores = erroresPorControl.get(control) || [];
+                errores.push(mensaje.id);
+                erroresPorControl.set(control, errores);
+            });
+        });
+        erroresPorControl.forEach((errores, control) => {
+            const descripcion = control.getAttribute('aria-describedby');
+            control.setAttribute('aria-invalid', 'true');
+            control.setAttribute('aria-describedby', [descripcion, ...errores].filter(Boolean).join(' '));
+            control.addEventListener('input', () => {
+                control.removeAttribute('aria-invalid');
+                if (descripcion) control.setAttribute('aria-describedby', descripcion);
+                else control.removeAttribute('aria-describedby');
+            }, {once: true});
+        });
+    }
+    mensajes.firstElementChild.focus({preventScroll: true});
+    mensajes.scrollIntoView({block: 'nearest'});
+}
+
+document.addEventListener('submit', (event) => {
+    const form = event.target;
+    if (form.method !== 'post' || !form.closest('main') || form.matches('[data-async-form]')) return;
+    try { sessionStorage.setItem(claveFormulario, JSON.stringify(origenFormulario(form))); } catch {}
+});
+
+window.addEventListener('pageshow', () => {
+    try {
+        const origen = sessionStorage.getItem(claveFormulario);
+        if (!origen) return;
+        sessionStorage.removeItem(claveFormulario);
+        mostrarMensajesDelFormulario(JSON.parse(origen));
+    } catch {}
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     iniciarRestriccionesCampos();
@@ -329,6 +411,8 @@ function showAsyncError(message) {
     }
 
     const errorContainer = document.createElement('div');
+    errorContainer.setAttribute('role', 'alert');
+    errorContainer.tabIndex = -1;
     errorContainer.className = 'mt-5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800';
     errorContainer.textContent = message;
 
@@ -354,6 +438,7 @@ document.addEventListener('submit', async (event) => {
         .filter(Boolean);
 
     const formData = new FormData(form);
+    const origen = origenFormulario(form);
 
     form.dataset.asyncBusy = 'true';
     setFormBusy(form, true);
@@ -378,6 +463,7 @@ document.addEventListener('submit', async (event) => {
         const html = await response.text();
 
         const replacedAnyRegion = replaceAsyncRegions(html, targets);
+        if (method !== 'GET') mostrarMensajesDelFormulario(origen, form);
 
         if (response.ok && method === 'GET') {
             window.history.replaceState({}, '', url);
@@ -388,10 +474,11 @@ document.addEventListener('submit', async (event) => {
                 return;
             }
 
-            throw new Error('No se pudo completar la accion.');
+            throw new Error('No se pudo completar la acción.');
         }
     } catch (error) {
-        showAsyncError(error.message || 'No se pudo completar la accion.');
+        showAsyncError('No se pudo completar la acción. Vuelve a intentarlo.');
+        mostrarMensajesDelFormulario(origen, form);
     } finally {
         if (form.isConnected) {
             form.dataset.asyncBusy = 'false';

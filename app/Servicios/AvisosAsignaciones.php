@@ -11,7 +11,7 @@ use App\Models\User;
 
 class AvisosAsignaciones
 {
-    public function enviarManualmente(Proyecto $proyecto): int
+    public function enviarManualmente(Proyecto $proyecto, ?string $lote = null): int
     {
         $proyecto->loadMissing(['guiaIntegradora.apartados', 'guiaIntegradora.periodo', 'equipo.integrantes.role', 'equipo.grupoAcademico']);
         $cantidad = 0;
@@ -28,6 +28,7 @@ class AvisosAsignaciones
                 $aviso = AvisoAsignacion::query()->firstOrCreate(['clave' => $clave], [
                     'proyecto_id' => $proyecto->id, 'apartado_guia_id' => $apartado->id, 'estudiante_id' => $alumno->id,
                     'huella' => $huella, 'tipo' => 'recordatorio_manual', 'programado_en' => now(), 'despachado_en' => now(),
+                    'lote_manual' => $lote,
                 ]);
                 if ($aviso->wasRecentlyCreated) {
                     EnviarAvisoAsignacion::dispatch($aviso->id)->afterCommit();

@@ -11,19 +11,54 @@
 
 @layer base {
     button:not(:disabled),
-    input[type="submit"]:not(:disabled) {
-        transition: filter 150ms ease;
+    input[type="submit"]:not(:disabled),
+    .boton-secundario,
+    a[class*="rounded"][class*="bg-"] {
+        cursor: pointer;
+        transition: background-color 150ms ease, box-shadow 150ms ease, filter 150ms ease;
     }
 
     button:not(:disabled):hover,
-    input[type="submit"]:not(:disabled):hover {
-        filter: brightness(0.9);
+    input[type="submit"]:not(:disabled):hover,
+    .boton-secundario:hover,
+    a[class*="rounded"][class*="bg-"]:hover {
+        filter: brightness(0.93);
+        box-shadow: 0 0 0 2px #15529a55, 0 2px 5px #0f172a26;
     }
 
     button:focus-visible,
-    input[type="submit"]:focus-visible {
+    input[type="submit"]:focus-visible,
+    .boton-secundario:focus-visible,
+    a[class*="rounded"][class*="bg-"]:focus-visible {
         outline: 2px solid #15529a;
         outline-offset: 2px;
+    }
+
+    .boton-secundario {
+        @apply inline-flex max-w-full items-center rounded-md border border-[#15529A] bg-[#EAF2FB] px-3 py-2 text-sm font-bold text-[#0D376D] no-underline;
+        overflow-wrap: anywhere;
+    }
+
+    .boton-bloqueado {
+        @apply border-slate-400 bg-slate-100 text-slate-700;
+    }
+
+    summary.boton-secundario::-webkit-details-marker {
+        display: none;
+    }
+
+    .boton-peligro {
+        @apply border-red-300 bg-red-50 text-red-800;
+    }
+
+    [data-mensajes-junto-formulario] {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+
+    main :is(input, select, textarea)[aria-invalid="true"] {
+        border-color: #b91c1c;
+        outline: 1px solid #b91c1c;
     }
 
     input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="submit"]):not([type="button"]),

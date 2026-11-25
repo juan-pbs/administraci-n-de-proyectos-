@@ -308,7 +308,9 @@ class ControladorAyuda extends Controller
                     titulo: 'Recordatorios de entrega',
                     descripcion: 'Como docente líder puedes recordar entregas pendientes a alumnos y revisiones pendientes a docentes de tus equipos, y editar el texto de cada tipo de correo.',
                     pasos: [
-                        'Abre Recordatorios. Enviar recordatorios a todos mis proyectos incluye todos tus proyectos en proceso, aunque no aparezcan en la página actual. Enviar recordatorios ahora actúa solo sobre el proyecto de esa fila.',
+                        'Abre Recordatorios. Enviar recordatorios a todos mis proyectos incluye todos los proyectos habilitados, incluso los de otras páginas. Enviar recordatorios ahora se aplica al proyecto de la fila.',
+                        'Si un botón aparece en gris, púlsalo para conocer el motivo. En una guía cerrada, el envío se habilita solo para las actividades con prórroga vigente.',
+                        'Junto al botón de envío, revisa los totales de avisos enviados, sin enviar y en cola para estudiantes y docentes. Pulsa Actualizar estado después de que la cola procese los correos.',
                         'En Formatos de correo, edita el texto de 72 horas, 24 horas, envío manual y revisión pendiente de docentes. Usa las variables indicadas en la vista y pulsa Guardar formato en cada bloque.',
                         'La cola envía los correos. Antes de mandar un aviso, comprueba que el alumno aún tenga la entrega pendiente o que el docente siga asignado y no haya revisado la versión actual.',
                     ],
@@ -501,6 +503,8 @@ class ControladorAyuda extends Controller
                     pasos: [
                         'Pulsa Ver apartado en la fila que corresponde a tu evidencia.',
                         'Dentro del plazo o de una prórroga, selecciona hasta 10 archivos de evidencia de 150 MB cada uno. Pulsa Enviar avance o Enviar nueva versión.',
+                        'Revisa la confirmación junto al formulario. Si hay errores, el mensaje indica qué debes corregir. Al registrar la entrega, los demás integrantes activos del equipo reciben un aviso por correo.',
+                        'En Historial del equipo, cada versión indica quién la subió y cuándo. Usa Descargar para abrir los archivos de una versión disponible.',
                         'Revisa comentarios y calificación cuando el docente concluya la revisión.',
                         'Durante el plazo, puedes usar Retirar última versión si la enviaste y todavía no fue revisada. El retiro queda en el historial y la versión anterior vuelve a estar vigente, si existe.',
                     ],
@@ -517,6 +521,7 @@ class ControladorAyuda extends Controller
                         'Captura la URL del repositorio del equipo.',
                         'La URL de demostración no es obligatoria. Puedes adjuntar APK, EXE, MSI, DMG, AppImage o DEB; el sistema no ejecuta instaladores.',
                         'Indica la versión. La aplicación admite hasta 150 MB y puedes incluir hasta 10 archivos técnicos de 150 MB cada uno. Pulsa Registrar entrega o Enviar nueva versión.',
+                        'Revisa el resultado junto al formulario. Los demás integrantes activos del equipo reciben un correo y pueden consultar la última entrega desde Código y repositorio.',
                         'Al vencer el plazo, puedes consultar tu entrega. Para enviar otra, el docente líder debe abrir una prórroga de Código para tu equipo.',
                         'Durante el plazo, usa Retirar última versión para retirar el envío de código que hiciste si aún no lo han revisado.',
                     ],
@@ -1066,6 +1071,7 @@ class ControladorAyuda extends Controller
                 $this->detalle('Fecha límite', 'Revisa la fecha antes de cargar archivos para evitar entregas fuera de tiempo.'),
                 $this->detalle('Estado', 'Sin entrega indica que aún falta evidencia. Pendiente de revisión indica que la evidencia ya se envió.'),
                 $this->detalle('Archivos de evidencia', 'Selecciona hasta 10 archivos de 150 MB por archivo y pulsa Enviar avance o Enviar nueva versión.'),
+                $this->detalle('Historial del equipo', 'Consulta quién subió cada versión y descarga los archivos disponibles.'),
                 $this->detalle('Retirar última versión', 'Confirma el retiro de tu último envío no revisado mientras siga abierto el plazo. El historial indica qué versión se retiró.'),
                 $this->detalle('Comentarios', 'Cuando exista revisión, lee las observaciones antes de enviar una nueva versión.'),
             ],
@@ -1086,8 +1092,9 @@ class ControladorAyuda extends Controller
                 $this->detalle('Buscar acciones del sistema', 'Escribe qué quieres hacer y abre una sugerencia. Las opciones dependen de los módulos a los que tienes acceso.'),
             ],
             'assets/ayuda/actualizadas/lider-recordatorios.png' => [
-                $this->detalle('Enviar recordatorios a todos mis proyectos', 'Incluye proyectos en proceso de tus grupos, aun si están en otra página.'),
-                $this->detalle('Enviar recordatorios ahora', 'Envía los avisos que correspondan solo al proyecto de la fila.'),
+                $this->detalle('Enviar recordatorios a todos mis proyectos', 'Incluye todos tus proyectos habilitados, incluso si aparecen en otra página.'),
+                $this->detalle('Enviar recordatorios ahora', 'Solicita los avisos del proyecto de esa fila. Si el botón está gris, púlsalo para consultar el motivo del bloqueo.'),
+                $this->detalle('Resultado del último envío solicitado', 'Sin enviar incluye avisos fallidos o cancelados. En cola identifica avisos que siguen pendientes. Pulsa Actualizar estado para consultar el resultado más reciente.'),
                 $this->detalle('Formatos de correo', 'Abre el tipo de recordatorio, edita su texto y pulsa Guardar formato.'),
             ],
             'assets/ayuda/actualizadas/lider-estado-guias.png' => [

@@ -37,7 +37,7 @@ class AvisosRevisiones
                 ->orWhereHas('asignaturas', fn ($a) => $a->where('asignaturas_proyecto.docente_id', $docente->id)))->exists();
     }
 
-    public function paraProyecto(Proyecto $proyecto, bool $manual): int
+    public function paraProyecto(Proyecto $proyecto, bool $manual, ?string $lote = null): int
     {
         $proyecto->loadMissing(['guiaIntegradora.periodo', 'equipo.grupoAcademico']);
         $cantidad = 0;
@@ -59,6 +59,7 @@ class AvisosRevisiones
                 $aviso = AvisoRevision::query()->firstOrCreate(['clave' => $clave], [
                     'entrega_id' => $entrega->id, 'docente_id' => $docente->id,
                     'origen' => $manual ? 'manual' : 'automatico', 'programado_en' => now(), 'despachado_en' => now(),
+                    'lote_manual' => $lote,
                 ]);
                 if ($aviso->wasRecentlyCreated) {
                     EnviarAvisoRevision::dispatch($aviso->id)->afterCommit();

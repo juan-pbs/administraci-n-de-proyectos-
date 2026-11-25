@@ -1,7 +1,7 @@
 @props(['accion', 'etiqueta', 'mensaje', 'metodo' => 'DELETE', 'campo' => 'confirmar_eliminacion', 'peligro' => true])
 
 <details {{ $attributes->merge(['class' => 'rounded-md border border-slate-200 bg-white p-3 text-sm']) }}>
-    <summary class="cursor-pointer font-bold {{ $peligro ? 'text-red-700' : 'text-[#15529A]' }}">{{ $etiqueta }}</summary>
+    <summary class="boton-secundario {{ $peligro ? 'boton-peligro' : '' }}">{{ $etiqueta }}</summary>
     <form method="POST" action="{{ $accion }}" class="mt-3 space-y-3">
         @csrf @method($metodo)
         {{ $slot }}

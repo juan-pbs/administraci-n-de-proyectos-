@@ -22,6 +22,8 @@ Los docentes con sufijo `06` y algunos alumnos están inactivos para verificar q
 
 ## Periodos
 
+Los rangos siguientes corresponden a una carga de noviembre de 2026. Una nueva carga calcula el cuatrimestre vigente según la fecha local y ajusta los demás periodos al calendario académico.
+
 - Enero - Abril 2025 y Mayo - Agosto 2025: proyectos terminados con PDF, trabajos corregidos con segunda versión y cierres incompletos.
 - Mayo - Agosto 2026: entregas faltantes, firma pendiente, listo para PDF, prórroga activa, vencida, PDF final y cierre con pendientes.
 - Septiembre - Diciembre 2026: periodo activo, entregas abiertas, parciales, correcciones, rechazos y aprobaciones pendientes de registrar firma.
@@ -59,6 +61,8 @@ Cada equipo tiene tres integrantes. El último dígito de su matrícula identifi
 6. Docente DOC-TI-03: revisa documentos y comentarios. DOC-TI-05 permite comprobar el registro de firma previo a aprobar. Ninguno recibe acceso a los repositorios de la materia líder.
 7. Líder DOC-TI-01: revisa los repositorios de referencia y descarga los comprimidos o el paquete Debian de práctica. El paquete no es una aplicación compilada del repositorio y no se ejecuta en el servidor.
 8. Prueba recuperación con el correo de una cuenta (`doc-ti-01@example.invalid`). En modo local el código aparece en el log; el reenvío tarda tres minutos.
+9. En **Recordatorios**, pulsa un botón gris para consultar el motivo. Solicita un envío habilitado y usa **Actualizar estado** para consultar enviados, sin enviar y en cola.
+10. Como `TI41011`, sube una evidencia y consulta el historial con `TI41012`. La evidencia aparecerá con el autor de la subida. Para revisar el correo de práctica, configura `MAIL_MAILER=log` y procesa la cola.
 
 Las URL de aplicaciones alojadas permanecen vacías cuando no se conoce un despliegue verificado. El campo es opcional y admite una URL HTTPS pública cuando el alumno entregue su trabajo.
 

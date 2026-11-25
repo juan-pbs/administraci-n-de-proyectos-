@@ -2,7 +2,7 @@
     <h2 class="text-2xl font-bold text-[#0D376D]">Cierres y prórrogas</h2>
     <p class="mt-2 text-sm text-slate-600">Al terminar el periodo se revisan los PDF finales de tus equipos. Aquí puedes resolver los pendientes y consultar tus decisiones.</p>
     <x-mensajes-formulario />
-    <a href="{{ route('docente-lider.estado-guias') }}" class="mt-4 inline-block font-bold text-[#155AA3] underline">Consultar el estado de todas las guías de mis equipos</a>
+    <a href="{{ route('docente-lider.estado-guias') }}" class="mt-4 boton-secundario">Consultar el estado de todas las guías de mis equipos</a>
     <div class="mt-5 space-y-3">
         @forelse($cierres as $cierre)
         <article class="rounded-lg border bg-white p-5">
@@ -12,7 +12,7 @@
             @if(in_array($cierre->estado, ['pendiente', 'prorroga'], true) && ($fecha = $cierre->fechaProrrogaActual()))
                 <p class="mt-2 text-sm text-amber-800">Fecha de prórroga: {{ $fecha->format('d/m/Y H:i') }}</p>
             @endif
-            <a href="{{ route('docente-lider.cierres.mostrar', $cierre->proyecto) }}" class="mt-3 inline-block font-bold text-[#155AA3] underline">Ver pendientes y decisión</a>
+            <a href="{{ route('docente-lider.cierres.mostrar', $cierre->proyecto) }}" class="mt-3 boton-secundario">Ver pendientes y decisión</a>
         </article>
         @empty<p class="rounded-lg border bg-white p-6 text-sm text-slate-500">No hay cierres pendientes registrados para tus equipos.</p>@endforelse
     </div>

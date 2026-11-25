@@ -20,7 +20,7 @@ class VerificarCicloAcademico
 {
     public function handle(Request $request, Closure $next)
     {
-        if ($request->isMethodSafe() || $request->routeIs('periodos.*', 'guias.publicar', 'guias.preview-apartado', 'documentos.generar', 'docente.firma.*', 'docente-lider.cierres.*', 'docente-lider.estado-guias.preparar-cierre')) {
+        if ($request->isMethodSafe() || $request->routeIs('periodos.*', 'guias.publicar', 'guias.preview-apartado', 'documentos.generar', 'docente.firma.*', 'docente-lider.cierres.*', 'docente-lider.estado-guias.preparar-cierre', 'docente-lider.recordatorios.enviar*')) {
             return $next($request);
         }
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\ApartadoGuia;
+use App\Models\ArchivoEntrega;
 use App\Models\Asignatura;
 use App\Models\Carrera;
 use App\Models\ComentarioRevision;
@@ -14,10 +15,12 @@ use App\Models\Proyecto;
 use App\Models\Role;
 use App\Models\Revision;
 use App\Models\User;
+use App\Notifications\EntregaDelEquipo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 
 uses(RefreshDatabase::class);
 
@@ -64,18 +67,72 @@ function escenarioFlujosRoles(): array
 
 test('integrantes del equipo comparten entregas y conservan autoria por version', function () {
     Storage::fake('local');
+    Notification::fake();
     $data = escenarioFlujosRoles();
+    $inactivo = User::factory()->create(['rol_id' => $data['studentA']->rol_id, 'estado' => 'inactivo']);
+    $data['team']->integrantes()->attach($inactivo->id, ['activo' => true]);
 
     $this->actingAs($data['studentA'])->post(route('estudiante.entregas.guardar', $data['section']), [
         'archivos' => [UploadedFile::fake()->create('reporte.pdf', 50), UploadedFile::fake()->create('anexo.zip', 80)],
-    ])->assertRedirect();
+    ])->assertSessionHasNoErrors();
+    Notification::assertNotSentTo($data['studentA'], EntregaDelEquipo::class);
+    Notification::assertNotSentTo($inactivo, EntregaDelEquipo::class);
+    Notification::assertSentTo($data['studentB'], EntregaDelEquipo::class, function ($correo, $canales) use ($data) {
+        $mensaje = $correo->toMail($data['studentB']);
+
+        return $canales === ['mail'] && $correo->afterCommit && $correo->shouldSend($data['studentB'], 'mail')
+            && str_contains($mensaje->introLines[0], $data['studentA']->nombre)
+            && str_ends_with($mensaje->actionUrl, '#entrega-'.$data['section']->id);
+    });
     $this->actingAs($data['studentB'])->post(route('estudiante.entregas.guardar', $data['section']), [
         'archivos' => [UploadedFile::fake()->create('reporte-v2.pdf', 60)],
     ])->assertRedirect();
 
     $this->assertDatabaseHas('entregas', ['proyecto_id' => $data['project']->id, 'version' => 1, 'entregado_por_id' => $data['studentA']->id]);
     $this->assertDatabaseHas('entregas', ['proyecto_id' => $data['project']->id, 'version' => 2, 'entregado_por_id' => $data['studentB']->id]);
-    expect(\App\Models\ArchivoEntrega::query()->count())->toBe(3);
+    expect(ArchivoEntrega::query()->count())->toBe(3);
+
+    $archivo = ArchivoEntrega::where('nombre_original', 'reporte.pdf')->firstOrFail();
+    $consulta = route('estudiante.entregas', ['proyecto_contexto' => $data['project']->id]);
+    $descarga = route('estudiante.archivos.descargar', ['archivo' => $archivo, 'proyecto_contexto' => $data['project']->id]);
+
+    $this->get($consulta)->assertOk()->assertSeeTextInOrder([
+        'Historial del equipo',
+        'Versión 2', 'Subida por '.$data['studentB']->nombre, 'Descargar reporte-v2.pdf',
+        'Versión 1', 'Subida por '.$data['studentA']->nombre, 'Descargar reporte.pdf', 'Descargar anexo.zip',
+    ])->assertSee($descarga);
+    $this->get($descarga)->assertDownload('reporte.pdf');
+
+    $otroEstudiante = User::factory()->create($data['studentB']->only(['rol_id', 'carrera_id', 'grupo_academico_id']));
+    $otroEquipo = $data['team']->replicate();
+    $otroEquipo->forceFill(['numero' => 2, 'nombre' => 'Equipo 2'])->save();
+    $otroEquipo->integrantes()->attach($otroEstudiante->id, ['activo' => true]);
+    $otroProyecto = Proyecto::create([
+        'guia_integradora_id' => $data['project']->guia_integradora_id,
+        'equipo_id' => $otroEquipo->id, 'titulo' => 'Otro proyecto', 'estado' => 'en_proceso',
+    ]);
+
+    $this->actingAs($otroEstudiante)->get(route('estudiante.entregas'))->assertOk()->assertDontSee('reporte.pdf');
+    $this->get($consulta)->assertForbidden();
+    $this->get($descarga)->assertForbidden();
+    $this->get(route('estudiante.archivos.descargar', ['archivo' => $archivo, 'proyecto_contexto' => $otroProyecto->id]))->assertForbidden();
+    Notification::assertNotSentTo($otroEstudiante, EntregaDelEquipo::class);
+});
+
+test('una entrega inválida identifica el error y no notifica a nadie', function () {
+    Storage::fake('local');
+    Notification::fake();
+    $d = escenarioFlujosRoles();
+    $vista = route('estudiante.entregas');
+    $ruta = route('estudiante.entregas.guardar', $d['section']);
+    $this->actingAs($d['studentA'])->from($vista)->followingRedirects()->post($ruta)
+        ->assertOk()->assertSeeText('Selecciona al menos un archivo de evidencia.')->assertSee('data-campo-error="archivos"', false);
+    $this->from($vista)->post($ruta, ['archivos' => [UploadedFile::fake()->create('grande.pdf', 150 * 1024 + 1)]])
+        ->assertSessionHasErrors(['archivos.0' => 'El archivo 1 supera el límite de 150 MB.']);
+    $this->from($vista)->post($ruta, ['archivos' => [UploadedFile::fake()->create('no-admitido.exe')]])
+        ->assertSessionHasErrors(['archivos.0' => 'El archivo 1 tiene un formato no permitido. Usa PDF, Word, Excel, PNG, JPG, un comprimido, SQL, TXT o MD.']);
+    $this->assertDatabaseCount('entregas', 0);
+    Notification::assertNothingSent();
 });
 
 test('el autor retira solo la última versión no revisada y los próximos envíos conservan la secuencia', function () {
@@ -92,7 +149,7 @@ test('el autor retira solo la última versión no revisada y los próximos enví
     $this->actingAs($d['studentA'])->delete(route('estudiante.entregas.retirar', $ultima), ['confirmar_eliminacion' => 1])->assertSessionHasNoErrors();
     $this->assertDatabaseHas('entregas', ['id' => $ultima->id, 'estado' => 'retirada']);
     $this->assertDatabaseHas('auditoria_academica', ['registro_id' => $ultima->id, 'modulo' => 'entregas', 'accion' => 'retirar']);
-    $this->get(route('estudiante.entregas'))->assertOk()->assertSee('Retirada');
+    $this->get(route('estudiante.entregas'))->assertOk()->assertSee('Retirada')->assertSee('Descargar v1.pdf')->assertDontSee('Descargar v2.pdf');
     $this->actingAs($d['matter'])->get(route('docente-materia.revisiones'))->assertOk()->assertSee('Versión 1')->assertDontSee('Versión 2');
     $this->put(route('docente-materia.revisiones.guardar', $primera), ['resultado' => 'correccion', 'calificacion' => 7])
         ->assertSessionHasNoErrors();

@@ -84,12 +84,12 @@
                     </summary>
 
                     <div class="border-t border-slate-200 bg-slate-50/60 p-5">
-                        <a href="{{ route('documentos.mostrar', ['proyecto' => $proyecto, 'origen' => 'modulos.proyectos', 'contexto' => request()->only('periodo_proyectos', 'grupo_proyectos')]) }}" class="mb-4 inline-block text-sm font-bold text-[#155AA3] underline">Formato final y firmas</a>
+                        <a href="{{ route('documentos.mostrar', ['proyecto' => $proyecto, 'origen' => 'modulos.proyectos', 'contexto' => request()->only('periodo_proyectos', 'grupo_proyectos')]) }}" class="mb-4 boton-secundario">Formato final y firmas</a>
                         @if($editable)
                             @include('modulos.gestion-proyectos.editar-proyecto')
                         @endif
                         <div class="grid gap-5 xl:grid-cols-2">
-                            <article class="rounded-lg border border-slate-200 bg-white">
+                            <article id="docentes-proyecto-{{ $proyecto->id }}" class="rounded-lg border border-slate-200 bg-white">
                                 <div class="border-b border-slate-200 px-4 py-3">
                                     <p class="text-xs font-bold uppercase tracking-[0.15em] text-[#005227]">Docentes participantes</p>
                                 </div>
@@ -120,7 +120,7 @@
                                 @endif
                             </article>
 
-                            <article class="rounded-lg border border-slate-200 bg-white">
+                            <article id="asignaturas-proyecto-{{ $proyecto->id }}" class="rounded-lg border border-slate-200 bg-white">
                                 <div class="border-b border-slate-200 px-4 py-3">
                                     <p class="text-xs font-bold uppercase tracking-[0.15em] text-[#005227]">Asignaturas participantes</p>
                                 </div>

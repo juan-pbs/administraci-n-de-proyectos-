@@ -31,12 +31,14 @@ class EscenariosAcademicosSeeder extends Seeder
                 Role::firstOrCreate(['nombre' => $nombre], ['nombre_visible' => $visible]);
             }
             $coordinacion = $this->usuario('20260001', 'Patricia Hernández Luna', 'coordinacion');
+            $hoy = today();
+            $inicioActual = $hoy->copy()->startOfYear()->addMonths(4 * intdiv($hoy->month - 1, 4));
             $ciclos = [
-                [today()->startOfMonth()->subMonths(20), today()->startOfMonth()->subMonths(17)->endOfMonth(), 'cerrado', 'historico'],
-                [today()->startOfMonth()->subMonths(16), today()->startOfMonth()->subMonths(13)->endOfMonth(), 'cerrado', 'historico'],
-                [today()->startOfMonth()->subMonths(4), today()->startOfMonth()->subMonth()->endOfMonth(), 'cerrado', 'cierre'],
-                [today()->startOfMonth(), today()->startOfMonth()->addMonths(3)->endOfMonth(), 'activo', 'actual'],
-                [today()->startOfMonth()->addMonths(4), today()->startOfMonth()->addMonths(7)->endOfMonth(), 'borrador', 'borrador'],
+                [$inicioActual->copy()->subMonths(20), 'cerrado', 'historico'],
+                [$inicioActual->copy()->subMonths(16), 'cerrado', 'historico'],
+                [$inicioActual->copy()->subMonths(4), 'cerrado', 'cierre'],
+                [$inicioActual, 'activo', 'actual'],
+                [$inicioActual->copy()->addMonths(4), 'borrador', 'borrador'],
             ];
             $personas = [
                 ['TI', 'Tecnologías de la Información', ['Elena Rivera Soto', 'Carlos Mendoza Ruiz'], ['Tomás Vega López', 'Lucía Montes García', 'Ana Torres Salas']],
@@ -56,7 +58,8 @@ class EscenariosAcademicosSeeder extends Seeder
                 $inactivo->update(['estado' => 'inactivo']);
                 $carrera->docentes()->attach($inactivo->id, ['activo' => false]);
                 $materias = collect(['Integradora', 'Desarrollo de proyectos', 'Comunicación técnica'])->map(fn ($n, $i) => Asignatura::create(['carrera_id' => $carrera->id, 'clave' => "$clave-08-".($i + 1), 'nombre' => $n, 'grado' => 8, 'estado' => 'activo']));
-                foreach ($ciclos as $ciclo => [$inicio, $fin, $estado, $tipo]) {
+                foreach ($ciclos as $ciclo => [$inicio, $estado, $tipo]) {
+                    $fin = $inicio->copy()->addMonths(3)->endOfMonth();
                     $periodo = Periodo::firstOrCreate(['nombre' => Periodo::nombreParaFechas($inicio, $fin)], ['fecha_inicio' => $inicio, 'fecha_fin' => $fin, 'estado' => $estado]);
                     foreach ($lideres as $lider) {
                         $materias[0]->docentes()->attach($lider->id, ['periodo_id' => $periodo->id, 'activo' => true]);
@@ -126,9 +129,10 @@ class EscenariosAcademicosSeeder extends Seeder
             'estado' => $tipo === 'borrador' ? 'borrador' : ($periodo->estado === 'cerrado' ? 'cerrada' : 'publicada'),
             'objetivo_aprendizaje' => 'Diseñar e implementar una solución tecnológica a una necesidad de la comunidad.', 'competencias_evaluar' => 'Análisis, diseño, implementación, pruebas y documentación de proyectos.']);
         foreach ([['Protocolo del proyecto', "Antecedentes\nProblema\nObjetivos\nJustificación\nAlcances y limitaciones", 30], ['Desarrollo y resultados', "Arquitectura\nImplementación\nPruebas\nResultados\nConclusiones", 35], ['Código y liberación', "Código fuente\nManual técnico\nManual de usuario\nCarta de liberación", 35]] as $orden => [$titulo, $descripcion, $peso]) {
+            $fin = Carbon::parse($periodo->fecha_fin)->endOfDay();
             $fecha = $periodo->estado === 'cerrado'
-                ? Carbon::parse($periodo->fecha_fin)->subDays(3)->endOfDay()
-                : Carbon::parse($periodo->fecha_inicio)->max(today())->addWeeks($orden + 1)->endOfDay();
+                ? $fin->copy()->subDays(3)
+                : Carbon::parse($periodo->fecha_inicio)->max(today())->addWeeks($orden + 1)->endOfDay()->min($fin);
             $apartado = ApartadoGuia::create(['guia_integradora_id' => $guia->id, 'orden' => $orden + 1, 'titulo' => $titulo, 'descripcion' => $descripcion, 'ponderacion' => $peso, 'requiere_documento' => true, 'requiere_codigo' => $orden === 2, 'fecha_limite' => $fecha]);
             foreach ($orden === 2 ? [$lider] : [$lider, $docente] as $i => $revisor) {
                 FirmaApartadoGuia::create(['apartado_guia_id' => $apartado->id, 'docente_id' => $revisor->id, 'asignatura_id' => $materias[$i]->id, 'orden' => $i + 1, 'etiqueta' => $i === 0 ? 'Docente integrador' : 'Docente asesor', 'requerida' => true]);
@@ -197,7 +201,10 @@ class EscenariosAcademicosSeeder extends Seeder
 
     private function entrega(Proyecto $proyecto, ApartadoGuia $apartado, User $alumno, int $indice, int $version = 1): Entrega
     {
-        $fecha = $proyecto->guiaIntegradora->periodo->estado === 'cerrado' ? Carbon::parse($apartado->fecha_limite)->subDay() : now()->subDays(2);
+        $periodo = $proyecto->guiaIntegradora->periodo;
+        $fecha = $periodo->estado === 'cerrado'
+            ? Carbon::parse($apartado->fecha_limite)->subDay()
+            : now()->subDays(2)->max(Carbon::parse($periodo->fecha_inicio));
         $entrega = Entrega::create(['proyecto_id' => $proyecto->id, 'equipo_id' => $proyecto->equipo_id, 'apartado_guia_id' => $apartado->id, 'entregado_por_id' => $alumno->id, 'version' => $version, 'estado' => 'enviada', 'entregado_en' => $fecha]);
         $contenido = "# {$proyecto->titulo}\n\n{$apartado->titulo}\n\nVersión $version\n\nObjetivo: mejorar los servicios escolares.\nResultados: documentación del análisis, implementación y pruebas.\n";
         $ruta = "escenarios/proyecto-{$proyecto->id}/apartado-{$apartado->id}-v$version.md";

@@ -2,14 +2,13 @@
     <h2 class="text-2xl font-bold text-[#0D376D]">Estado de las guías</h2>
     <p class="mt-2 max-w-4xl text-sm text-slate-600">Consulta las guías de tus equipos, sus entregas, aprobaciones firmadas y PDF finales. Los pendientes se calculan con la última versión de cada entrega. Una guía puede tener equipos con distintos avances.</p>
     <x-mensajes-formulario />
-    @if(session('status'))<p class="mt-4 rounded border border-blue-200 bg-blue-50 p-4 text-sm">{{ session('status') }}</p>@endif
     <form method="GET" action="{{ route('docente-lider.estado-guias') }}" class="mt-5 grid gap-4 rounded-lg border bg-white p-5 md:grid-cols-2 xl:grid-cols-5">
         <label class="text-sm font-bold">Periodo<select name="periodo" class="mt-2 block w-full rounded border-slate-300"><option value="">Todos mis periodos</option>@foreach($periodos as $periodo)<option value="{{ $periodo->id }}" @selected((int)($filtros['periodo'] ?? 0) === $periodo->id)>{{ $periodo->nombre }}</option>@endforeach</select></label>
         <label class="text-sm font-bold">Grupo<select name="grupo" class="mt-2 block w-full rounded border-slate-300"><option value="">Todos mis grupos</option>@foreach($grupos as $grupo)<option value="{{ $grupo->id }}" @selected((int)($filtros['grupo'] ?? 0) === $grupo->id)>{{ $grupo->carrera?->clave }} · {{ $grupo->nombre }}@if(empty($filtros['periodo'])) · {{ $grupo->periodo?->nombre }}@endif</option>@endforeach</select></label>
         <label class="text-sm font-bold">Estado del equipo<select name="estado" class="mt-2 block w-full rounded border-slate-300"><option value="">Todos los estados</option>@foreach($estados as $valor => $etiqueta)<option value="{{ $valor }}" @selected(($filtros['estado'] ?? '') === $valor)>{{ $etiqueta }}</option>@endforeach</select></label>
         <label class="text-sm font-bold">Buscar<input type="search" name="buscar" maxlength="160" value="{{ $filtros['buscar'] ?? '' }}" placeholder="Guía, proyecto o equipo" class="mt-2 block w-full rounded border-slate-300"></label>
         <label class="text-sm font-bold">Equipos por página<select name="por_pagina" class="mt-2 block w-full rounded border-slate-300">@foreach([10, 20, 40] as $cantidad)<option value="{{ $cantidad }}" @selected($filtros['por_pagina'] === $cantidad)>{{ $cantidad }}</option>@endforeach</select></label>
-        <div class="flex items-end gap-3"><button class="rounded bg-[#155AA3] px-4 py-2 font-bold text-white">Consultar</button><a class="py-2 text-sm text-[#155AA3] underline" href="{{ route('docente-lider.estado-guias') }}">Limpiar</a></div>
+        <div class="flex items-end gap-3"><button class="rounded bg-[#155AA3] px-4 py-2 font-bold text-white">Consultar</button><a class="boton-secundario" href="{{ route('docente-lider.estado-guias') }}">Limpiar</a></div>
     </form>
     <p class="mt-4 text-xs text-slate-500">Resumen de tus proyectos para el periodo, grupo y búsqueda seleccionados. El filtro de estado limita el detalle de abajo.</p>
     <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">

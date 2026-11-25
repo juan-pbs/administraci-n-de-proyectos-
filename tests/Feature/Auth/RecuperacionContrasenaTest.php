@@ -48,6 +48,7 @@ test('recuperacion completa exige código y vuelve al login sin permitir reutili
 
 test('código incorrecto muestra error sin guardar campos y el reenvío espera tres minutos', function () {
     Mail::fake();
+    $this->freezeSecond();
     $usuario = User::factory()->create();
     $anterior = solicitarCodigoPrueba($this, $usuario);
     $this->post(route('password.verificar'), ['codigo' => '00000000'])->assertSessionHasErrors('codigo');
@@ -59,7 +60,7 @@ test('código incorrecto muestra error sin guardar campos y el reenvío espera t
     $this->travel(179)->seconds();
     $this->post(route('password.reenviar'))->assertRedirect(route('password.codigo'));
     Mail::assertSentCount(1);
-    $this->travel(2)->seconds();
+    $this->travel(1)->seconds();
     $this->post(route('password.reenviar'))->assertRedirect(route('password.codigo'));
     Mail::assertSentCount(2);
     $nuevo = Mail::sent(CodigoRecuperacion::class)->last()->codigo;

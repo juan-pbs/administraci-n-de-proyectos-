@@ -1,12 +1,12 @@
 <x-contenedor-aplicacion title="Decisión de cierre" active="cierres" :navegacion="$navegacion" :role-name="$roleName">
-    <a href="{{ route('docente-lider.cierres') }}" class="text-sm text-[#155AA3] underline">Volver a cierres y prórrogas</a>
+    <a href="{{ route('docente-lider.cierres') }}" class="boton-secundario">Volver a cierres y prórrogas</a>
     <h2 class="mt-3 text-2xl font-bold text-[#0D376D]">{{ $proyecto->titulo }}</h2>
     <p class="mt-2 text-sm text-slate-600">{{ $proyecto->equipo->nombre }} · {{ $proyecto->guiaIntegradora->nombre }} · Estado: {{ $cierre->etiquetaEstado() }}</p>
     <x-mensajes-formulario />
     <section class="mt-5 rounded-lg border bg-white p-5">
         <h3 class="font-bold">{{ $cierre->estado === 'cerrado' ? 'Pendientes conservados al cerrar' : 'Pendientes del formato final' }}</h3>
         <ul class="mt-3 space-y-3">@forelse($pendientes as $pendiente)<li class="rounded bg-amber-50 p-3 text-sm"><strong>{{ $pendiente['apartado'] }}</strong><span class="ml-2 text-xs uppercase">{{ $pendiente['tipo'] }}</span><p class="mt-1">{{ $pendiente['detalle'] }}</p></li>@empty<li class="text-sm text-emerald-800">Sin entregas ni firmas pendientes.</li>@endforelse</ul>
-        <a href="{{ route('documentos.mostrar', ['proyecto' => $proyecto, 'origen' => 'docente-lider.cierres.mostrar']) }}" class="mt-4 inline-block font-bold text-[#155AA3] underline">Consultar formato y PDF emitidos</a>
+        <a href="{{ route('documentos.mostrar', ['proyecto' => $proyecto, 'origen' => 'docente-lider.cierres.mostrar']) }}" class="mt-4 boton-secundario">Consultar formato y PDF emitidos</a>
     </section>
     @if(in_array($cierre->estado, ['pendiente', 'prorroga'], true) && $cierre->fechaProrrogaActual())
     <section class="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-5"><h3 class="font-bold">Apartados de la prórroga actual</h3><ul class="mt-3 space-y-2 text-sm">@foreach($cierre->prorrogas->where('ronda', $cierre->ronda) as $prorroga)<li>{{ $proyecto->guiaIntegradora->apartados->firstWhere('id', $prorroga->apartado_guia_id)?->titulo }}: {{ $prorroga->fecha_limite->format('d/m/Y H:i') }} · {{ $prorroga->fecha_limite->isFuture() ? 'Abierto' : 'Vencido' }}</li>@endforeach</ul></section>

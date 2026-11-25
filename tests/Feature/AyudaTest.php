@@ -174,6 +174,8 @@ test('la ayuda del docente lider explica el envio manual y los formatos de recor
         ->assertOk()
         ->assertSee('Enviar recordatorios ahora')
         ->assertSee('Enviar recordatorios a todos mis proyectos')
+        ->assertSee('Actualizar estado')
+        ->assertSee('Si un botón aparece en gris')
         ->assertSee('72 horas, 24 horas, envío manual y revisión pendiente de docentes')
         ->assertSee('lider-recordatorios.png')
         ->assertSee('lider-recordatorios-formato-72.png')
@@ -184,6 +186,7 @@ test('la ayuda del docente lider explica el envio manual y los formatos de recor
         ->get('/ayuda?seccion=recordatorios')
         ->assertOk()
         ->assertDontSee('Enviar recordatorios ahora');
+    $this->get('/ayuda?seccion=entregas')->assertOk()->assertSee('Historial del equipo')->assertSee('reciben un aviso por correo');
 });
 
 test('todos los apartados de ayuda por rol y acceso publico muestran una captura existente', function () {

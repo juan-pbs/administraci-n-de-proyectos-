@@ -1,17 +1,20 @@
 <x-contenedor-aplicacion title="Código y demostración | Administración de proyectos" active="codigo-estudiante" :navegacion="$navegacion" :role-name="$roleName">
     <h2 class="text-2xl font-bold text-[#0D376D]">Código, demostración y aplicación</h2>
-    <p class="mt-2 text-sm text-slate-600">Entrega el repositorio, una URL del trabajo alojado o un instalador. Estos productos se comparten únicamente con el docente que puede revisar tu repositorio.</p>
+    <p class="mt-2 text-sm text-slate-600">Registra el repositorio, una URL de demostración o un instalador. Tu equipo puede consultar la última entrega y el docente autorizado puede revisarla.</p>
     <x-mensajes-formulario />
     @include('modulos.estudiante.selector-proyecto')
-    @if(session('status'))<p class="mt-5 rounded border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{{ session('status') }}</p>@endif
     @if($proyecto && $apartadoCodigo)
         @if($producto)
-        <section class="mt-5 rounded-lg border bg-white p-5">
+        <section id="ultima-entrega-codigo" class="mt-5 rounded-lg border bg-white p-5">
             <h3 class="font-bold">Última entrega: {{ $producto->version }}</h3>
             <p class="mt-2 break-all text-sm">Repositorio: {{ $producto->repositorio_url ?: 'Sin repositorio' }}</p>
             <p class="mt-2 break-all text-sm">Demostración: {{ $producto->demostracion_url ?: 'Sin URL de demostración' }}</p>
             <p class="mt-2 text-xs text-slate-500">Subida por {{ $producto->entrega?->entregadoPor?->nombre ?? 'Integrante del equipo' }}</p>
-            @foreach($producto->entrega?->archivos ?? [] as $archivo)<a href="{{ route('estudiante.archivos.descargar', ['archivo' => $archivo, 'proyecto_contexto' => $proyecto->id]) }}" class="mt-2 block text-sm font-bold text-[#155AA3] underline">{{ $archivo->nombre_original }}</a>@endforeach
+            <ul class="mt-2 space-y-1">
+                @foreach($producto->entrega?->archivos ?? [] as $archivo)
+                    <li><a href="{{ route('estudiante.archivos.descargar', ['archivo' => $archivo, 'proyecto_contexto' => $proyecto->id]) }}" class="boton-secundario">Descargar {{ $archivo->nombre_original }}</a></li>
+                @endforeach
+            </ul>
             @if($producto->entrega && $producto->entrega->revisiones->isEmpty() && $apartadoCodigo->habilitado_para_entrega && (!$apartadoCodigo->fecha_limite || $apartadoCodigo->fecha_limite->isFuture())
                 && ($producto->entrega->entregado_por_id === null || (int) $producto->entrega->entregado_por_id === (int) auth()->id()))
                 <x-confirmar-accion class="mt-4" :accion="route('estudiante.entregas.retirar', $producto->entrega)" etiqueta="Retirar última versión"
@@ -21,7 +24,7 @@
             @endif
         </section>
         @endif
-        <section class="mt-5 rounded-lg border bg-white p-5"><h3 class="font-bold">{{ $apartadoCodigo->titulo }}</h3>
+        <section id="enviar-entrega-codigo" class="mt-5 rounded-lg border bg-white p-5"><h3 class="font-bold">{{ $apartadoCodigo->titulo }}</h3>
         <p class="mt-2 text-sm text-slate-500">Fecha límite: {{ $apartadoCodigo->fecha_limite?->format('d/m/Y H:i') ?? 'Sin fecha definida' }}</p>
         @if($apartadoCodigo->habilitado_para_entrega && (!$apartadoCodigo->fecha_limite || $apartadoCodigo->fecha_limite->isFuture()))
         <form method="POST" enctype="multipart/form-data" action="{{ route('estudiante.codigo.guardar') }}" class="mt-4 grid gap-4">

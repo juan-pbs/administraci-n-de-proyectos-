@@ -81,7 +81,7 @@
                         <p class="font-bold text-slate-900">{{ $periodo->grupos_count }}</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-3">
-                        <a href="{{ route('modulos.carreras-grupos', ['periodo_grupos' => $periodo->id]) }}" class="text-sm font-bold text-[#15529A] hover:underline">Abrir estructura →</a>
+                        <a href="{{ route('modulos.carreras-grupos', ['periodo_grupos' => $periodo->id]) }}" class="boton-secundario">Abrir estructura →</a>
                         @if($periodo->estado === 'borrador')
                             <form method="POST" action="{{ route('periodos.activar', $periodo) }}">@csrf @method('PATCH')<button @disabled($periodos->contains('estado', 'activo')) class="rounded-md bg-[#15529A] px-3 py-2 text-sm font-bold text-white disabled:opacity-40">Activar periodo</button></form>
                             @if($periodos->contains('estado', 'activo'))<p class="text-xs text-slate-500">Primero cierra el periodo activo.</p>@endif
@@ -99,7 +99,7 @@
                             @if(\Illuminate\Support\Carbon::parse($periodo->fecha_fin)->endOfDay()->isPast())<p class="mb-3 rounded-md bg-amber-50 p-3 text-sm font-semibold text-amber-800">La fecha de fin ya pasó. Revisa los pendientes y decide cuándo cerrar este periodo.</p>@endif
                             <details class="rounded-md border border-amber-200 bg-amber-50 p-3"><summary class="cursor-pointer text-sm font-bold text-amber-900">Revisar pendientes y cerrar periodo</summary>
                                 <p class="mt-3 text-sm text-amber-900">{{ $periodo->proyectos_sin_pdf }} proyectos sin PDF final · {{ $periodo->guias_borrador }} guías en borrador.</p>
-                                <div class="mt-2 flex flex-wrap gap-4 text-sm font-bold text-[#15529A]"><a class="underline" href="{{ route('periodos.pendientes', $periodo) }}#proyectos">Revisar proyectos</a><a class="underline" href="{{ route('periodos.pendientes', $periodo) }}#guias">Revisar guías en borrador</a></div>
+                                <div class="mt-2 flex flex-wrap gap-4 text-sm font-bold text-[#15529A]"><a class="boton-secundario" href="{{ route('periodos.pendientes', $periodo) }}#proyectos">Revisar proyectos</a><a class="boton-secundario" href="{{ route('periodos.pendientes', $periodo) }}#guias">Revisar guías en borrador</a></div>
                                 <p class="mt-2 text-sm text-slate-600">El cierre conserva el historial y cierra las guías publicadas que terminan en este ciclo. Las pendientes no se aprueban ni generan PDF automáticamente.</p>
                                 <form method="POST" action="{{ route('periodos.cerrar', $periodo) }}" class="mt-3 space-y-3">@csrf @method('PATCH')<label class="flex items-start gap-2 text-sm"><input type="checkbox" name="confirmar_cierre" value="1" required class="mt-1 rounded">He revisado los pendientes y deseo cerrar el periodo para consulta.</label><button class="rounded-md bg-amber-800 px-3 py-2 text-sm font-bold text-white">Cerrar periodo</button></form>
                             </details>

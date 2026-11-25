@@ -7,19 +7,40 @@
 
     <x-mensajes-formulario />
 
-    <section class="mt-6 rounded-lg border border-slate-200 bg-white p-5">
+    <section id="envio-recordatorios" class="mt-6 rounded-lg border border-slate-200 bg-white p-5">
         <h3 class="font-bold text-[#0D376D]">Enviar recordatorios manualmente</h3>
         <p class="mt-2 text-sm text-slate-600">Cada botón considera entregas pendientes de estudiantes y versiones sin revisar por docentes. El mismo aviso no se repite para la misma persona y actividad durante el día.</p>
-        <form method="POST" action="{{ route('docente-lider.recordatorios.enviar-todos') }}" class="mt-4">
-            @csrf
-            <button class="rounded-md bg-[#0D376D] px-4 py-2 text-sm font-bold text-white">Enviar recordatorios a todos mis proyectos</button>
-            <p class="mt-2 text-xs text-slate-500">Incluye todos tus proyectos en proceso, aunque no aparezcan en esta página. El envío se programa por la cola.</p>
-        </form>
+        @if($puedeEnviarATodos)
+            <form method="POST" action="{{ route('docente-lider.recordatorios.enviar-todos') }}" class="mt-4">
+                @csrf
+                <button class="rounded-md bg-[#0D376D] px-4 py-2 text-sm font-bold text-white">Enviar recordatorios a todos mis proyectos</button>
+            </form>
+            <p class="mt-2 text-xs text-slate-500">Incluye todos tus proyectos habilitados, aunque no aparezcan en esta página.</p>
+        @else
+            <details class="mt-4">
+                <summary class="boton-secundario boton-bloqueado gap-2">Enviar recordatorios a todos mis proyectos <span class="text-xs font-medium">(no disponible)</span></summary>
+                <p class="mt-2 text-sm text-slate-700">{{ $proyectos->total() ? 'Todos tus proyectos tienen bloqueos de envío. Consulta el motivo en cada proyecto.' : 'No tienes proyectos en proceso.' }}</p>
+            </details>
+        @endif
+
+        @if($resultadoEnvio !== null && !$proyectos->getCollection()->contains('id', $proyectoDelEnvio))
+            @include('modulos.docente-lider.resultado-recordatorios')
+        @endif
         <div class="mt-4 divide-y divide-slate-200">
             @forelse($proyectos as $proyecto)
-                <div class="flex flex-wrap items-center justify-between gap-3 py-4">
+                <div id="recordatorios-proyecto-{{ $proyecto->id }}" class="flex flex-wrap items-start justify-between gap-3 py-4">
                     <div><p class="font-semibold text-slate-900">{{ $proyecto->titulo }}</p><p class="text-sm text-slate-500">{{ $proyecto->equipo->nombre }} · {{ $proyecto->guiaIntegradora->nombre }}</p></div>
-                    <form method="POST" action="{{ route('docente-lider.recordatorios.enviar', $proyecto) }}">@csrf<button class="rounded-md bg-[#15529A] px-4 py-2 text-sm font-bold text-white">Enviar recordatorios ahora</button></form>
+                    @if($bloqueos[$proyecto->id])
+                        <details>
+                            <summary class="boton-secundario boton-bloqueado gap-2">Enviar recordatorios ahora <span class="text-xs font-medium">(no disponible)</span></summary>
+                            <p class="mt-2 text-sm text-slate-700">{{ $bloqueos[$proyecto->id] }}</p>
+                        </details>
+                    @else
+                        <form method="POST" action="{{ route('docente-lider.recordatorios.enviar', ['proyecto' => $proyecto, 'page' => $proyectos->currentPage()]) }}">@csrf<button class="rounded-md bg-[#15529A] px-4 py-2 text-sm font-bold text-white">Enviar recordatorios ahora</button></form>
+                    @endif
+                    @if($resultadoEnvio !== null && $proyectoDelEnvio === $proyecto->id)
+                        @include('modulos.docente-lider.resultado-recordatorios')
+                    @endif
                 </div>
             @empty
                 <p class="py-5 text-sm text-slate-500">No tienes proyectos en proceso.</p>
@@ -31,7 +52,7 @@
     <section class="mt-6 space-y-5">
         <div><h3 class="font-bold text-[#0D376D]">Formatos de correo</h3><p class="mt-1 text-sm text-slate-600">Para alumnos puedes usar {nombre}, {proyecto}, {actividad} y {fecha_limite}. Para docentes también están {equipo} y {version}. El asunto, los datos de la actividad, el enlace y la imagen institucional permanecen en el correo.</p></div>
         @foreach($tipos as $tipo => $nombre)
-            <form method="POST" action="{{ route('docente-lider.recordatorios.guardar') }}" class="rounded-lg border border-slate-200 bg-white p-5">
+            <form id="formato-{{ $tipo }}" method="POST" action="{{ route('docente-lider.recordatorios.guardar') }}" class="rounded-lg border border-slate-200 bg-white p-5">
                 @csrf
                 <input type="hidden" name="tipo" value="{{ $tipo }}">
                 <h4 class="font-bold text-slate-900">{{ $nombre }}</h4>

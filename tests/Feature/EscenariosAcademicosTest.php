@@ -12,6 +12,7 @@ uses(RefreshDatabase::class);
 
 test('escenarios académicos cubren estados y relaciones con nombres normales sin enviar correos', function () {
     Storage::fake('local'); Queue::fake(); Notification::fake();
+    $this->travelTo(Carbon::parse('2026-11-25 10:00:00'));
     $this->partialMock(DocumentosGuias::class, fn ($m) => $m->shouldReceive('pdf')->times(24)->andReturn('%PDF-1.7 ESCUELA'));
     $this->seed(EscenariosAcademicosSeeder::class);
     $this->seed(CorreosPruebaSeeder::class);
@@ -24,10 +25,19 @@ test('escenarios académicos cubren estados y relaciones con nombres normales si
     foreach (Periodo::all() as $periodo) {
         expect($periodo->nombre)->toBe(Periodo::nombreParaFechas(Carbon::parse($periodo->fecha_inicio), Carbon::parse($periodo->fecha_fin)));
     }
+    expect(Periodo::where('estado', 'activo')->value('nombre'))->toBe('Septiembre - Diciembre 2026')
+        ->and(Periodo::latest('fecha_inicio')->firstOrFail()->nombre)->toBe('Enero - Abril 2027')
+        ->and(Periodo::where('estado', 'cerrado')->latest('fecha_inicio')->firstOrFail()->nombre)->toBe('Mayo - Agosto 2026');
     foreach (GuiaIntegradora::with(['periodo', 'apartados'])->where('estado', 'borrador')->get() as $guia) {
         foreach ($guia->apartados as $apartado) {
             expect($apartado->fecha_limite->toDateString())->toBeGreaterThanOrEqual($guia->periodo->fecha_inicio)
                 ->toBeLessThanOrEqual($guia->periodo->fecha_fin);
+        }
+    }
+    foreach (GuiaIntegradora::with(['periodo', 'apartados'])->where('estado', 'publicada')->get() as $guia) {
+        foreach ($guia->apartados as $apartado) {
+            expect($apartado->fecha_limite->isFuture())->toBeTrue()
+                ->and($apartado->fecha_limite->toDateString())->toBeLessThanOrEqual($guia->periodo->fecha_fin);
         }
     }
     foreach (['usuarios' => 'nombre', 'periodos' => 'nombre', 'guias_integradoras' => 'nombre', 'proyectos' => 'titulo'] as $tabla => $campo) {

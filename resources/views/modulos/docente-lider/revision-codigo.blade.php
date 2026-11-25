@@ -13,7 +13,6 @@
     </section>
 
     <x-mensajes-formulario />
-    @if(session('status'))<div class="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{{ session('status') }}</div>@endif
 
     @php($grupos = $entregas->map(fn($entrega) => $entrega->equipo?->grupoAcademico)->filter()->unique('id')->sortBy(fn($grupo) => $grupo->grado.$grupo->grupo)->values())
     @if($grupos->isNotEmpty())
@@ -31,7 +30,7 @@
         @forelse($entregas as $entrega)
             @php($revision = $entrega->revisiones->first())
             @php($producto = $entrega->productosCodigo->first())
-            <article class="entrega-codigo overflow-hidden rounded-md border border-slate-300 border-l-4 border-l-[#155AA3] bg-white shadow-sm" data-grupo="{{ $entrega->equipo?->grupo_academico_id }}">
+            <article id="revision-codigo-{{ $entrega->id }}" data-abrir-con=".pagina-grupo[data-grupo='{{ $entrega->equipo?->grupo_academico_id }}']" class="entrega-codigo overflow-hidden rounded-md border border-slate-300 border-l-4 border-l-[#155AA3] bg-white shadow-sm" data-grupo="{{ $entrega->equipo?->grupo_academico_id }}">
                 <div class="grid gap-4 px-5 py-4 lg:grid-cols-[180px_minmax(0,1fr)_160px] lg:items-center">
                     <div class="lg:border-r lg:border-slate-200 lg:pr-4"><p class="text-xs font-bold uppercase text-[#005227]">{{ $entrega->equipo?->grupoAcademico?->carrera?->clave }} · {{ $entrega->equipo?->grupoAcademico?->grado }}{{ $entrega->equipo?->grupoAcademico?->grupo }}</p><p class="mt-1 font-extrabold text-[#0D376D]">{{ $entrega->equipo?->nombre }}</p></div>
                     <div><p class="font-bold text-slate-900">{{ $entrega->proyecto?->titulo }}</p><p class="mt-1 text-sm text-slate-500">{{ $entrega->apartado?->titulo }} · Versión {{ $producto?->version ?? $entrega->version }}</p><p class="mt-1 text-xs font-semibold text-[#155AA3]">Subida por {{ $entrega->entregadoPor?->nombre ?? 'Integrante del equipo' }}</p></div>
@@ -39,7 +38,7 @@
                 </div>
                 <div class="border-t border-slate-200 bg-slate-50 px-5 py-5">
                     <div class="grid gap-4 lg:grid-cols-2">
-                        @if($producto?->demostracion_url)<div class="rounded-md border border-slate-200 bg-white p-4"><p class="text-xs font-bold uppercase text-slate-500">Demostración alojada</p><a href="{{ route('docente-lider.demostracion', $producto) }}" class="mt-2 block font-bold text-[#155AA3] underline">Ver demostración de esta versión</a></div>@endif
+                        @if($producto?->demostracion_url)<div class="rounded-md border border-slate-200 bg-white p-4"><p class="text-xs font-bold uppercase text-slate-500">Demostración alojada</p><a href="{{ route('docente-lider.demostracion', $producto) }}" class="mt-2 boton-secundario">Ver demostración de esta versión</a></div>@endif
                         <a href="{{ route('documentos.mostrar', ['proyecto' => $entrega->proyecto_id, 'origen' => 'docente-lider.codigo', 'contexto' => request()->only('page')]) }}" class="rounded-md border bg-white p-4 text-sm font-bold text-[#155AA3]">Consultar formato final y firmas</a>
                         <div class="rounded-md border border-slate-200 bg-white p-4"><p class="text-xs font-bold uppercase text-slate-500">Repositorio</p>@if($producto?->repositorio_url)<a href="{{ $producto->repositorio_url }}" target="_blank" rel="noopener" class="mt-2 block break-all text-sm font-bold text-[#155AA3] underline">{{ $producto->repositorio_url }}</a>@else<p class="mt-2 text-sm text-slate-500">No se registró un repositorio.</p>@endif @if($producto?->archivo_fuente)<p class="mt-3 text-sm font-semibold text-slate-700">Fuente: {{ basename($producto->archivo_fuente) }}</p>@endif</div>
                         <div class="rounded-md border border-slate-200 bg-white p-4">
@@ -64,7 +63,7 @@
                     <fieldset @disabled(!$entrega->habilitada_para_revision)>
                     <form method="POST" action="{{ route('docente-lider.codigo.revisar', $entrega) }}" class="mt-4 grid gap-3 lg:grid-cols-[180px_150px_minmax(0,1fr)_150px] lg:items-end">
                         @csrf @method('PUT')
-                        <label class="text-sm text-slate-700 lg:col-span-4"><input type="checkbox" name="autorizar_firma" value="1"> Al aprobar, autorizo incluir mi firma en esta entrega (versión {{ $entrega->version }}). <a class="font-bold text-[#155AA3] underline" href="{{ route('docente.firma') }}">Registrar mi firma</a></label>
+                        <label class="text-sm text-slate-700 lg:col-span-4"><input type="checkbox" name="autorizar_firma" value="1"> Al aprobar, autorizo incluir mi firma en esta entrega (versión {{ $entrega->version }}). <a class="boton-secundario" href="{{ route('docente.firma') }}">Registrar mi firma</a></label>
                         <label><span class="text-xs font-bold uppercase text-slate-500">Resultado</span><select name="resultado" class="mt-2 w-full rounded-md border-slate-300 text-sm"><option value="aprobada" @selected($revision?->resultado === 'aprobada')>Aprobada</option><option value="correccion" @selected($revision?->resultado === 'correccion')>Solicitar corrección</option><option value="rechazada" @selected($revision?->resultado === 'rechazada')>Rechazada</option></select></label>
                         <label><span class="text-xs font-bold uppercase text-slate-500">Calificación (0–10)</span><input required name="calificacion" type="number" min="0" max="10" step="0.01" value="{{ $revision?->calificacion }}" class="mt-2 w-full rounded-md border-slate-300 text-sm"></label>
                         <label><span class="text-xs font-bold uppercase text-slate-500">Observaciones técnicas</span><textarea name="observaciones" rows="2" maxlength="2000" class="mt-2 w-full rounded-md border-slate-300 text-sm">{{ $revision?->observaciones }}</textarea></label>

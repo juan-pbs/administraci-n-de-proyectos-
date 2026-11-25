@@ -10,9 +10,6 @@
         <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Califica únicamente los apartados que te fueron asignados. Se muestra la versión más reciente de cada equipo.</p>
     </section>
 
-    @if(session('status'))
-        <div class="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{{ session('status') }}</div>
-    @endif
     <x-mensajes-formulario />
 
     @php($apartadosPaginacion = $entregas->map(fn($entrega) => $entrega->apartado)->filter()->unique('id')->sortBy('orden')->values())
@@ -60,8 +57,8 @@
             @forelse($entregas as $entrega)
                 @php($revision = $entrega->revisiones->first())
                 @php($grupo = $entrega->equipo?->grupoAcademico)
-                <article class="entrega overflow-hidden rounded-md border border-slate-300 border-l-4 border-l-[#155AA3] bg-white shadow-sm" data-apartado="{{ $entrega->apartado_guia_id }}" data-grupo="{{ $grupo?->id }}" data-estado="{{ $revision?->resultado ?? 'pendiente' }}" data-busqueda="{{ Str::lower(($entrega->equipo?->nombre ?? 'equipo '.$entrega->equipo?->numero).' '.$entrega->proyecto?->titulo.' '.$entrega->apartado?->titulo) }}">
-                    <button type="button" class="desplegar-entrega grid w-full gap-3 px-5 py-4 text-left hover:bg-slate-50 md:grid-cols-[190px_minmax(0,1fr)_180px_130px] md:items-center" aria-label="Revisar entrega de {{ $entrega->equipo?->nombre ?? 'Equipo '.$entrega->equipo?->numero }}: {{ $entrega->apartado?->titulo }}">
+                <article id="revision-{{ $entrega->id }}" data-abrir-con=".boton-apartado[data-apartado='{{ $entrega->apartado_guia_id }}']" class="entrega overflow-hidden rounded-md border border-slate-300 border-l-4 border-l-[#155AA3] bg-white shadow-sm" data-apartado="{{ $entrega->apartado_guia_id }}" data-grupo="{{ $grupo?->id }}" data-estado="{{ $revision?->resultado ?? 'pendiente' }}" data-busqueda="{{ Str::lower(($entrega->equipo?->nombre ?? 'equipo '.$entrega->equipo?->numero).' '.$entrega->proyecto?->titulo.' '.$entrega->apartado?->titulo) }}">
+                    <button id="abrir-revision-{{ $entrega->id }}" type="button" class="desplegar-entrega grid w-full gap-3 px-5 py-4 text-left hover:bg-slate-50 md:grid-cols-[190px_minmax(0,1fr)_180px_130px] md:items-center" aria-label="Revisar entrega de {{ $entrega->equipo?->nombre ?? 'Equipo '.$entrega->equipo?->numero }}: {{ $entrega->apartado?->titulo }}">
                         <div class="border-b border-slate-200 pb-3 md:border-b-0 md:border-r md:pb-0 md:pr-4">
                             <p class="text-[11px] font-bold uppercase tracking-wider text-[#005227]">{{ $grupo?->carrera?->clave }} · Grupo {{ $grupo?->grado }}{{ $grupo?->grupo }}</p>
                             <p class="mt-1 text-base font-extrabold text-[#0D376D]">{{ $entrega->equipo?->nombre ?? 'Equipo '.$entrega->equipo?->numero }}</p>
@@ -70,8 +67,8 @@
                         <div><p class="text-xs text-slate-500">Entrega</p><p class="mt-1 text-sm font-semibold text-slate-700">{{ $entrega->entregado_en?->format('d/m/Y H:i') ?? 'Sin fecha' }}</p><p class="mt-1 text-xs text-[#155AA3]">Por {{ $entrega->entregadoPor?->nombre ?? 'Integrante del equipo' }}</p></div>
                         <div class="flex items-center justify-between gap-2"><span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $revision ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700' }}">{{ $revision ? ucfirst($revision->resultado) : 'Pendiente' }}</span><span class="text-sm font-bold text-[#155AA3]">Revisar <span aria-hidden="true">⌄</span></span></div>
                     </button>
-                    <div class="detalle-entrega hidden border-t border-slate-100 bg-slate-50 px-5 py-5">
-                        <a href="{{ route('documentos.mostrar', ['proyecto' => $entrega->proyecto_id, 'origen' => 'docente-materia.revisiones', 'contexto' => request()->only('page')]) }}" class="mb-4 block text-sm font-bold text-[#155AA3] underline">Consultar formato final y firmas</a>
+                    <div id="detalle-revision-{{ $entrega->id }}" data-abrir-con="#abrir-revision-{{ $entrega->id }}" class="detalle-entrega hidden border-t border-slate-100 bg-slate-50 px-5 py-5">
+                        <a href="{{ route('documentos.mostrar', ['proyecto' => $entrega->proyecto_id, 'origen' => 'docente-materia.revisiones', 'contexto' => request()->only('page')]) }}" class="mb-4 boton-secundario">Consultar formato final y firmas</a>
                         <div class="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                             <div class="rounded-lg border border-slate-200 bg-white p-4">
                                 <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Evidencias entregadas</p>
@@ -99,7 +96,7 @@
                             <label><span class="text-xs font-bold uppercase text-slate-500">Resultado</span><select name="resultado" required class="mt-2 w-full rounded-md border-slate-300 text-sm"><option value="aprobada" @selected($revision?->resultado === 'aprobada')>Aprobada</option><option value="correccion" @selected($revision?->resultado === 'correccion')>Requiere corrección</option><option value="rechazada" @selected($revision?->resultado === 'rechazada')>Rechazada</option></select></label>
                             <label><span class="text-xs font-bold uppercase text-slate-500">Calificación (0–10)</span><input name="calificacion" type="number" min="0" max="10" step="0.01" required value="{{ $revision?->calificacion }}" class="mt-2 w-full rounded-md border-slate-300 text-sm"></label>
                             <label><span class="text-xs font-bold uppercase text-slate-500">Observaciones</span><textarea name="observaciones" rows="2" maxlength="2000" class="mt-2 w-full rounded-md border-slate-300 text-sm" placeholder="Indica aciertos o correcciones necesarias">{{ $revision?->observaciones }}</textarea></label>
-                            <label class="text-sm text-slate-700 lg:col-span-4"><input type="checkbox" name="autorizar_firma" value="1"> Al aprobar, autorizo incluir mi firma en esta entrega (versión {{ $entrega->version }}). <a class="font-bold text-[#155AA3] underline" href="{{ route('docente.firma') }}">Registrar mi firma</a></label>
+                            <label class="text-sm text-slate-700 lg:col-span-4"><input type="checkbox" name="autorizar_firma" value="1"> Al aprobar, autorizo incluir mi firma en esta entrega (versión {{ $entrega->version }}). <a class="boton-secundario" href="{{ route('docente.firma') }}">Registrar mi firma</a></label>
                             <button class="rounded-md bg-[#155AA3] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#0D376D]">Guardar revisión</button>
                         </form>
                         </fieldset>

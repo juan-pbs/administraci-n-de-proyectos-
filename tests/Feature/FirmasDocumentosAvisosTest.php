@@ -290,6 +290,33 @@ test('el envio manual respeta permisos, entregas completas y plazos vencidos', f
     Queue::assertPushed(EnviarAvisoRevision::class, 1);
 });
 
+test('recordatorios muestra el resultado real del último envío y explica el bloqueo de una guía cerrada', function () {
+    Queue::fake();
+    Notification::fake();
+    $d = escenarioFirmas();
+    $ruta = route('docente-lider.recordatorios');
+    $enviar = route('docente-lider.recordatorios.enviar', $d['proyecto']);
+    $this->actingAs($d['lider'])->post($enviar)->assertRedirect($ruta);
+    $this->get($ruta)->assertOk()->assertViewHas('resultadoEnvio', fn ($resultado) => $resultado['Estudiantes'] === ['enviados' => 0, 'no_enviados' => 0, 'pendientes' => 1]);
+
+    $aviso = AvisoAsignacion::where('tipo', 'recordatorio_manual')->firstOrFail();
+    (new EnviarAvisoAsignacion($aviso->id))->handle(app(AvisosAsignaciones::class));
+    $this->get($ruta)->assertViewHas('resultadoEnvio', fn ($resultado) => $resultado['Estudiantes'] === ['enviados' => 1, 'no_enviados' => 0, 'pendientes' => 0]);
+
+    entregaFirmaPrueba($d);
+    $this->post($enviar)->assertRedirect($ruta);
+    $avisoRevision = AvisoRevision::firstOrFail();
+    (new EnviarAvisoRevision($avisoRevision->id))->failed(new RuntimeException('Error de correo simulado'));
+    $this->get($ruta)->assertViewHas('resultadoEnvio', fn ($resultado) => $resultado['Docentes'] === ['enviados' => 0, 'no_enviados' => 1, 'pendientes' => 0]
+        && $resultado['Estudiantes']['enviados'] === 0)->assertSeeText('Los avisos sin enviar fallaron');
+
+    $d['guia']->update(['estado' => 'cerrada']);
+    $this->get($ruta)->assertOk()->assertSeeText('La guía está cerrada.')->assertSee('boton-bloqueado')->assertViewHas('puedeEnviarATodos', false);
+    $this->post($enviar)->assertSessionHasErrors(['recordatorios' => 'La guía está cerrada.']);
+    Queue::assertPushed(EnviarAvisoAsignacion::class, 1);
+    Queue::assertPushed(EnviarAvisoRevision::class, 1);
+});
+
 test('el aviso docente se envía solo por una revisión pendiente y usa el enlace de su rol', function () {
     Queue::fake(); Notification::fake();
     $d = escenarioFirmas();
