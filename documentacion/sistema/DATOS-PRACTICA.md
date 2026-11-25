@@ -59,7 +59,7 @@ Cada equipo tiene tres integrantes. El último dígito de su matrícula identifi
 4. En Mayo - Agosto 2026, revisa prórrogas, decisiones y constancias de cierre; en la prórroga activa solo se abren Desarrollo y Código.
 5. Alumno TI31041: selecciona el proyecto anterior y envía una versión nueva en esos dos apartados; Protocolo permanece bloqueado.
 6. Docente DOC-TI-03: revisa documentos y comentarios. DOC-TI-05 permite comprobar el registro de firma previo a aprobar. Ninguno recibe acceso a los repositorios de la materia líder.
-7. Líder DOC-TI-01: revisa los repositorios de referencia y descarga los comprimidos o el paquete Debian de práctica. El paquete no es una aplicación compilada del repositorio y no se ejecuta en el servidor.
+7. Líder DOC-TI-01: revisa los repositorios de referencia y descarga los comprimidos o el paquete Debian de documentación. El paquete no es una aplicación compilada del repositorio y no se ejecuta en el servidor.
 8. Prueba recuperación con el correo de una cuenta (`doc-ti-01@example.invalid`). En modo local el código aparece en el log; el reenvío tarda tres minutos.
 9. En **Recordatorios**, pulsa un botón gris para consultar el motivo. Solicita un envío habilitado y usa **Actualizar estado** para consultar enviados, sin enviar y en cola.
 10. Como `TI41011`, sube una evidencia y consulta el historial con `TI41012`. La evidencia aparecerá con el autor de la subida. Para revisar el correo de práctica, configura `MAIL_MAILER=log` y procesa la cola.

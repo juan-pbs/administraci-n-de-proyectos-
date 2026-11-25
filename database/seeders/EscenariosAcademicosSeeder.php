@@ -116,7 +116,7 @@ class EscenariosAcademicosSeeder extends Seeder
             imageline($image, $x, $y, $x + 1, (int) (65 + sin(($x + 1) / (11 + $docente->id % 7)) * 23 + cos(($x + 1) / 31) * 12), $ink);
         }
         imageline($image, 25, 96, 540, 85, $ink);
-        imagestring($image, 3, 30, 120, 'Firma de practica', $ink);
+        imagestring($image, 3, 30, 120, 'Firma academica', $ink);
         ob_start(); imagepng($image); $bytes = ob_get_clean(); imagedestroy($image);
         $normal = app(FirmasDocentes::class)->normalizar($bytes);
         FirmaDocente::create(['docente_id' => $docente->id, 'imagen' => $normal, 'sha256' => hash('sha256', base64_decode($normal))]);
@@ -234,10 +234,10 @@ class EscenariosAcademicosSeeder extends Seeder
         // Un reinicio reutiliza los IDs de entrega; los archivos temporales necesitan rutas nuevas.
         $base = Storage::disk('local')->path('escenarios/proyecto-'.$entrega->proyecto_id.'/paquete-'.$entrega->id.'-'.bin2hex(random_bytes(8)));
         $control = new \PharData($base.'-control.tar');
-        $control->addFromString('control', "Package: practica-escolar\nVersion: 1.0\nArchitecture: all\nMaintainer: Escuela <escuela@example.invalid>\nDescription: Paquete de practica para revisar adjuntos escolares\n");
+        $control->addFromString('control', "Package: documentacion-escolar\nVersion: 1.0\nArchitecture: all\nMaintainer: Escuela <escuela@example.invalid>\nDescription: Documentacion de proyectos escolares\n");
         $control->compress(\Phar::GZ);
         $data = new \PharData($base.'-data.tar');
-        $data->addFromString('usr/share/doc/practica-escolar/README', "Paquete de práctica para explorar la revisión de archivos. No representa una versión compilada del repositorio enlazado.\n");
+        $data->addFromString('usr/share/doc/documentacion-escolar/README', "Documentación técnica del proyecto. El paquete contiene materiales de consulta.\n");
         $data->compress(\Phar::GZ);
         $ar = "!<arch>\n";
         foreach (['debian-binary' => "2.0\n", 'control.tar.gz' => file_get_contents($base.'-control.tar.gz'), 'data.tar.gz' => file_get_contents($base.'-data.tar.gz')] as $nombre => $bytes) {
@@ -245,9 +245,9 @@ class EscenariosAcademicosSeeder extends Seeder
         }
         unset($control, $data);
         foreach (['-control.tar', '-control.tar.gz', '-data.tar', '-data.tar.gz'] as $sufijo) { unlink($base.$sufijo); }
-        $ruta = 'escenarios/proyecto-'.$entrega->proyecto_id.'/practica-escolar-v'.$entrega->version.'.deb';
+        $ruta = 'escenarios/proyecto-'.$entrega->proyecto_id.'/documentacion-escolar-v'.$entrega->version.'.deb';
         Storage::disk('local')->put($ruta, $ar);
-        ArchivoEntrega::create(['entrega_id' => $entrega->id, 'nombre_original' => 'practica-escolar.deb', 'ruta' => $ruta, 'tipo_archivo' => 'application/vnd.debian.binary-package', 'tamano' => strlen($ar), 'es_aplicacion' => true]);
+        ArchivoEntrega::create(['entrega_id' => $entrega->id, 'nombre_original' => 'documentacion-escolar.deb', 'ruta' => $ruta, 'tipo_archivo' => 'application/vnd.debian.binary-package', 'tamano' => strlen($ar), 'es_aplicacion' => true]);
     }
 
     private function revisar(User $docente, Entrega $entrega, string $resultado): void

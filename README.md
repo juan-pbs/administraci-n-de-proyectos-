@@ -105,7 +105,7 @@ Contenido inicial:
 - 325 usuarios: coordinación, doce docentes y 312 alumnos; docentes con y sin firma y usuarios inactivos.
 - 104 equipos, incluyendo equipos sin integrantes, y alumnos libres para probar la organización.
 - 24 guías y 84 proyectos con ocho estados distintos; 24 PDF finales.
-- Entregas completas, parciales, faltantes, corregidas, rechazadas y versiones anteriores; firmas válidas y pendientes, comentarios, comprimidos y paquetes Debian de práctica.
+- Entregas completas, parciales, faltantes, corregidas, rechazadas y versiones anteriores; firmas válidas y pendientes, comentarios, comprimidos y paquetes Debian de documentación.
 - Repositorios públicos `comedor`, `e-support-system`, `equipo_dinamita` y `universidad-`. La URL de trabajo alojado queda vacía cuando no existe un despliegue confirmado.
 
 Contraseña de todas las cuentas iniciales: **password**. Solo las cuentas de práctica usan esta contraseña conocida; el alta normal genera una aleatoria.

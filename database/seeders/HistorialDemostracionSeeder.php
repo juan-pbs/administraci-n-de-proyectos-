@@ -41,11 +41,11 @@ class HistorialDemostracionSeeder extends Seeder
         }
 
         $carrera = Carrera::query()->firstOrCreate(['clave' => 'TI'], ['nombre' => 'Tecnologías de la Información', 'estado' => 'activa']);
-        $coordinacion = $this->usuario('DEMO-COORD', 'Coordinación de demostración', 'coordinacion', $carrera);
+        $coordinacion = $this->usuario('ACA-COORD', 'Patricia Hernández Luna', 'coordinacion', $carrera);
         $docentes = [
-            $this->usuario('DEMO-LIDER-01', 'Elena Rivera (DEMO)', 'docente_lider', $carrera),
-            $this->usuario('DEMO-DOC-01', 'Tomás Vega (DEMO)', 'docente_materia', $carrera),
-            $this->usuario('DEMO-DOC-02', 'Lucía Montes (DEMO)', 'docente_materia', $carrera),
+            $this->usuario('ACA-LIDER-01', 'Elena Rivera Soto', 'docente_lider', $carrera),
+            $this->usuario('ACA-DOC-01', 'Tomás Vega López', 'docente_materia', $carrera),
+            $this->usuario('ACA-DOC-02', 'Lucía Montes García', 'docente_materia', $carrera),
         ];
         foreach ($docentes as $indice => $docente) {
             $carrera->docentes()->syncWithoutDetaching([$docente->id => ['activo' => true]]);
@@ -58,9 +58,10 @@ class HistorialDemostracionSeeder extends Seeder
         foreach ([2024, 2025] as $anio) {
             foreach ([['Enero - Abril', '01-08', '04-26'], ['Mayo - Agosto', '05-06', '08-23'], ['Septiembre - Diciembre', '09-02', '12-13']] as $indice => [$nombre, $inicio, $fin]) {
                 DB::transaction(function () use ($anio, $indice, $nombre, $inicio, $fin, $carrera, $coordinacion, $docentes): void {
-                    $periodo = Periodo::query()->firstOrCreate(['nombre' => "$nombre $anio (DEMO)"], [
-                        'fecha_inicio' => "$anio-$inicio", 'fecha_fin' => "$anio-$fin", 'estado' => 'cerrado',
-                    ]);
+                    $periodo = Periodo::query()->where('nombre', "$nombre $anio (DEMO)")->first()
+                        ?? Periodo::query()->firstOrCreate(['nombre' => "$nombre $anio · Historial académico"], [
+                            'fecha_inicio' => "$anio-$inicio", 'fecha_fin' => "$anio-$fin", 'estado' => 'cerrado',
+                        ]);
                     $this->ciclo($periodo, $carrera, $coordinacion, $docentes, "$anio-".($indice + 1), Carbon::parse($periodo->fecha_inicio), false);
                 });
             }
@@ -69,24 +70,25 @@ class HistorialDemostracionSeeder extends Seeder
         // Conserva el periodo activo del usuario y agrega casos de avance al mismo.
         $activo = Periodo::query()->where('estado', 'activo')->latest('fecha_inicio')->firstOrFail();
         DB::transaction(fn () => $this->ciclo($activo, $carrera, $coordinacion, $docentes, 'ACTUAL', Carbon::today()->subDays(42), true));
-        $this->command?->info('Historial DEMO cargado: 6 periodos cerrados, 7 guías, 28 proyectos y 25 PDF finales. Contraseña inicial de cuentas nuevas: password.');
+        $this->command?->info('Historial académico cargado: 6 periodos cerrados, 7 guías, 28 proyectos y 25 PDF finales. Contraseña inicial de cuentas nuevas: password.');
     }
 
     private function usuario(string $matricula, string $nombre, string $rol, Carrera $carrera, ?GrupoAcademico $grupo = null): User
     {
-        return User::query()->firstOrCreate(['matricula' => $matricula], [
-            'nombre' => $nombre, 'correo' => strtolower($matricula).'@example.invalid',
-            'rol_id' => Role::query()->where('nombre', $rol)->firstOrFail()->id,
-            'carrera_id' => $carrera->id, 'grupo_academico_id' => $grupo?->id,
-            'estado' => 'activo', 'contrasena' => 'password', 'debe_cambiar_contrasena' => false,
-        ]);
+        return User::where('matricula', 'DEMO-'.substr($matricula, 4))->first()
+            ?? User::firstOrCreate(['matricula' => $matricula], [
+                'nombre' => $nombre, 'correo' => strtolower($matricula).'@example.invalid',
+                'rol_id' => Role::query()->where('nombre', $rol)->firstOrFail()->id,
+                'carrera_id' => $carrera->id, 'grupo_academico_id' => $grupo?->id,
+                'estado' => 'activo', 'contrasena' => 'password', 'debe_cambiar_contrasena' => false,
+            ]);
     }
 
     private function ciclo(Periodo $periodo, Carrera $carrera, User $coordinacion, array $docentes, string $clave, Carbon $inicio, bool $actual): void
     {
-        $nombre = "Guía TI 8 - $clave (DEMO)";
+        $nombre = "Guía integradora TI 8 - $clave";
         // Cada ciclo es atómico. Al repetir la carga se conservan las revisiones del usuario.
-        if (GuiaIntegradora::query()->where('nombre', $nombre)->where('periodo_id', $periodo->id)->exists()) {
+        if (GuiaIntegradora::query()->whereIn('nombre', [$nombre, "Guía TI 8 - $clave (DEMO)"])->where('periodo_id', $periodo->id)->exists()) {
             return;
         }
 
@@ -94,7 +96,7 @@ class HistorialDemostracionSeeder extends Seeder
             $materias = [];
             foreach (['Integradora', 'Ingeniería de software', 'Bases de datos'] as $indice => $materia) {
                 $materias[] = $asignatura = Asignatura::query()->create([
-                    'clave' => "DEMO-$clave-".($indice + 1), 'nombre' => "$materia (DEMO $clave)",
+                    'clave' => "TI-08-$clave-".($indice + 1), 'nombre' => $materia,
                     'carrera_id' => $carrera->id, 'grado' => 8, 'estado' => 'activo',
                 ]);
                 $asignatura->docentes()->attach($docentes[$indice]->id, ['periodo_id' => $periodo->id, 'activo' => true]);
@@ -103,8 +105,8 @@ class HistorialDemostracionSeeder extends Seeder
                 'periodo_id' => $periodo->id, 'periodo_fin_id' => $periodo->id,
                 'asignatura_id' => $materias[0]->id, 'creado_por' => $coordinacion->id, 'nombre' => $nombre,
                 'cuatrimestre' => '8° cuatrimestre', 'version' => '1.0', 'estado' => $actual ? 'publicada' : 'cerrada',
-                'competencias_evaluar' => 'DEMOSTRACIÓN: analizar necesidades, diseñar una solución, desarrollar software y documentar su validación.',
-                'objetivo_aprendizaje' => 'Ejemplo ficticio de seguimiento académico completo. Las personas, evidencias y firmas son datos de demostración.',
+                'competencias_evaluar' => 'Analizar necesidades, diseñar una solución, desarrollar software y documentar su validación.',
+                'objetivo_aprendizaje' => 'Aplicar el ciclo de desarrollo de software y documentar los resultados de la validación.',
             ]);
             $apartados = [];
             foreach ($this->apartados() as $indice => [$titulo, $descripcion, $ponderacion]) {
@@ -129,17 +131,17 @@ class HistorialDemostracionSeeder extends Seeder
             foreach (['D', 'E'] as $indiceGrupo => $letra) {
                 $grupo = GrupoAcademico::query()->create([
                     'periodo_id' => $periodo->id, 'carrera_id' => $carrera->id, 'grado' => 8,
-                    'grupo' => $letra.'-DEMO', 'nombre' => "8$letra (DEMO)",
+                    'grupo' => $letra.'-HIST', 'nombre' => "8$letra - Historial",
                     'lider_proyecto_id' => $docentes[0]->id, 'asignatura_lider_id' => $materias[0]->id,
                 ]);
                 for ($numero = 1; $numero <= 2; $numero++) {
                     $integrantes = [];
                     foreach (['Andrea Solís', 'Diego Luna', 'Paola Torres'] as $indice => $alumno) {
-                        $integrantes[] = $this->usuario("DEMO-$clave-$letra$numero-".($indice + 1), "$alumno (DEMO $clave $letra$numero)", 'estudiante', $carrera, $grupo);
+                        $integrantes[] = $this->usuario("ACA-$clave-$letra$numero-".($indice + 1), $alumno, 'estudiante', $carrera, $grupo);
                     }
                     $equipo = Equipo::query()->create([
                         'grupo_academico_id' => $grupo->id, 'lider_id' => $integrantes[0]->id, 'numero' => $numero,
-                        'nombre' => "Equipo $numero (DEMO)", 'estado' => 'activo', 'contexto_proyecto' => 'Caso ficticio de aplicación académica.',
+                        'nombre' => "Equipo $numero", 'estado' => 'activo', 'contexto_proyecto' => 'Proyecto de desarrollo de software.',
                     ]);
                     $equipo->integrantes()->attach(collect($integrantes)->pluck('id')->mapWithKeys(fn ($id) => [$id => ['activo' => true]])->all());
                     $equipo->asesores()->attach(collect($docentes)->mapWithKeys(fn ($docente, $indice) => [$docente->id => ['principal' => $indice === 0, 'activo' => true]])->all());
@@ -147,8 +149,8 @@ class HistorialDemostracionSeeder extends Seeder
                     $terminado = ! $actual || $caso === 1;
                     $tema = ['Biblioteca digital', 'Control de inventario', 'Reservas de laboratorios', 'Seguimiento de tutorías'][$caso - 1];
                     $proyecto = Proyecto::query()->create([
-                        'guia_integradora_id' => $guia->id, 'equipo_id' => $equipo->id, 'titulo' => "$tema - $clave (DEMO)",
-                        'descripcion' => 'Proyecto ficticio para explorar entregas, correcciones, aprobaciones y archivo de PDF. Sin repositorio ni demostración real.',
+                        'guia_integradora_id' => $guia->id, 'equipo_id' => $equipo->id, 'titulo' => "$tema - $clave",
+                        'descripcion' => 'Análisis, desarrollo y validación de una solución para los servicios universitarios.',
                         'estado' => $terminado ? 'finalizado' : 'en_proceso',
                     ]);
                     foreach ($materias as $indice => $materia) {
@@ -203,12 +205,12 @@ class HistorialDemostracionSeeder extends Seeder
                 'proyecto_id' => $proyecto->id, 'apartado_guia_id' => $apartado->id, 'equipo_id' => $equipo->id,
                 'entregado_por_id' => $equipo->lider_id, 'version' => $version, 'estado' => 'enviada', 'entregado_en' => $fecha,
             ]);
-            $contenido = "EVIDENCIA FICTICIA / DEMO\n{$proyecto->titulo}\n{$apartado->titulo}\nVersión $version\n".
-                ($version === 2 ? 'Se atendieron las observaciones de la primera revisión.' : 'Contenido de muestra para explorar el sistema.')."\nNo constituye una entrega académica real.\n";
-            $ruta = "demo-historial/proyecto-{$proyecto->id}/apartado-{$apartado->id}-v$version.txt";
+            $contenido = "INFORME DE AVANCE\n{$proyecto->titulo}\n{$apartado->titulo}\nVersión $version\n".
+                ($version === 2 ? 'Se atendieron las observaciones de la primera revisión.' : 'Se documentaron los requisitos y los resultados de la revisión del equipo.')."\n";
+            $ruta = "historial-academico/proyecto-{$proyecto->id}/apartado-{$apartado->id}-v$version.txt";
             Storage::disk('local')->put($ruta, $contenido);
             ArchivoEntrega::query()->create([
-                'entrega_id' => $entrega->id, 'nombre_original' => "evidencia-demo-v$version.txt", 'ruta' => $ruta,
+                'entrega_id' => $entrega->id, 'nombre_original' => "informe-avance-v$version.txt", 'ruta' => $ruta,
                 'tipo_archivo' => 'text/plain', 'tamano' => strlen($contenido), 'es_aplicacion' => false,
             ]);
             if ($apartado->requiere_codigo) {
@@ -226,8 +228,8 @@ class HistorialDemostracionSeeder extends Seeder
     {
         Carbon::withTestNow($fecha, function () use ($entrega, $docente, $resultado, $nota): void {
             $observaciones = $resultado === 'aprobada'
-                ? 'DEMO: evidencia revisada y criterios satisfechos. Aprobación con firma ficticia.'
-                : 'DEMO: completar los casos de prueba y justificar las decisiones de diseño antes de reenviar.';
+                ? 'La evidencia cumple los criterios y cuenta con la autorización del revisor.'
+                : 'Completar los casos de prueba y justificar las decisiones de diseño antes de reenviar.';
             app(FirmasDocentes::class)->guardarRevision($docente, $entrega, [
                 'resultado' => $resultado, 'calificacion' => $nota, 'observaciones' => $observaciones,
             ], $resultado === 'aprobada');
@@ -244,7 +246,7 @@ class HistorialDemostracionSeeder extends Seeder
             $documentos = app(DocumentosGuias::class);
             $datos = $documentos->datos($proyecto);
             if ($datos['pendientes']) {
-                throw new RuntimeException('El proyecto DEMO no reúne las aprobaciones necesarias: '.implode(' ', $datos['pendientes']));
+                throw new RuntimeException('El proyecto no reúne las aprobaciones necesarias: '.implode(' ', $datos['pendientes']));
             }
             $pdf = $documentos->pdf([...$datos, 'emitido_por' => $coordinacion->nombre, 'emitido_en' => now()], 'FINAL');
             DocumentoFinal::query()->create([
@@ -266,7 +268,7 @@ class HistorialDemostracionSeeder extends Seeder
             imageline($imagen, $x, $y, $x + 1, $siguiente, $tinta);
         }
         imageline($imagen, 45, 108, 580 - $indice * 15, 90, $tinta);
-        imagestring($imagen, 5, 110, 130, 'FIRMA FICTICIA / DEMO '.($indice + 1), $tinta);
+        imagestring($imagen, 5, 110, 130, 'FIRMA ACADEMICA '.($indice + 1), $tinta);
         ob_start();
         imagepng($imagen);
         $bytes = ob_get_clean();
@@ -282,7 +284,7 @@ class HistorialDemostracionSeeder extends Seeder
             ['Capítulo I - Protocolo del proyecto', "1.1 Antecedentes\n1.2 Planteamiento del problema\n1.3 Propuesta de solución\n1.4 Objetivos\n1.5 Justificación\n1.6 Alcances y limitaciones", 20],
             ['Capítulo II - Análisis y diseño', "2.1 Contexto institucional\n2.2 Requisitos funcionales\n2.3 Casos de uso\n2.4 Modelo de datos\n2.5 Diseño de interfaces", 20],
             ['Capítulo III - Desarrollo y validación', "3.1 Arquitectura\n3.2 Desarrollo de componentes\n3.3 Pruebas y resultados\n3.4 Evidencias de validación", 20],
-            ['Producto de software y cierre', "Manual de usuario\nManual técnico\nCódigo fuente (caso ficticio)\nInforme de cierre\nCarta de liberación", 30],
+            ['Producto de software y cierre', "Manual de usuario\nManual técnico\nCódigo fuente\nInforme de cierre\nCarta de liberación", 30],
         ];
     }
 }

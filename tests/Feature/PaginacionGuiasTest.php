@@ -19,11 +19,11 @@ function prepararPaginacionGuias($test): User
     Queue::fake();
     Notification::fake();
     $mock = Mockery::mock(DocumentosGuias::class)->makePartial();
-    $mock->shouldReceive('pdf')->times(4)->andReturn('%PDF DEMO PAGINACION');
+    $mock->shouldReceive('pdf')->times(4)->andReturn('%PDF ARCHIVO');
     app()->instance(DocumentosGuias::class, $mock);
     $test->seed(PaginacionGuiasDemostracionSeeder::class);
 
-    return User::where('matricula', 'DEMO-LIDER-01')->firstOrFail();
+    return User::where('matricula', 'ACA-LIDER-01')->firstOrFail();
 }
 
 test('paginación reparte proyectos sin duplicarlos y conserva filtros y resumen global', function () {
@@ -65,9 +65,9 @@ test('formato ofrece regreso interno conservando página y filtros y descarta ru
     $alumno = $proyecto->equipo->integrantes->first();
     $this->actingAs($alumno)->get(route('documentos.mostrar', $proyecto))->assertOk()
         ->assertViewHas('regreso', fn ($r) => $r['url'] === route('estudiante.proyecto', ['proyecto_contexto' => $proyecto->id]));
-    $docente = User::where('matricula', 'DEMO-DOC-01')->firstOrFail();
+    $docente = User::where('matricula', 'ACA-DOC-01')->firstOrFail();
     $this->actingAs($docente)->get(route('documentos.mostrar', $proyecto))->assertOk()->assertSee('Volver a revisiones');
-    $this->actingAs(User::where('matricula', 'DEMO-COORD')->firstOrFail())->get(route('documentos.mostrar', $proyecto))->assertOk()->assertSee('Volver a proyectos');
+    $this->actingAs(User::where('matricula', 'ACA-COORD')->firstOrFail())->get(route('documentos.mostrar', $proyecto))->assertOk()->assertSee('Volver a proyectos');
 });
 
 test('historial de paginación conserva PDF originales y decisiones al repetir carga sin enviar avisos', function () {

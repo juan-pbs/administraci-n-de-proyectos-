@@ -25,7 +25,7 @@ function prepararEstadoGuias($test): User
     app()->instance(DocumentosGuias::class, $mock);
     $test->seed(CierresDemostracionSeeder::class);
 
-    return User::where('matricula', 'DEMO-LIDER-01')->firstOrFail();
+    return User::where('matricula', 'ACA-LIDER-01')->firstOrFail();
 }
 
 test('panel muestra el estado de todas las guías y sus equipos sin depender de casos o comentarios', function () {
@@ -45,7 +45,7 @@ test('panel muestra el estado de todas las guías y sus equipos sin depender de 
 
 test('estado de guías exige líder activo y limita proyectos y filtros a sus propios grupos', function () {
     $lider = prepararEstadoGuias($this);
-    foreach (['DEMO-COORD', 'DEMO-DOC-01', 'DEMO-CIERRE-ENTREGA-1'] as $matricula) {
+    foreach (['ACA-COORD', 'ACA-DOC-01', 'ACA-CIERRE-ENTREGA-1'] as $matricula) {
         $this->actingAs(User::where('matricula', $matricula)->first())->get(route('docente-lider.estado-guias'))->assertForbidden();
     }
     $ajeno = User::factory()->create(['rol_id' => $lider->rol_id]);
@@ -102,7 +102,7 @@ test('líder puede abrir la decisión de un cierre vencido sin esperar al schedu
     $conteo = CierreProyecto::count();
     $this->actingAs($lider)->get(route('docente-lider.estado-guias', ['buscar' => '01 -']))->assertOk()->assertSee('Requiere decisión de cierre');
     expect(CierreProyecto::count())->toBe($conteo);
-    $this->actingAs(User::where('matricula', 'DEMO-DOC-01')->first())->post(route('docente-lider.estado-guias.preparar-cierre', $proyecto))->assertForbidden();
+    $this->actingAs(User::where('matricula', 'ACA-DOC-01')->first())->post(route('docente-lider.estado-guias.preparar-cierre', $proyecto))->assertForbidden();
     $this->actingAs($lider)->post(route('docente-lider.estado-guias.preparar-cierre', $proyecto))->assertRedirect(route('docente-lider.cierres.mostrar', $proyecto));
     expect(CierreProyecto::count())->toBe($conteo + 1);
 });

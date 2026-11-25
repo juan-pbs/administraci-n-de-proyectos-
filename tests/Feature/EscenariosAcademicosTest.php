@@ -46,7 +46,7 @@ test('escenarios académicos cubren estados y relaciones con nombres normales si
     $estados = Proyecto::all()->map(fn ($p) => app(EstadoGuias::class)->proyecto($p))->countBy('estado')->all();
     expect($estados)->toEqual(['finalizada' => 24, 'cerrada_pendientes' => 12, 'necesita_prorroga' => 8, 'lista_pdf' => 8, 'prorroga_activa' => 4, 'prorroga_vencida' => 4, 'en_curso' => 20, 'borrador' => 4]);
     expect(ProductoCodigo::whereNotIn('repositorio_url', EscenariosAcademicosSeeder::REPOSITORIOS)->exists())->toBeFalse()
-        ->and(ArchivoEntrega::where('es_aplicacion', true)->exists())->toBeTrue();
+        ->and(ArchivoEntrega::where('es_aplicacion', true)->distinct()->pluck('nombre_original')->all())->toBe(['documentacion-escolar.deb']);
     foreach (ArchivoEntrega::all() as $archivo) { expect(Storage::disk('local')->exists($archivo->ruta))->toBeTrue(); }
     $lider = User::where('matricula', 'DOC-TI-01')->firstOrFail();
     $this->actingAs($lider)->get(route('docente-lider.estado-guias'))->assertOk()->assertViewHas('resumen', fn ($r) => $r['total'] === 21)

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ArchivoEntrega;
 use App\Models\DocumentoFinal;
 use App\Models\Entrega;
 use App\Models\FirmaDocente;
@@ -29,7 +30,7 @@ test('historial ficticio conserva datos existentes y carga aprobaciones válidas
     $firma = FirmaDocente::create(['docente_id' => $usuario->id, 'imagen' => 'firma existente', 'sha256' => str_repeat('a', 64)]);
     $contrasena = $usuario->getRawOriginal('contrasena');
     // La generación visual de PDF se comprueba con los archivos reales de la carga local.
-    $this->partialMock(DocumentosGuias::class, fn ($mock) => $mock->shouldReceive('pdf')->times(25)->andReturn('%PDF-1.7 DEMO'));
+    $this->partialMock(DocumentosGuias::class, fn ($mock) => $mock->shouldReceive('pdf')->times(25)->andReturn('%PDF-1.7 ARCHIVO'));
 
     $this->seed(HistorialDemostracionSeeder::class);
     expect(Periodo::count())->toBe(7)
@@ -45,14 +46,18 @@ test('historial ficticio conserva datos existentes y carga aprobaciones válidas
         ->and($firma->fresh()->imagen)->toBe('firma existente')
         ->and($usuario->fresh()->getRawOriginal('contrasena'))->toBe($contrasena);
 
-    $lider = User::where('matricula', 'DEMO-LIDER-01')->firstOrFail();
+    $archivo = ArchivoEntrega::firstOrFail();
+    expect($archivo->nombre_original)->toBe('informe-avance-v1.txt')
+        ->and(Storage::disk('local')->get($archivo->ruta))->toStartWith('INFORME DE AVANCE')->not->toMatch('/\\b(demo|codex)\\b/i');
+
+    $lider = User::where('matricula', 'ACA-LIDER-01')->firstOrFail();
     expect(Revision::whereHas('entrega.apartado', fn ($query) => $query->where('requiere_codigo', true))->where('revisor_id', '!=', $lider->id)->count())->toBe(0);
-    $this->actingAs($lider)->get(route('dashboard'))->assertOk()->assertSee('8D-DEMO');
-    $this->get(route('docente-lider.codigo'))->assertOk()->assertSee('Reservas de laboratorios - ACTUAL (DEMO)')->assertSee('Correccion');
-    $this->actingAs(User::where('matricula', 'DEMO-DOC-01')->firstOrFail())
-        ->get(route('docente-materia.revisiones'))->assertOk()->assertSee('Biblioteca digital - ACTUAL (DEMO)');
+    $this->actingAs($lider)->get(route('dashboard'))->assertOk()->assertSee('8D-HIST');
+    $this->get(route('docente-lider.codigo'))->assertOk()->assertSee('Reservas de laboratorios - ACTUAL')->assertSee('Correccion');
+    $this->actingAs(User::where('matricula', 'ACA-DOC-01')->firstOrFail())
+        ->get(route('docente-materia.revisiones'))->assertOk()->assertSee('Biblioteca digital - ACTUAL');
     $completo = Proyecto::where('estado', 'finalizado')->firstOrFail();
-    $this->actingAs(User::where('matricula', 'DEMO-COORD')->firstOrFail())
+    $this->actingAs(User::where('matricula', 'ACA-COORD')->firstOrFail())
         ->get(route('documentos.mostrar', $completo))->assertOk();
     $this->get(route('documentos.descargar', [$completo, DocumentoFinal::where('proyecto_id', $completo->id)->firstOrFail()]))
         ->assertOk()->assertHeader('Content-Type', 'application/pdf');
